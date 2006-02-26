@@ -1,0 +1,8 @@
+DIG
+
+Usage: dig <north | south | east | west> <name>
+
+Create a new location with the indicated name and create a two-way
+passage between it and the current location.  The exit will be in
+the specified direction from the current location to the new
+location.

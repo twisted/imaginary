@@ -1,0 +1,15 @@
+How to implement Actions!
+=========================
+
+Define the parser, an english.Subparser subclass
+
+Register the parser, english.registerSubparser(subparserinstance)
+
+Define/implement/whatever the interfaces associated with the action,
+register the adapters for your objects to them in the stupid crappy
+lib directory (soon to change). Especially remember the iface for the
+player! IFooActor.
+
+Ensure that the module that defines your action and parser is imported
+somewhere!
+

@@ -1,0 +1,6 @@
+GET
+
+Usage: get <name>
+
+Retrieve the object with the given name from the immediate vicinity
+and stash it in your inventory.

@@ -1,0 +1,5 @@
+DESCRIBE
+
+Usage: describe <name> <description>
+
+Change the description of the object with the given name.

@@ -1,0 +1,10 @@
+
+See: http://achewood.com/index.php?date=04272005
+
+Imaginary numbers are so named not because they are fictitious, but because
+they are along a different axis from real numbers.
+
+Divmod Imaginary is a simulationists take on the realm of role playing,
+interactive fiction, and multiplayer dungeons.  It incorporates gameplay
+features from each area while attempting to provide a richer environment
+than is generally available from existing systems.

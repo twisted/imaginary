@@ -1,0 +1,5 @@
+EAT
+
+Usage: eat <name>
+
+Consume the object with the given name.

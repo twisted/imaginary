@@ -1,0 +1,8 @@
+CREATE
+
+Usage: create <name> [description]
+
+Bring a new object into existence, using the given name and if provided,
+the description.  The object will be created in your inventory.  Creation
+may fail if you are unable to carry it.  Anyone able to see you or the
+created object will witness the creation.

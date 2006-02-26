@@ -1,0 +1,5 @@
+SEARCH
+
+Usage: search <name>
+
+Look around the immediate area for an object with the given name.

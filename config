@@ -1,0 +1,14 @@
+
+#IMAGINATION_DB = "imagination/db"
+#IMAGINATION_FILES = "imagination/files"
+
+telnetPort = 4009
+sshPort = 4022
+webPort = 4242
+manholePort = 4010
+manholeUser = 'admin'
+manholePassword = 'password'
+
+import simplemap
+
+actorTemplate = simplemap.ActorTemplate

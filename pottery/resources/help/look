@@ -1,0 +1,6 @@
+LOOK
+
+Usage: look [name]
+
+If a name is given, examine something in particular.  Otherwise, take
+in your immediate surroundings.

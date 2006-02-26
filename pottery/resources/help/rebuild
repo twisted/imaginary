@@ -1,0 +1,5 @@
+REBUILD
+
+Usage: rebuild
+
+Load new source code from disk and attempt to incorporate it into the running world.

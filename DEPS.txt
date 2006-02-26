@@ -1,0 +1,4 @@
+Python 2.4
+Twisted 2.1.1
+Epsilon 0.4.0
+PyParsing 1.2

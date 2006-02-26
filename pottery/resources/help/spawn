@@ -1,0 +1,7 @@
+SPAWN
+
+Usage: spawn <name> [description]
+
+Create a living creature with the given name and, if provided, the given
+description.  It will come into being at your current location and its
+creation will be visible to anyone who can see either you or it.

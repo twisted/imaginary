@@ -1,0 +1,6 @@
+DROP
+
+Usage: drop <name>
+
+Get rid of the object in your inventory with the given name by
+depositing it in your current location.

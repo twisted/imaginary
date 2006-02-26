@@ -1,0 +1,5 @@
+include NAME.txt
+include DEPS.txt
+include NEWS.txt
+include LICENSE
+graft pottery
