@@ -155,12 +155,13 @@ class Ambiguity(ActionTests):
         balls = [ITargetTestActionTarget(self.ball1), ITargetTestActionTarget(self.ball2)]
         self.assertEquals(promptBalls, balls)
 
-        action = unittest.deferredResult(action)
+        def cbTarget(action):
+            self.failUnless(isinstance(action, TargetTestAction))
+            self.assertEquals(action.didPreAction, 1)
+            self.assertEquals(action.didPostAction, 1)
+            self.assertEquals(action.didAction, 1)
 
-        self.failUnless(isinstance(action, TargetTestAction))
-        self.assertEquals(action.didPreAction, 1)
-        self.assertEquals(action.didPostAction, 1)
-        self.assertEquals(action.didAction, 1)
+            self.assertIdentical(action.actor, ITargetTestActionActor(self.actor))
+            self.assertIdentical(action.target, ITargetTestActionTarget(promptBalls[0]))
+        return action.addCallback(cbTarget)
 
-        self.assertIdentical(action.actor, ITargetTestActionActor(self.actor))
-        self.assertIdentical(action.target, ITargetTestActionTarget(promptBalls[0]))

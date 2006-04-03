@@ -24,9 +24,14 @@ class Event(object):
         return ''
 
     def formattedFor(self, observer):
-        msg = {self.actor: self.actorMessage,
-               self.target: self.targetMessage,
-               self.tool: self.toolMessage}.get(observer, self.otherMessage)
+        if observer is self.actor:
+            msg = self.actorMessage
+        elif observer is self.target:
+            msg = self.targetMessage
+        elif observer is self.tool:
+            msg = self.toolMessage
+        else:
+            msg = self.otherMessage
         return msg
 
     def broadcast(self):

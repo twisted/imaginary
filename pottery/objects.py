@@ -5,7 +5,6 @@ from __future__ import division
 import math, random, itertools
 
 from zope.interface import implements
-from twisted.python.components import backwardsCompatImplements
 
 from twisted.internet import reactor
 from twisted.python import reflect, util
@@ -67,6 +66,9 @@ class Object(object):
 
     # Direct reference to the location of this object
     location = None
+
+    # Whether this can be picked up, pushed around, relocated, etc
+    portable = True
 
     def __init__(self, name, description=''):
         self.name = name
@@ -149,6 +151,8 @@ class Object(object):
         oldLocation = self.location
         if oldLocation is where:
             return
+        if oldLocation is not None and not self.portable:
+            raise epottery.CannotMove(self, where)
         where.add(self)
         if oldLocation is not None:
             oldLocation.remove(self)
@@ -163,6 +167,8 @@ class Object(object):
         return (T.fg.yellow, self.name, '\n')
 
 class Container(Object):
+    implements(ipottery.IContainer)
+
     # Units of weight which can be contained
     capacity = 1
 
@@ -189,15 +195,30 @@ class Container(Object):
                 [(T.fg.cyan, c.formatTo(who), '\n') for c in self.contents if c is not who])
 
     def add(self, obj):
+        if self.closed:
+            raise epottery.Closed(self, obj)
         if sum([o.weight for o in self.contents]) + obj.weight > self.capacity:
             raise epottery.DoesntFit(self, obj)
         self.contents.append(obj)
         obj.location = self
 
     def remove(self, obj):
+        if self.closed:
+            raise epottery.Closed(self, obj)
         self.contents.remove(obj)
         if obj.location is self:
             obj.location = None
+
+    def contains(self, other):
+        for child in self.contents:
+            if other is child:
+                return True
+            cchild = ipottery.IContainer(child, None)
+            if cchild is not None and cchild.contains(other):
+                return True
+        return False
+
+
 
 class Room(Container):
     capacity = 1000
@@ -308,7 +329,7 @@ class Actor(Container):
             except StopIteration:
                 break
             else:
-                if hasattr(obj, 'formatTo'):
+                if ipottery.IDescribeable.providedBy(obj):
                     it = itertools.chain(
                         T.flatten(obj.formatTo(self),
                                   currentAttrs=self.termAttrs), it)
@@ -374,4 +395,3 @@ class Player(Actor):
             self.send("You lose ", self.level - level, " levels!\n")
         self.level = level
         self.experience = experience
-backwardsCompatImplements(Player)

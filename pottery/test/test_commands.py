@@ -8,59 +8,11 @@ from twisted.trial import unittest
 from twisted.test.proto_helpers import StringTransport
 
 from pottery import objects, wiring, commands
+from pottery.test import commandutils
 
 E = re.escape
 
-class Commands(unittest.TestCase):
-    def setUp(self):
-        self.location = objects.Room("Test Location",
-                                     "Location for testing.")
-
-        self.player = objects.Player("Test Player")
-        self.player.useColors = False
-        self.location.add(self.player)
-        self.transport = StringTransport()
-        class Protocol:
-            write = self.transport.write
-        self.player.setProtocol(Protocol())
-
-        self.observer = objects.Player("Observer Player")
-        self.location.add(self.observer)
-        self.otransport = StringTransport()
-        class Protocol:
-            write = self.otransport.write
-        self.observer.setProtocol(Protocol())
-
-
-    def tearDown(self):
-        for p in self.player, self.observer:
-            try:
-                p.destroy()
-            except AttributeError:
-                pass
-
-    def _test(self, command, output, observed=()):
-        wiring.parse(self.transport, self.player, command)
-
-        output.insert(0, "> " + command)
-
-        results = []
-        for xport, oput in ((self.transport, output),
-                            (self.otransport, observed)):
-            results.append([])
-            gotLines = xport.value().splitlines()
-            for i, (got, expected) in enumerate(map(None, gotLines, oput)):
-                got = got or ''
-                expected = expected or '$^'
-                m = re.compile(expected.rstrip()).match(got.rstrip())
-                if m is None:
-                    s1 = pprint.pformat(gotLines)
-                    s2 = pprint.pformat(oput)
-                    raise unittest.FailTest(
-                        "\n%s\ndid not match expected\n%s\n(Line %d)" % (s1, s2, i))
-                results[-1].append(m)
-            xport.clear()
-        return results
+class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
     def testBadCommand(self):
         self._test(
@@ -105,18 +57,18 @@ class Commands(unittest.TestCase):
         # Try to get something that does not exist
         self._test(
             "get foobar",
-            ["Nothing named foobar here."])
+            ["Nothing like that around here."])
 
         # Try to get yourself
         self._test(
             "get self",
-            ["Yea, right."])
+            ["You cannot take Test Player."])
         self.assertEquals(self.player.location, self.location)
 
         # Try to get the location
         self._test(
             "get here",
-            ["Yea, right."])
+            ["You cannot take Test Location."])
         self.assertEquals(self.location.location, None)
 
         # Make an object and try to get it
@@ -124,26 +76,21 @@ class Commands(unittest.TestCase):
         self.location.add(o)
         self._test(
             "get foo",
-            ["You take foo.",
-             ">"],
-            ["Test Player takes foo.",
-             ">"])
+            ["You take foo."],
+            ["Test Player takes foo."])
         self.assertEquals(o.location, self.player)
 
         # Try to get the observer
         self._test(
             "get 'Observer Player'",
-            ["Observer Player is too heavy to pick up.",
-             ">"],
-            ["Test Player tries to pick you up, but fails.",
-             ">"])
+            ["Observer Player is too heavy to pick up."],
+            ["Test Player tries to pick you up, but fails."])
         self.assertEquals(self.observer.location, self.location)
 
         # Container stuff
         self._test(
             "get baz from bar",
-            ["Nothing named bar around here.",
-             ">"])
+            ["Nothing like that around here."])
 
         c = objects.Container("bar")
         self.location.add(c)
@@ -151,11 +98,19 @@ class Commands(unittest.TestCase):
         c.add(o)
         self._test(
             "get baz from bar",
-            ["You take baz from bar.",
-             ">"],
-            ["Test Player takes baz from bar.",
-             ">"])
+            ["You take baz from bar."],
+            ["Test Player takes baz from bar."])
         self.assertEquals(o.location, self.player)
+
+        # Can't get things from a closed container
+        o.moveTo(c)
+        c.closed = True
+        self._test(
+            "get baz from bar",
+            ["Nothing like that around here."],
+            [])
+        self.assertEquals(o.location, c)
+        self.assertEquals(c.contents, [o])
 
     def testDrop(self):
         self._test(
@@ -209,7 +164,7 @@ class Commands(unittest.TestCase):
 
         self._test(
             "look at bar",
-            ["You don't see bar here."])
+            ["You don't see that."])
 
     def testSay(self):
         self._test(
@@ -404,33 +359,6 @@ class Commands(unittest.TestCase):
         self.assertEquals(x[4].groups(), ('12', '39'))
         self.assertEquals(x[5].groups(), ())
 
-    def testCreate(self):
-        self._test(
-            "create foobar",
-            ["foobar created."],
-            ["Test Player creates foobar."])
-        foobar = self.player.find("foobar")
-        self.assertEquals(foobar.name, "foobar")
-        self.assertEquals(foobar.description, "an undescribed object")
-        self.assertEquals(foobar.location, self.player)
-
-        self._test(
-            "create 'bar foo'",
-            ["bar foo created."],
-            ["Test Player creates bar foo."])
-        barfoo = self.player.find("bar foo")
-        self.assertEquals(barfoo.name, "bar foo")
-        self.assertEquals(barfoo.description, 'an undescribed object')
-        self.assertEquals(barfoo.location, self.player)
-
-        self._test(
-            "create 'described thing' This is the things description.",
-            ["described thing created."],
-            ["Test Player creates described thing."])
-        thing = self.player.find("described thing")
-        self.assertEquals(thing.name, "described thing")
-        self.assertEquals(thing.description, "This is the things description.")
-        self.assertEquals(thing.location, self.player)
 
     def testSpawn(self):
         self._test(
@@ -555,7 +483,7 @@ class Commands(unittest.TestCase):
              E("  'hitpoints': pottery.objects.Points(100, 100),"),
              E("  'location': Room(name='Test Location', location=None),"),
              E("  'name': 'Test Player',"),
-             E("  'proto': <pottery.test.test_commands.Protocol instance at ") + ptr + E(">,"),
+             E("  'proto': <pottery.test.commandutils.Protocol instance at ") + ptr + E(">,"),
              E("  'stamina': pottery.objects.Points(100, 100),"),
              E("  'strength': pottery.objects.Points(100, 100),"),
              E("  'termAttrs': AttributeSet(bold=False, underline=False, reverseVideo=False, blink=False, fg=9, bg=9),"),
@@ -570,3 +498,24 @@ class Commands(unittest.TestCase):
              E("  'exits': {},"),
              E("  'name': 'Test Location'})")])
 
+
+
+    def testOpenClose(self):
+        container = objects.Container("container")
+        self.location.add(container)
+        self._test(
+            "close container",
+            ["You close container."],
+            ["Test Player closes container."])
+        self._test(
+            "close container",
+            ["container is already closed."],
+            [])
+        self._test(
+            "open container",
+            ["You open container."],
+            ["Test Player opens container."])
+        self._test(
+            "open container",
+            ["container is already open."],
+            [])

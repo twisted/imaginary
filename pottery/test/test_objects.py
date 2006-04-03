@@ -1,6 +1,7 @@
 
 from twisted.trial import unittest
 
+from pottery import epottery
 from pottery import objects
 from pottery import iterutils
 from pottery import text as T
@@ -10,6 +11,7 @@ class PointsTestCase(unittest.TestCase):
         p = objects.Points(100)
         self.assertEquals(p.current, p.max)
         self.assertEquals(p.max, 100)
+
 
     def testMutation(self):
         p = objects.Points(100)
@@ -34,6 +36,7 @@ class PointsTestCase(unittest.TestCase):
         p.modify(-10)
         self.assertEquals(p.current, 0)
 
+
     def testRepresentation(self):
         p = objects.Points(100)
         self.assertEquals(str(p), '100/100')
@@ -47,11 +50,14 @@ class PointsTestCase(unittest.TestCase):
         self.assertEquals(str(p), '0/100')
         self.assertEquals(repr(p), 'pottery.objects.Points(100, 0)')
 
+
+
 class ObjectTestCase(unittest.TestCase):
     def testCreation(self):
         obj = objects.Object("test object", "lame description")
         self.assertEquals(obj.name, "test object")
         self.assertEquals(obj.description, "lame description")
+
 
     def testDestroy(self):
         obj = objects.Object("x")
@@ -65,6 +71,8 @@ class ObjectTestCase(unittest.TestCase):
         self.assertEquals(obj.location, None)
         self.failIf(room.find("y") is not None)
 
+
+
     def testFind(self):
         obj = objects.Object("z")
         room = objects.Room("location")
@@ -76,6 +84,8 @@ class ObjectTestCase(unittest.TestCase):
         self.assertIdentical(obj.find("here"), room)
 
         self.assertIdentical(obj.find("zoop"), None)
+
+
 
     def testFormatting(self):
         pc = objects.Actor("test actor")
@@ -92,6 +102,8 @@ class ObjectTestCase(unittest.TestCase):
         finally:
             pc.destroy()
 
+
+
     def testMoving(self):
         obj = objects.Object("DOG")
         room = objects.Room("HOUSE")
@@ -99,3 +111,19 @@ class ObjectTestCase(unittest.TestCase):
         self.assertIdentical(obj.location, room)
         obj.moveTo(room)
         self.assertIdentical(obj.location, room)
+
+
+
+    def testNonPortable(self):
+        """
+        Test that the C{portable} flag is respected and prevents movement between locations.
+        """
+        obj = objects.Object("mountain")
+        obj.portable = False
+        room = objects.Room("place")
+        obj.moveTo(room)
+        elsewhere = objects.Room("different place")
+        self.assertRaises(epottery.CannotMove, obj.moveTo, elsewhere)
+        self.assertIdentical(obj.location, room)
+        self.assertEquals(room.contents, [obj])
+        self.assertEquals(elsewhere.contents, [])

@@ -1,0 +1,5 @@
+CLOSE
+
+Usage: close <name>
+
+Attempt to close an open container.

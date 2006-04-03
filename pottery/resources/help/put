@@ -1,0 +1,5 @@
+PUT
+
+Usage: put <item name> in <container name>
+
+Attempt to place an object inside another object.

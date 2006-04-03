@@ -2,7 +2,7 @@
 from Crypto.PublicKey import RSA
 
 from zope.interface import implements, Interface
-from twisted.python.components import backwardsCompatImplements, registerAdapter
+from twisted.python.components import registerAdapter
 
 from twisted.protocols import basic
 from twisted.internet import defer
@@ -55,7 +55,6 @@ class ConchSession(object):
         appProto.factory = self.factory
         appProto.makeConnection(transport)
         transport.makeConnection(session.wrapProtocol(appProto))
-backwardsCompatImplements(ConchSession)
 
 registerAdapter(ConchSession, ConchUser, session.ISession)
 

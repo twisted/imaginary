@@ -1,12 +1,22 @@
 
+from zope.interface import implements
+
 from twisted.trial import unittest
 from twisted.python.util import unsignedID
 
-from pottery import iterutils, objects
+from pottery import ipottery, iterutils, objects
 
 class formattable:
+    implements(ipottery.IDescribeable)
+
     def formatTo(self, what):
         return 'shortFormatTo(%X)' % (unsignedID(what),)
+
+
+    def longFormatTo(self, what):
+        raise NotImplementedError("This isn't tested here.")
+
+
 
 class UtilTestCase(unittest.TestCase):
     def testInterlace(self):

@@ -27,6 +27,9 @@ class AmbiguousArgument(PotteryError):
     things with similar names, or due to the absence of anything named
     similarly to the given input.
 
+    @ivar action: The action which was being processed when an ambiguity was
+    found.
+
     @type part: C{str}
     @ivar part: The part of the command which was ambiguous.
     Typically something like 'target' or 'tool'.
@@ -35,14 +38,26 @@ class AmbiguousArgument(PotteryError):
     @ivar objects: The objects which were involved in the ambiguity.
     """
 
-    def __init__(self, part, objects):
+    def __init__(self, action, part, objects):
         PotteryError.__init__(self)
+        self.action = action
         self.part = part
         self.objects = objects
 
 # Game logic errors
 class DoesntFit(PotteryError):
     """
-    An object tried to go into a container, but the container was
-    full.
+    An object tried to go into a container, but the container was full.
+    """
+
+
+class Closed(PotteryError):
+    """
+    An object tried to go into a container, but the container was closed.
+    """
+
+
+class CannotMove(PotteryError):
+    """
+    An object tried to move but it was not portable so it couldn't.
     """

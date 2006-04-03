@@ -1,6 +1,5 @@
 
 from zope.interface import implements
-from twisted.python.components import backwardsCompatImplements
 
 from twisted.internet import defer
 from twisted.application import service
@@ -29,7 +28,7 @@ def parse(transport, player, line):
         err.trap(epottery.AmbiguousArgument)
         exc = err.value
         if len(exc.objects) == 0:
-            transport.write("Who's that?\r\n")
+            transport.write(getattr(err.value.action, err.value.part + "NotAvailable", "Who's that?") + "\r\n")
         else:
             transport.write("Could you be more specific?\r\n")
 
@@ -95,7 +94,6 @@ class PotteryRealm(object):
             raise epottery.BadPassword()
         except KeyError:
             raise epottery.NoSuchUser()
-backwardsCompatImplements(PotteryRealm)
 
 def makeService(
     place,

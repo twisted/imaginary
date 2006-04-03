@@ -1,3 +1,4 @@
+# -*- test-case-name: pottery.test -*-
 
 import os, random
 
@@ -5,10 +6,12 @@ from zope.interface import Interface
 
 import pyparsing
 
-from twisted.python import util, reflect, rebuild
+from twisted.python import util, rebuild, components
+from twisted import plugin
 
-import pottery
-from pottery import ipottery, epottery, iterutils, commands, events, objects, text as T
+import pottery.plugins
+from pottery import (ipottery, epottery, iterutils, commands, events,
+                     objects, text as T)
 from pottery.predicates import atLeastOne, isNot, And
 
 class Action(commands.Command):
@@ -22,13 +25,20 @@ class Action(commands.Command):
                 pass
             else:
                 if len(objs) != 1:
-                    raise epottery.AmbiguousArgument(k, objs)
+                    raise epottery.AmbiguousArgument(self, k, objs)
                 else:
                     kw[k] = objs[0]
         return self.do(player, line, **kw)
 
     def resolve(self, player, name, value):
         raise NotImplementedError("Don't know how to resolve %r (%r)" % (name, value))
+
+def getPlugins(iface, package):
+    """Get plugins. See L{twisted.plugin.getPlugins}.
+
+    I only exist so that I can be monkeypatched. :-S
+    """
+    return plugin.getPlugins(iface, package)
 
 
 class NoTargetAction(Action):
@@ -101,6 +111,8 @@ class LookAt(TargetAction):
             pyparsing.White() +
             pyparsing.restOfLine.setResultsName("target"))
 
+    targetNotAvailable = "You don't see that."
+
     def targetRadius(self, player):
         return 3
 
@@ -155,6 +167,58 @@ class Name(TargetAction):
         evt.broadcast()
         target.name = name
 
+
+
+class Open(TargetAction):
+    expr = (pyparsing.Literal("open") +
+            pyparsing.White() +
+            commands.targetString("target"))
+
+    targetInterface = ipottery.IContainer
+
+    def do(self, player, line, target):
+        if not target.closed:
+            evt = events.ThatDoesntWork(
+                actor=player,
+                target=target,
+                actorMessage=(target, " is already open."))
+        else:
+            target.closed = False
+            evt = events.Success(
+                actor=player,
+                target=target,
+                actorMessage=("You open ", target, "."),
+                targetMessage=(player, " opens you."),
+                otherMessage=(player, " opens ", target, "."))
+        evt.broadcast()
+
+
+
+class Close(TargetAction):
+    expr = (pyparsing.Literal("close") +
+            pyparsing.White() +
+            commands.targetString("target"))
+
+    targetInterface = ipottery.IContainer
+
+    def do(self, player, line, target):
+        if target.closed:
+            evt = events.ThatDoesntWork(
+                actor=player,
+                target=target,
+                actorMessage=(target, " is already closed."))
+        else:
+            target.closed = True
+            evt = events.Success(
+                actor=player,
+                target=target,
+                actorMessage=("You close ", target, "."),
+                targetMessage=(player, " closes you."),
+                otherMessage=(player, " closes ", target, "."))
+        evt.broadcast()
+
+
+
 def tooHeavy(player, target):
     return events.ThatDoesntWork(
         actor=player, target=target,
@@ -162,12 +226,21 @@ def tooHeavy(player, target):
         otherMessage=(player, " struggles to lift ", target, ", but fails."),
         targetMessage=(player, " tries to pick you up, but fails."))
 
-def targetTaken(player, target):
+def targetTaken(player, target, container=None):
+    if container is None:
+        return events.Success(
+            actor=player, target=target,
+            actorMessage=("You take ", target, "."),
+            targetMessage=(player, " takes you."),
+            otherMessage=(player, " takes ", target, "."))
     return events.Success(
-        actor=player, target=target,
-        actorMessage=("You take ", target, "."),
-        targetMessage=(player, " takes you."),
-        otherMessage=(player, " takes ", target, "."))
+        actor=player,
+        target=target,
+        tool=container,
+        actorMessage=("You take ", target, " from ", container, "."),
+        targetMessage=(player, " takes you from ", container, "."),
+        toolMessage=(player, " takes ", target, " from you."),
+        otherMessage=(player, " takes ", target, " from ", container, "."))
 
 
 class TakeFrom(ToolAction):
@@ -181,19 +254,63 @@ class TakeFrom(ToolAction):
             pyparsing.White() +
             commands.targetString("tool"))
 
+    targetNotAvailable = "Nothing like that around here."
+    toolNotAvailable = "Nothing like that around here."
+
     def do(self, player, line, target, tool):
+        # XXX Make sure target is in tool
         try:
             target.moveTo(player)
         except epottery.DoesntFit:
             tooHeavy(player, target).broadcast()
         else:
-            targetTaken(player, target).broadcast()
+            targetTaken(player, target, tool).broadcast()
+
+
+
+## <allexpro> dash: put me in a tent and give it to moshez!
+class PutIn(ToolAction):
+    toolInterface = ipottery.IObject
+    targetInterface = ipottery.IContainer
+
+    targetNotAvailable = "That doesn't work."
+
+    expr = (pyparsing.Literal("put") +
+            pyparsing.White() +
+            commands.targetString("tool") +
+            pyparsing.Optional(pyparsing.White() +
+                               pyparsing.Literal("in")) +
+            pyparsing.White() +
+            commands.targetString("target"))
+
+    def do(self, player, line, tool, target):
+        ctool = ipottery.IContainer(tool, None)
+        if ctool is not None and (ctool.contains(target) or ctool is target):
+            evt = events.ThatDoesntWork(actor=player, target=target, tool=tool,
+                                        actorMessage="A thing cannot contain itself in euclidean space.")
+        else:
+            try:
+                tool.moveTo(target)
+            except epottery.DoesntFit:
+                evt = events.ThatDoesntWork(actor=player, target=target, tool=tool)
+            except epottery.Closed:
+                evt = events.ThatDoesntWork(actor=player, target=target, tool=tool, actorMessage=(target, " is closed."))
+            else:
+                evt = events.Success(
+                    actor=player, target=target, tool=tool,
+                    actorMessage=("You put ", tool, " in ", target, "."),
+                    targetMessage=(player, " puts ", " tool in you."),
+                    toolMessage=(player, " puts you in ", target, "."),
+                    otherMessage=(player, " puts ", tool, " in ", target, "."))
+        evt.broadcast()
 
 
 class Take(TargetAction):
     expr = ((pyparsing.Literal("get") ^ pyparsing.Literal("take")) +
             pyparsing.White() +
             commands.targetString("target"))
+
+    targetNotAvailable = "Nothing like that around here."
 
     def targetRadius(self, player):
         return 1
@@ -216,7 +333,7 @@ class Take(TargetAction):
 
 def insufficientSpace(player):
     return events.ThatDoesntWork(
-        actor=actor,
+        actor=player,
         actorMessage="There's not enough space for that.")
 
 def creationSuccess(player, creation):
@@ -247,12 +364,20 @@ class Spawn(NoTargetAction):
 class Create(NoTargetAction):
     expr = (pyparsing.Literal("create") +
             pyparsing.White() +
+            commands.targetString("typeName") +
+            pyparsing.White() +
             commands.targetString("name") +
             pyparsing.Optional(pyparsing.White() +
                                pyparsing.restOfLine.setResultsName("description")))
 
-    def do(self, player, line, name, description='an undescribed object'):
-        o = objects.Object(name, description)
+    def do(self, player, line, typeName, name,
+           description='an undescribed object'):
+        for plug in getPlugins(ipottery.IObjectType, pottery.plugins):
+            if plug.type == typeName:
+                o = plug.getType()(name, description)
+                break
+        else:
+            raise ValueError("Can't find " + typeName)
         try:
             o.moveTo(player)
         except epottery.DoesntFit:
@@ -265,6 +390,8 @@ class Drop(TargetAction):
     expr = (pyparsing.Literal("drop") +
             pyparsing.White() +
             commands.targetString("target"))
+
+    targetNotAvailable = "Nothing like that around here."
 
     def targetRadius(self, player):
         return 1
