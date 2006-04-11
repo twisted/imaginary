@@ -5,29 +5,55 @@ import re
 from twisted.trial import unittest
 from twisted.test.proto_helpers import StringTransport
 
+from axiom import store
+
 from pottery import objects, wiring
+from pottery.wiring import player
+
+
+E = re.escape
+
+def _makePlayer(store, name):
+    obj = objects.Object(store=store, name=name)
+    obj.weight = 100
+    actor = objects.Actor(store=store)
+    actor.installOn(obj)
+    playerContainer = objects.Container(store=store, capacity=90)
+    playerContainer.installOn(obj)
+    return obj, player.Player(obj)
+
+
+class PlayerProtocol(object):
+    def __init__(self, transport):
+        self.transport = transport
+
+    def write(self, crap):
+        self.transport.write(crap)
 
 
 class CommandTestCaseMixin:
     def setUp(self):
-        self.location = objects.Room("Test Location",
-                                     "Location for testing.")
+        self.store = store.Store()
 
-        self.player = objects.Player("Test Player")
-        self.player.useColors = False
-        self.location.add(self.player)
+        self.location = objects.Object(
+            store=self.store,
+            name=u"Test Location",
+            description=u"Location for testing.")
+
+        locContainer = objects.Container(store=self.store, capacity=1000)
+        locContainer.installOn(self.location)
+
+        self.player, self.playerWrapper = _makePlayer(self.store, u"Test Player")
+
+        self.playerWrapper.useColors = False
+        locContainer.add(self.player)
         self.transport = StringTransport()
-        class Protocol:
-            write = self.transport.write
-        self.player.setProtocol(Protocol())
+        self.playerWrapper.setProtocol(PlayerProtocol(self.transport))
 
-        self.observer = objects.Player("Observer Player")
-        self.location.add(self.observer)
+        self.observer, self.observerWrapper = _makePlayer(self.store, u"Observer Player")
+        locContainer.add(self.observer)
         self.otransport = StringTransport()
-        class Protocol:
-            write = self.otransport.write
-        self.observer.setProtocol(Protocol())
-
+        self.observerWrapper.setProtocol(PlayerProtocol(self.otransport))
 
     def tearDown(self):
         for p in self.player, self.observer:
@@ -37,7 +63,10 @@ class CommandTestCaseMixin:
                 pass
 
     def _test(self, command, output, observed=()):
-        wiring.parse(self.transport, self.player, command)
+        # Deprecate this or something
+        command = unicode(command, 'ascii')
+
+        self.playerWrapper.parse(command)
 
         output.insert(0, "> " + command)
 

@@ -7,9 +7,11 @@ from pottery import ipottery, action, objects
 class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def setUp(self):
         r = commandutils.CommandTestCaseMixin.setUp(self)
-        self.object = objects.Object("foo")
+        self.object = objects.Object(store=self.store, name=u"foo")
         self.object.moveTo(self.player)
-        self.container = objects.Container("bar")
+        self.container = objects.Object(store=self.store, name=u"bar")
+        self.containerContainer = objects.Container(store=self.store, capacity=1)
+        self.containerContainer.installOn(self.container)
         self.container.moveTo(self.location)
         return r
 
@@ -21,7 +23,7 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertIdentical(self.player.location, self.location)
         self.assertIdentical(self.object.location, self.container)
         self.assertIdentical(self.container.location, self.location)
-        self.assertEquals(self.container.contents, [self.object])
+        self.assertEquals(list(self.containerContainer.getContents()), [self.object])
 
 
     def testPutSelf(self):
@@ -30,7 +32,7 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["That doesn't work."],
             [])
         self.assertIdentical(self.player.location, self.location)
-        self.assertIn(self.player, self.location.contents)
+        self.assertIn(self.player, ipottery.IContainer(self.location).getContents())
 
 
     def testPutHere(self):
@@ -39,7 +41,7 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["A thing cannot contain itself in euclidean space."],
             [])
         self.assertIdentical(self.location.location, None)
-        self.assertNotIn(self.location, self.container.contents)
+        self.assertNotIn(self.location, self.containerContainer.getContents())
 
 
     def testPutNonContainer(self):
@@ -55,44 +57,49 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "put bar in bar",
             ["A thing cannot contain itself in euclidean space."],
             [])
-        self.assertEquals(self.container.contents, [])
+        self.assertEquals(list(self.containerContainer.getContents()), [])
         self.assertEquals(self.container.location, self.location)
 
 
     def testNestedContainment(self):
-        another = objects.Container("another")
-        self.container.add(another)
+        another = objects.Object(store=self.store, name=u"another")
+        objects.Container(store=self.store, capacity=1).installOn(another)
+        self.containerContainer.add(another)
 
         self._test(
             "put bar in another",
             ["A thing cannot contain itself in euclidean space."],
             [])
         self.assertIdentical(another.location, self.container)
-        self.assertEquals(self.container.contents, [another])
+        self.assertEquals(list(self.containerContainer.getContents()), [another])
 
 
     def testIndirectNestedContainment(self):
-        innermost = objects.Container("innermost")
-        middle = objects.Container("middle")
-        middle.add(innermost)
-        self.container.add(middle)
+        innermost = objects.Object(store=self.store, name=u"innermost")
+        innermostContainer = objects.Container(store=self.store, capacity=1)
+        innermostContainer.installOn(innermost)
+        middle = objects.Object(store=self.store, name=u"middle")
+        middleContainer = objects.Container(store=self.store, capacity=1)
+        middleContainer.installOn(middle)
+        middleContainer.add(innermost)
+        self.containerContainer.add(middle)
 
         self._test(
             "put bar in innermost",
             ["A thing cannot contain itself in euclidean space."],
             [])
         self.assertIdentical(self.container.location, self.location)
-        self.assertEquals(self.container.contents, [middle])
+        self.assertEquals(list(self.containerContainer.getContents()), [middle])
         self.assertIdentical(middle.location, self.container)
-        self.assertEquals(middle.contents, [innermost])
+        self.assertEquals(list(middleContainer.getContents()), [innermost])
         self.assertIdentical(innermost.location, middle)
-        self.assertEquals(innermost.contents, [])
+        self.assertEquals(list(innermostContainer.getContents()), [])
 
 
     def testPutClosed(self):
-        self.container.closed = True
+        self.containerContainer.closed = True
         self._test(
             "put foo in bar",
             ["bar is closed."])
-        self.assertEquals(self.container.contents, [])
+        self.assertEquals(list(self.containerContainer.getContents()), [])
         self.assertIdentical(self.object.location, self.player)

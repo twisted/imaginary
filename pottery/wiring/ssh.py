@@ -23,7 +23,7 @@ class ConchUser(avatar.ConchUser):
         self.factory = factory
         self.channelLookup["session"] = session.SSHSession
 
-registerAdapter(ConchUser, ipottery.IPlayer, IConchUser)
+registerAdapter(ConchUser, ipottery.IActor, IConchUser)
 
 class ConchSession(object):
     implements(session.ISession)
@@ -100,7 +100,7 @@ class ConchFactory(factory.SSHFactory):
         return self.portal.login(
             credentials.UsernamePassword(username, password),
             None,
-            ipottery.IPlayer)
+            ipottery.IActor)
 
     def create(self, username, password):
         return self.realm.create(username, password)

@@ -1,20 +1,22 @@
 
 from twisted.trial import unittest
 
-from pottery import epottery
-from pottery import objects
-from pottery import iterutils
-from pottery import text as T
+from axiom import store, item, attributes
+
+from pottery import epottery, objects, iterutils, text as T, ipottery
 
 class PointsTestCase(unittest.TestCase):
+    def setUp(self):
+        self.store = store.Store()
+
     def testInitialiation(self):
-        p = objects.Points(100)
+        p = objects.Points(store=self.store, max=100)
         self.assertEquals(p.current, p.max)
         self.assertEquals(p.max, 100)
 
 
     def testMutation(self):
-        p = objects.Points(100)
+        p = objects.Points(store=self.store, max=100)
         p.increase(10)
         self.assertEquals(p.current, 100)
 
@@ -38,7 +40,7 @@ class PointsTestCase(unittest.TestCase):
 
 
     def testRepresentation(self):
-        p = objects.Points(100)
+        p = objects.Points(store=self.store, max=100)
         self.assertEquals(str(p), '100/100')
         self.assertEquals(repr(p), 'pottery.objects.Points(100, 100)')
 
@@ -52,19 +54,36 @@ class PointsTestCase(unittest.TestCase):
 
 
 
+class Describeable(item.Item):
+    long = attributes.text(default=u"Yo LONG")
+    short = attributes.text(default=u"yo")
+
+    def longFormatTo(self, other):
+        return self.long
+
+
+    def formatTo(self, other):
+        return self.short
+
+
+
 class ObjectTestCase(unittest.TestCase):
+    def setUp(self):
+        self.store = store.Store()
+
     def testCreation(self):
-        obj = objects.Object("test object", "lame description")
-        self.assertEquals(obj.name, "test object")
-        self.assertEquals(obj.description, "lame description")
+        obj = objects.Object(store=self.store, name=u"test object", description=u"lame description")
+        self.assertEquals(obj.name, u"test object")
+        self.assertEquals(obj.description, u"lame description")
 
 
     def testDestroy(self):
-        obj = objects.Object("x")
+        obj = objects.Object(store=self.store, name=u"x")
         obj.destroy()
 
-        room = objects.Room("test location")
-        obj = objects.Object("y")
+        room = objects.Object(store=self.store, name=u"test location")
+        objects.Container(store=self.store, capacity=1000).installOn(room)
+        obj = objects.Object(store=self.store, name=u"y")
         obj.moveTo(room)
 
         obj.destroy()
@@ -74,8 +93,9 @@ class ObjectTestCase(unittest.TestCase):
 
 
     def testFind(self):
-        obj = objects.Object("z")
-        room = objects.Room("location")
+        obj = objects.Object(store=self.store, name=u"z")
+        room = objects.Object(store=self.store, name=u"location")
+        objects.Container(store=self.store, capacity=1000).installOn(room)
         obj.moveTo(room)
 
         self.assertIdentical(obj.find("z"), obj)
@@ -87,26 +107,10 @@ class ObjectTestCase(unittest.TestCase):
 
 
 
-    def testFormatting(self):
-        pc = objects.Actor("test actor")
-        pc.useColors = False
-        try:
-            obj = objects.Object("name", "descr")
-            self.assertEquals(pc.format(obj), "name")
-
-            longFormat = pc.format(obj.longFormatTo(pc))
-            self.assertEquals(
-                longFormat,
-                "name\n"
-                "descr\n")
-        finally:
-            pc.destroy()
-
-
-
     def testMoving(self):
-        obj = objects.Object("DOG")
-        room = objects.Room("HOUSE")
+        obj = objects.Object(store=self.store, name=u"DOG")
+        room = objects.Object(store=self.store, name=u"HOUSE")
+        objects.Container(store=self.store, capacity=1000).installOn(room)
         obj.moveTo(room)
         self.assertIdentical(obj.location, room)
         obj.moveTo(room)
@@ -118,12 +122,28 @@ class ObjectTestCase(unittest.TestCase):
         """
         Test that the C{portable} flag is respected and prevents movement between locations.
         """
-        obj = objects.Object("mountain")
+        obj = objects.Object(store=self.store, name=u"mountain")
         obj.portable = False
-        room = objects.Room("place")
+        room = objects.Object(store=self.store, name=u"place")
+        objects.Container(store=self.store, capacity=1000).installOn(room)
         obj.moveTo(room)
-        elsewhere = objects.Room("different place")
+        elsewhere = objects.Object(store=self.store, name=u"different place")
+        container = objects.Container(store=self.store, capacity=1000)
+        container.installOn(elsewhere)
         self.assertRaises(epottery.CannotMove, obj.moveTo, elsewhere)
         self.assertIdentical(obj.location, room)
-        self.assertEquals(room.contents, [obj])
-        self.assertEquals(elsewhere.contents, [])
+        self.assertEquals(list(ipottery.IContainer(room).getContents()), [obj])
+        self.assertEquals(list(container.getContents()), [])
+
+
+    def testObjectProvidesIDescribeable(self):
+        obj = objects.Object(store=self.store, name=u"mountain")
+        self.assertTrue(ipottery.IDescribeable.providedBy(ipottery.IDescribeable(obj)))
+
+    def testDescriptionOverridableByPowerup(self):
+        obj = objects.Object(store=self.store, name=u"mountain")
+        obj.powerUp(Describeable(store=self.store), ipottery.IDescribeable)
+
+        out = ipottery.IDescribeable(obj).longFormatTo("hello")
+        self.assertEquals(out, "Yo LONG")
+

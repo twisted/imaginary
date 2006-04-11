@@ -2,14 +2,18 @@
 
 from __future__ import division
 
-import math, random, itertools
+import math
 
 from zope.interface import implements
 
-from twisted.internet import reactor
-from twisted.python import reflect, util
+from twisted.python import reflect
 
-from pottery import ipottery, epottery, text as T, iterutils
+from epsilon import structlike
+
+from axiom import item, attributes
+
+from pottery import ipottery, epottery, text as T, iterutils, events
+
 
 def merge(d1, *dn):
     """
@@ -23,15 +27,20 @@ def merge(d1, *dn):
         for (k, v) in d.iteritems():
             d1.setdefault(k, []).extend(v)
 
-class Points(object):
-    max = 0
-    current = 0
 
-    def __init__(self, max, current=None):
-        self.max = max
-        if current is None:
-            current = max
-        self.current = current
+class Points(item.Item):
+    max = attributes.integer(doc="""
+    Maximum number of points.
+    """, allowNone=False)
+
+    current = attributes.integer(doc="""
+    Current number of points.
+    """, allowNone=False)
+
+    def __init__(self, **kw):
+        if 'max' in kw and 'current' not in kw:
+            kw['current'] = kw['max']
+        super(Points, self).__init__(**kw)
 
     def __cmp__(self, other):
         return cmp(self.current, other)
@@ -55,51 +64,110 @@ class Points(object):
         self.current = max(min(self.current + amount, self.max), 0)
         return self.current
 
-class Object(object):
+
+OPPOSITE_DIRECTIONS = {
+    u"north": u"south",
+    u"south": u"north",
+    u"west": u"east",
+    u"east": u"west"}
+
+
+class Exit(item.Item):
+    implements(ipottery.IDescribeable)
+
+    fromLocation = attributes.reference(doc="""
+    Where this exit leads from.
+    """, allowNone=False, whenDeleted=attributes.reference.CASCADE)
+
+    toLocation = attributes.reference(doc="""
+    Where this exit leads to.
+    """, allowNone=False, whenDeleted=attributes.reference.CASCADE)
+
+    name = attributes.text(doc="""
+    What this exit is called/which direction it is in.
+    """, allowNone=False)
+
+    sibling = attributes.reference(doc="""
+    The reverse exit object, if one exists.
+    """)
+
+
+    def link(cls, a, b, forwardName, backwardName=None):
+        if backwardName is None:
+            backwardName = OPPOSITE_DIRECTIONS[forwardName]
+        me = cls(store=a.store, fromLocation=a, toLocation=b, name=forwardName)
+        him = cls(store=b.store, fromLocation=b, toLocation=a, name=backwardName)
+        me.sibling = him
+        him.sibling = me
+    link = classmethod(link)
+
+
+    def destroy(self):
+        if self.sibling is not None:
+            self.sibling.deleteFromStore()
+        self.deleteFromStore()
+
+
+    # IDescribeable
+    def formatTo(self, who):
+        return ('the exit to ',
+                ipottery.IDescribeable(self.toLocation).formatTo(who))
+
+
+    def longFormatTo(self, who):
+        raise NotImplemented("Please implement this.")
+
+
+
+class Object(item.Item):
     implements(ipottery.IObject)
 
-    # Units of weight of this object
-    weight = 1
+    weight = attributes.integer(doc="""
+    Units of weight of this object.
+    """, default=1, allowNone=False)
 
-    # Yay, experience!
-    experience = 0
+    location = attributes.reference(doc="""
+    Direct reference to the location of this object
+    """)
 
-    # Direct reference to the location of this object
-    location = None
+    portable = attributes.boolean(doc="""
+    Whether this can be picked up, pushed around, relocated, etc
+    """, default=True, allowNone=False)
 
-    # Whether this can be picked up, pushed around, relocated, etc
-    portable = True
+    name = attributes.text(doc="""
+    The name of this object.
+    """, allowNone=False)
 
-    def __init__(self, name, description=''):
-        self.name = name
-        self.description = description
+    description = attributes.text(doc="""
+    What this object looks like.
+    """, default=u"")
 
-    def __str__(self):
-        d = {'class': self.__class__.__name__,
-             'name': self.name,
-             'location': self.location}
-        return '%(class)s %(name)r at %(location)s' % d
-
-    def __repr__(self):
-        d = {'class': self.__class__.__name__,
-             'name': self.name,
-             'location': self.location}
-        return '%(class)s(name=%(name)r, location=%(location)r)' % d
 
     def destroy(self):
         if self.location is not None:
-            self.location.remove(self)
-            self.location = None
+            ipottery.IContainer(self.location).remove(self)
+        self.deleteFromStore()
+
 
     def links(self):
-        return {self.name.lower(): [self]}
+        d = {self.name.lower(): [self]}
+        for pup in self.powerupsFor(ipottery.ILinkContributor):
+            merge(d, pup.links())
+        for exit in self.getExits():
+            merge(d, {exit.name: [exit.toLocation]})
+        return d
+
 
     def find(self, name):
+        """
+        deprecated, don't use this.  look at search.
+        """
         i = self.search(1, lambda x, y: x, name)
         try:
             return i.next()
         except StopIteration:
             return None
+
 
     def locate(self, interface, name):
         name = name.lower()
@@ -110,7 +178,24 @@ class Object(object):
                     if facet is not None:
                         yield (ob, facet)
 
+
     def search(self, distance, interface, name):
+        """
+        Retrieve game objects answering to the given name which provide the
+        given interface and are within the given distance.
+
+        @type distance: C{int}
+        @param distance: How many steps to traverse (note: this is wrong, it
+        will become a real distance-y thing with real game-meaning someday).
+
+        @param interface: The interface which objects within the required range
+        must be adaptable to in order to be returned.
+
+        @type name: C{str}
+        @param name: The name of the stuff.
+
+        @return: An iterable of L{ipottery.IObject} providers which are found.
+        """
         seen = {}
         visited = {self: True}
 
@@ -144,73 +229,91 @@ class Object(object):
                             descendTo.append((distance - 1, n, ob))
             descendTo.sort()
 
+
     def canSee(self, thing):
         return True
 
+
     def moveTo(self, where):
-        oldLocation = self.location
-        if oldLocation is where:
+        if where is self.location:
             return
+        where = ipottery.IContainer(where)
+        oldLocation = self.location
         if oldLocation is not None and not self.portable:
             raise epottery.CannotMove(self, where)
         where.add(self)
         if oldLocation is not None:
-            oldLocation.remove(self)
+            ipottery.IContainer(oldLocation).remove(self)
+
 
     def formatTo(self, who):
         return self.name
 
-    def longFormatTo(self, who):
-        if self.description:
-            return (T.fg.yellow, self.name, '\n',
-                    T.fg.green, self.description, '\n')
-        return (T.fg.yellow, self.name, '\n')
 
-class Container(Object):
-    implements(ipottery.IContainer)
+    def longFormatTo(self, who):
+        exitNames = list(self.getExitNames())
+        if exitNames:
+            exits = ([T.fg.blue, '( ', [T.fg.cyan,
+                                        iterutils.interlace(' ', exitNames)],
+                      ' )'], '\n')
+        else:
+            exits = ''
+
+        description = ''
+        if self.description:
+            description = (self.description, '\n')
+
+        descriptionComponents = []
+        for pup in self.powerupsFor(ipottery.IDescriptionContributor):
+            descriptionComponents.append(pup.longFormatTo(who))
+
+        return (
+            [T.fg.magenta, '[ ', [T.fg.yellow, self.name], ' ]'], '\n',
+            exits,
+            [T.fg.green, description],
+            descriptionComponents)
+
+
+    def getExits(self):
+        return self.store.query(Exit, Exit.fromLocation == self)
+
+
+    def getExitNames(self):
+        return self.getExits().getColumn("name")
+
+
+    _marker = object()
+    def getExitNamed(self, name, default=_marker):
+        result = self.store.findUnique(
+            Exit,
+            attributes.AND(Exit.fromLocation == self,
+                           Exit.name == name),
+            default=default)
+        if result is self._marker:
+            raise KeyError(name)
+        return result
+
+
+
+class Containment(object):
+    """Functionality for containment to be used as a mixin in Powerups.
+    """
+
+    implements(ipottery.IContainer, ipottery.IDescriptionContributor, 
+               ipottery.ILinkContributor)
 
     # Units of weight which can be contained
-    capacity = 1
+    capacity = None
 
     # Reference to another object which serves as this container's lid.
     # If None, this container cannot be opened or closed.
-    lid = None
+    # lid = None
 
     # Boolean indicating whether the container is currently closed or open.
     closed = False
 
-    def __init__(self, *a, **kw):
-        super(Container, self).__init__(*a, **kw)
-        self.contents = []
-
-    def links(self):
-        d = super(Container, self).links()
-        if not self.closed:
-            for ob in self.contents:
-                merge(d, ob.links())
-        return d
-
-    def longFormatTo(self, who):
-        return (super(Container, self).longFormatTo(who),
-                [(T.fg.cyan, c.formatTo(who), '\n') for c in self.contents if c is not who])
-
-    def add(self, obj):
-        if self.closed:
-            raise epottery.Closed(self, obj)
-        if sum([o.weight for o in self.contents]) + obj.weight > self.capacity:
-            raise epottery.DoesntFit(self, obj)
-        self.contents.append(obj)
-        obj.location = self
-
-    def remove(self, obj):
-        if self.closed:
-            raise epottery.Closed(self, obj)
-        self.contents.remove(obj)
-        if obj.location is self:
-            obj.location = None
-
     def contains(self, other):
-        for child in self.contents:
+        for child in self.getContents():
             if other is child:
                 return True
             cchild = ipottery.IContainer(child, None)
@@ -218,44 +321,78 @@ class Container(Object):
                 return True
         return False
 
+    def getContents(self):
+        if self.installedOn is None:
+            return []
+        return self.store.query(Object, Object.location == self.installedOn)
 
+    def add(self, obj):
+        if self.closed:
+            raise epottery.Closed(self, obj)
+        containedWeight = self.getContents().getColumn("weight").sum()
+        if containedWeight + obj.weight > self.capacity:
+            raise epottery.DoesntFit(self, obj)
+        assert self.installedOn is not None
+        obj.location = self.installedOn
 
-class Room(Container):
-    capacity = 1000
+    def remove(self, obj):
+        if self.closed:
+            raise epottery.Closed(self, obj)
+        if obj.location is self.installedOn:
+            obj.location = None
 
-    def __init__(self, *a, **kw):
-        super(Room, self).__init__(*a, **kw)
-        self.exits = {}
-
+    # ILinkContributor
     def links(self):
-        d = super(Room, self).links()
-        for ex, dest in self.exits.iteritems():
-            merge(d, {ex: [dest]})
+        d = {}
+        if not self.closed:
+            for ob in self.getContents():
+                merge(d, ob.links())
         return d
 
+
+    # IDescriptionContributor
     def longFormatTo(self, who):
-        contents = iterutils.interlace(
-            ', ',
-            [c for c in self.contents if c is not who])
-        exits = iterutils.interlace(' ', self.exits)
-        description = ''
-        if self.description:
-            description = (self.description, '\n')
-        return (
-            [T.fg.magenta, '[ ', [T.fg.yellow, self.name], ' ]'], '\n',
-            [T.fg.blue, '( ', [T.fg.cyan, exits], ' )'], '\n',
-            [T.fg.green, description], contents, '\n')
+        contentStuff = [c for c in self.getContents() if c is not who]
+        if contentStuff:
+            return [iterutils.interlace(', ', contentStuff), '\n']
+        return ''
 
-    def broadcastIf(self, pred, *what):
-        for c in self.contents:
-            if pred(c):
-                if hasattr(c, 'broadcastIf'):
-                    c.broadcastIf(pred, *what)
-                elif hasattr(c, 'send'):
-                    c.send(*what)
 
-class Actor(Container):
-    HEARTBEAT_INTERVAL = 30
+    def installOn(self, other):
+        super(Containment, self).installOn(other)
+        other.powerUp(self, ipottery.IContainer)
+        other.powerUp(self, ipottery.ILinkContributor)
+        other.powerUp(self, ipottery.IDescriptionContributor)
+
+
+
+class Container(item.Item, Containment, item.InstallableMixin):
+    """A generic powerup that implements containment."""
+
+    capacity = attributes.integer(doc="""
+    Units of weight which can be contained.
+    """, allowNone=False, default=1)
+
+    closed = attributes.boolean(doc="""
+    Indicates whether the container is currently closed or open.
+    """, allowNone=False, default=False)
+
+    installedOn = attributes.reference(doc="""
+    The object this container powers up.
+    """)
+
+
+
+class Actable(object):
+    implements(ipottery.IActor, ipottery.IEventObserver)
+
+    # Yay, experience!
+    experience = 0
+    level = 0
+
+    # Something with a send method, maybe, sometimes.
+    intelligence = None
+
     CONDITIONS = (
         'dead',
         'dying',
@@ -268,42 +405,21 @@ class Actor(Container):
         'chipper',
         'great')
 
-    weight = 100
-    capacity = 90
 
-    level = 0
+    def installOn(self, other):
+        super(Actable, self).installOn(other)
+        other.powerUp(self, ipottery.IActor)
+        other.powerUp(self, ipottery.IEventObserver)
+        other.powerUp(self, ipottery.IDescriptionContributor)
 
-    useColors = True
+    # IDescriptionContributor
+    def longFormatTo(self, who):
+        return ([T.bold, T.fg.yellow, self.installedOn.formatTo(who)],
+                " is ",
+                [T.bold, T.fg.red, self._condition()],
+                ".",
+                "\n")
 
-    def __init__(self, *a, **kw):
-        super(Actor, self).__init__(*a, **kw)
-
-        self.termAttrs = T.AttributeSet()
-
-        self.hitpoints = Points(100)
-        self.stamina = Points(100)
-        self.strength = Points(100)
-
-        self.heartbeat()
-
-    def __setstate__(self, state):
-        self.__dict__ = state
-        self.heartbeat()
-
-    def __getstate__(self):
-        d = self.__dict__.copy()
-        d.pop('_heartbeatCall', '')
-        return d
-
-    def destroy(self):
-        super(Actor, self).destroy()
-        self._heartbeatCall.cancel()
-
-    def heartbeat(self):
-        self.stamina.increase(random.randrange(1, 5))
-        self.hitpoints.increase(random.randrange(1, 5))
-        self._heartbeatCall = reactor.callLater(self.HEARTBEAT_INTERVAL,
-                                                self.heartbeat)
 
     def _condition(self):
         if self.hitpoints.current == 0:
@@ -312,86 +428,66 @@ class Actor(Container):
         idx = int(ratio * (len(self.CONDITIONS) - 2))
         return self.CONDITIONS[idx + 1]
 
-    def longFormatTo(self, who):
-        return (super(Actor, self).longFormatTo(who),
-                [T.bold, T.fg.yellow, self.formatTo(who)],
-                " is ",
-                [T.bold, T.fg.red, self._condition()],
-                ".",
-                "\n")
 
-    def format(self, *args):
-        L = []
-        it = T.flatten(args, currentAttrs=self.termAttrs)
-        while True:
-            try:
-                obj = it.next()
-            except StopIteration:
-                break
-            else:
-                if ipottery.IDescribeable.providedBy(obj):
-                    it = itertools.chain(
-                        T.flatten(obj.formatTo(self),
-                                  currentAttrs=self.termAttrs), it)
-                else:
-                    if self.useColors:
-                        L.append(str(obj))
-                    else:
-                        if hasattr(obj, 'startswith'):
-                            if hasattr(obj, 'endswith'):
-                                if obj.startswith('\x1b['):
-                                    if obj.endswith('m'):
-                                        continue
-                        L.append(str(obj))
+    # IEventObserver
+    def send(self, *event):
+        if len(event) != 1 or isinstance(event[0], (str, tuple)):
+            event = events.Success(
+                actor=self.installedOn,
+                actorMessage=event)
+        else:
+            event = event[0]
+        if self.intelligence is not None:
+            self.intelligence.send(event)
 
-        return ''.join(L)
-
-
-class Mob(Actor):
-    def send(self, *a):
-        pass
-
-class Player(Actor):
-    implements(ipottery.IPlayer)
-
-    proto = None
-    realm = None
-
-    def __getstate__(self):
-        d = super(Player, self).__getstate__()
-        d.pop('proto', '')
-        return d
-
-    def setProtocol(self, proto):
-        if self.proto is not None:
-            self.send("Your body has been usurped!\n")
-            self.disconnect()
-        self.proto = proto
-        self.termAttrs = T.AttributeSet()
-
-    def disconnect(self):
-        if self.proto and self.proto.terminal:
-            self.proto.player = None
-            self.proto.terminal.loseConnection()
-
-    proto = None
-    def send(self, *args):
-        if self.proto is not None:
-            bytes = self.format(*args)
-            self.proto.write(bytes)
-
-
-    def destroy(self):
-        super(Player, self).destroy()
-        self.realm.destroy(self)
-        self.disconnect()
 
     def gainExperience(self, amount):
         experience = self.experience + amount
         level = int(math.log(experience) / math.log(2))
         if level > self.level:
-            self.send("You gain ", level - self.level, " levels!\n")
+            evt = events.Success(
+                actor=self.installedOn,
+                actorMessage=("You gain ", level - self.level, " levels!\n"))
         elif level < self.level:
-            self.send("You lose ", self.level - level, " levels!\n")
+            evt = events.Success(
+                actor=self.installedOn,
+                actorMessage=("You lose ", self.level - level, " levels!\n"))
+        self.send(evt)
         self.level = level
         self.experience = experience
+
+
+
+class Actor(item.Item, Actable, item.InstallableMixin):
+    hitpoints = attributes.reference(doc="""
+    """)
+    stamina = attributes.reference(doc="""
+    """)
+    strength = attributes.reference(doc="""
+    """)
+
+    intelligence = attributes.inmemory(doc="""
+    The intelligence provider associated with this actor, generally a L{wiring.player.Player} instance.
+    """)
+
+    installedOn = attributes.reference(doc="""
+    The L{IObject} that this is installed on.
+    """)
+
+    level = attributes.integer(doc="""
+    Don't you hate level-based games?  They're so stupid.
+    """, default=0, allowNone=False)
+
+    experience = attributes.integer(doc="""
+    XP!  Come on, you know what this is.
+    """, default=0, allowNone=False)
+
+
+    def __init__(self, **kw):
+        super(Actor, self).__init__(**kw)
+        if self.hitpoints is None:
+            self.hitpoints = Points(store=self.store, max=100)
+        if self.stamina is None:
+            self.stamina = Points(store=self.store, max=100)
+        if self.strength is None:
+            self.strength = Points(store=self.store, max=100)

@@ -2,6 +2,13 @@
 from zope.interface import Interface, Attribute
 
 
+class ITelnetService(Interface):
+    """
+    Really lame tag interface used by the Mantissa offering system to uniquely
+    identify a powerup that runs a telnet server.
+    """
+
+
 class IDescribeable(Interface):
     """
     A thing which can be described to those with the power of observation.
@@ -35,6 +42,35 @@ class IObjectType(Interface):
         """
 
 
+class ILinkContributor(Interface):
+    """
+    A powerup interface which can add more connections between objects in the
+    world graph.
+
+    All ILinkContributors which are powered up on a particular Object will be
+    given a chance to add to the L{IObject.link} method's return value.
+    """
+
+    def links():
+        """
+        Return a C{dict} mapping names of connections to C{IObjects}.
+        """
+
+
+class IDescriptionContributor(Interface):
+    """
+    A powerup interface which can add text to the description of an object.
+
+    All IDescriptionContributors which are powered up on a particular Object
+    will be given a chance to add to the output of its C{longFormatTo} method.
+    """
+
+    def longFormatTo(other):
+        """
+        @see IDescribeable
+        """
+
+
 
 class IObject(IDescribeable):
     """
@@ -57,8 +93,26 @@ class IObject(IDescribeable):
 
 
 
-class IPlayer(Interface):
-    pass
+class IActor(Interface):
+    hitpoints = Attribute("L{Points} instance representing hit points")
+    experience = Attribute("C{int} representing experience")
+    level = Attribute("C{int} representing player's level")
+
+    def send(event):
+        """Describe something to the actor.
+
+        @type event: L{IDescribeable} provider
+        @param event: Something that will be described to the actor.
+        """
+
+
+class IEventObserver(Interface):
+    def send(event):
+        """Describe something to the actor.
+
+        @type event: L{IDescribeable} provider
+        @param event: Something that will be described to the actor.
+        """
 
 
 
@@ -70,18 +124,13 @@ class IContainer(Interface):
     The maximum weight this container is capable of holding.
     """)
 
-    lid = Attribute("""
-    A reference to an L{IObject} which serves as this containers lid, or
-    C{None} if there is no lid.
-    """)
+#     lid = Attribute("""
+#     A reference to an L{IObject} which serves as this containers lid, or
+#     C{None} if there is no lid.
+#     """)
 
     closed = Attribute("""
     A boolean indicating whether this container is closed.
-    """)
-
-    contents = Attribute("""
-    A list of the L{IObject}s which are directly contained by this
-    L{IContainer}.
     """)
 
     def add(object):
@@ -117,3 +166,9 @@ class IContainer(Interface):
         @returns: True if other is in me. And by 'in', I mean 'IN'!  (And
         by 'IN' he means to any arbitrarily deeply nested distance)
         """
+
+    def getContents():
+        """
+        @returns: An iterable of the direct contents of this container.
+        """
+

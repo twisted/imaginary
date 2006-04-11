@@ -7,6 +7,7 @@ from twisted import copyright as tcopyright
 
 from pottery import copyright as pcopyright
 from pottery import epottery, resources
+from pottery.wiring import player
 
 class TextServer(insults.TerminalProtocol):
     state = 'USERNAME'
@@ -124,7 +125,7 @@ class TextServer(insults.TerminalProtocol):
         self.terminal.write(bytes)
 
     def lineReceived(self, line):
-        self.statefulDispatch('line_', line)
+        self.statefulDispatch('line_', unicode(line, 'ascii'))
 
     def line_IGNORE(self, line):
         self.write("Your input %r was ignored.\n" % (line,))
@@ -149,7 +150,7 @@ class TextServer(insults.TerminalProtocol):
         return 'IGNORE'
 
     def _cbLogin(self, (iface, avatar, logout)):
-        self.player = avatar
+        self.player = player.Player(avatar.installedOn)
         self.logout = logout
         self.player.setProtocol(self)
         self.state = 'COMMAND'
@@ -180,11 +181,14 @@ class TextServer(insults.TerminalProtocol):
         username = self.username
         del self.username
         self.echoOn()
-        self.player = self.factory.create(username, password)
+        self.player = player.Player(self.factory.create(username, password))
         self.player.setProtocol(self)
         return 'COMMAND'
 
     def line_COMMAND(self, line):
-        from pottery import wiring
-        wiring.parse(self.terminal, self.player, line)
-        self.commandHistory.append(line)
+        if line.strip().lower() == 'quit':
+            self.player.lowLevelSend("Bye!")
+            self.player.disconnect()
+        else:
+            self.player.parse(line)
+            self.commandHistory.append(line)

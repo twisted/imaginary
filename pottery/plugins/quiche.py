@@ -17,6 +17,7 @@ class _ObjectPluginHelper(object):
     def getType(self):
         return self.typeObject
 
-quichePlugin = _ObjectPluginHelper('quiche', quiche.Quiche)
-vendingPlugin = _ObjectPluginHelper('vending machine', quiche.VendingMachine)
-quarterPlugin = _ObjectPluginHelper('quarter', quiche.Quarter)
+quichePlugin = _ObjectPluginHelper('quiche', quiche.createQuiche)
+vendingPlugin = _ObjectPluginHelper('vending machine', quiche.createVendingMachine)
+quarterPlugin = _ObjectPluginHelper('quarter', quiche.createCoin)
+

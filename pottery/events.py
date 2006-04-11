@@ -1,3 +1,6 @@
+# -*- test-case-name: pottery.test -*-
+
+from pottery import ipottery
 
 class Event(object):
     def __init__(self,
@@ -35,9 +38,10 @@ class Event(object):
         return msg
 
     def broadcast(self):
-        for ob in self.location.contents:
-            if hasattr(ob, 'send'):
-                ob.send(self.formatTo(ob))
+        for ob in ipottery.IContainer(self.location).getContents():
+            observer = ipottery.IEventObserver(ob, None)
+            if observer:
+                observer.send(self)
 
 
 class ThatDoesntMakeSense(Event):

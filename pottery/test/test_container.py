@@ -1,12 +1,18 @@
+# -*- test-case-name: pottery.test -*-
 
 from twisted.trial import unittest
 
-from pottery import epottery, objects
+from axiom import store
+
+from pottery import epottery, ipottery, objects
 
 class ContainerTestCase(unittest.TestCase):
     def setUp(self):
-        self.container = objects.Container("container")
-        self.object = objects.Object("object")
+        self.store = store.Store()
+        self.containmentCore = objects.Object(store=self.store, name=u"container")
+        self.container = objects.Container(store=self.store, capacity=1)
+        self.container.installOn(self.containmentCore)
+        self.object = objects.Object(store=self.store, name=u"object")
 
 
     def testAdd(self):
@@ -16,8 +22,8 @@ class ContainerTestCase(unittest.TestCase):
         the location of the object.
         """
         self.container.add(self.object)
-        self.assertEquals(self.container.contents, [self.object])
-        self.assertIdentical(self.object.location, self.container)
+        self.assertEquals(list(self.container.getContents()), [self.object])
+        self.assertIdentical(self.object.location, self.containmentCore)
 
 
     def testRemove(self):
@@ -28,7 +34,7 @@ class ContainerTestCase(unittest.TestCase):
         """
         self.testAdd()
         self.container.remove(self.object)
-        self.assertEquals(self.container.contents, [])
+        self.assertEquals(list(self.container.getContents()), [])
         self.assertIdentical(self.object.location, None)
 
 
@@ -40,7 +46,7 @@ class ContainerTestCase(unittest.TestCase):
         self.container.capacity = 1
         self.object.weight = 2
         self.assertRaises(epottery.DoesntFit, self.container.add, self.object)
-        self.assertEquals(self.container.contents, [])
+        self.assertEquals(list(self.container.getContents()), [])
         self.assertIdentical(self.object.location, None)
 
 
@@ -50,7 +56,7 @@ class ContainerTestCase(unittest.TestCase):
         """
         self.container.closed = True
         self.assertRaises(epottery.Closed, self.container.add, self.object)
-        self.assertEquals(self.container.contents, [])
+        self.assertEquals(list(self.container.getContents()), [])
         self.assertIdentical(self.object.location, None)
 
         self.container.closed = False
@@ -58,5 +64,5 @@ class ContainerTestCase(unittest.TestCase):
         self.container.closed = True
 
         self.assertRaises(epottery.Closed, self.container.remove, self.object)
-        self.assertEquals(self.container.contents, [self.object])
-        self.assertIdentical(self.object.location, self.container)
+        self.assertEquals(list(self.container.getContents()), [self.object])
+        self.assertIdentical(self.object.location, self.containmentCore)

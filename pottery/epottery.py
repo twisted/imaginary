@@ -34,14 +34,18 @@ class AmbiguousArgument(PotteryError):
     @ivar part: The part of the command which was ambiguous.
     Typically something like 'target' or 'tool'.
 
+    @type partValue: C{str}
+    @ivar partValue: The string which was supplied by the user for the indicated part.
+
     @type objects: C{list} of C{IObject}
     @ivar objects: The objects which were involved in the ambiguity.
     """
 
-    def __init__(self, action, part, objects):
+    def __init__(self, action, part, partValue, objects):
         PotteryError.__init__(self)
         self.action = action
         self.part = part
+        self.partValue = partValue
         self.objects = objects
 
 # Game logic errors

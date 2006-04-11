@@ -1,14 +1,34 @@
 
 
-from zope.interface import implements, directlyProvides
+from zope.interface import Interface, implements, directlyProvides
 
 from twisted.trial import unittest
+
+from axiom import item, attributes
 
 from pottery.test import commandutils
 from pottery import ipottery, plugins, action, objects
 
-class Foo(objects.Object):
+
+class IFoo(Interface):
     pass
+
+
+
+class Foo(item.Item):
+    implements(IFoo)
+
+    foo = attributes.text()
+
+    def installOn(self, other):
+        other.powerUp(self, IFoo)
+
+
+def createFoo(store, name, description):
+    o = objects.Object(store=store, name=name, description=description)
+    Foo(store=store).installOn(o)
+    return o
+
 
 class FooPlugin(object):
     directlyProvides(ipottery.IObjectType)
@@ -16,8 +36,9 @@ class FooPlugin(object):
     type = 'foo'
 
     def getType(cls):
-        return Foo
+        return createFoo
     getType = classmethod(getType)
+
 
 
 class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
@@ -47,7 +68,7 @@ class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertEquals(foobar.name, "bar")
         self.assertEquals(foobar.description, "an undescribed object")
         self.assertEquals(foobar.location, self.player)
-        self.assertEquals(type(foobar), Foo)
+        self.failUnless(isinstance(IFoo(foobar), Foo))
 
         self._test(
             "create foo 'bar foo'",

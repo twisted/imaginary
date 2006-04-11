@@ -8,13 +8,6 @@ from twisted.python import reflect, rebuild, util
 
 import pottery
 from pottery import text as T, epottery, iterutils
-from pottery.predicates import atLeastOne, isNot, And
-
-OPPOSITE_DIRECTIONS = {
-    "north": "south",
-    "south": "north",
-    "west": "east",
-    "east": "west"}
 
 def stripper(s, loc, toks):
     toks = toks.asList()

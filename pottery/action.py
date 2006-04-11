@@ -12,7 +12,6 @@ from twisted import plugin
 import pottery.plugins
 from pottery import (ipottery, epottery, iterutils, commands, events,
                      objects, text as T)
-from pottery.predicates import atLeastOne, isNot, And
 
 class Action(commands.Command):
     infrastructure = True
@@ -25,7 +24,7 @@ class Action(commands.Command):
                 pass
             else:
                 if len(objs) != 1:
-                    raise epottery.AmbiguousArgument(self, k, objs)
+                    raise epottery.AmbiguousArgument(self, k, v, objs)
                 else:
                     kw[k] = objs[0]
         return self.do(player, line, **kw)
@@ -43,11 +42,11 @@ def getPlugins(iface, package):
 
 class NoTargetAction(Action):
     """
-    @cvar actorInterface
+    @cvar actorInterface: Interface that the actor must provide.
     """
     infrastructure = True
 
-    actorInterface = ipottery.IPlayer
+    actorInterface = ipottery.IActor
 
     def match(cls, player, line):
         actor = cls.actorInterface(player, None)
@@ -73,7 +72,7 @@ class TargetAction(NoTargetAction):
 
     def resolve(self, player, k, v):
         if k == "target":
-            return list(player.search(self.targetRadius(player), self.targetInterface, v))
+            return list(player.installedOn.search(self.targetRadius(player), self.targetInterface, v))
         return super(TargetAction, self).resolve(player, k, v)
 
 
@@ -90,7 +89,7 @@ class ToolAction(TargetAction):
 
     def resolve(self, player, k, v):
         if k == "tool":
-            return list(player.search(self.toolRadius(player), self.toolInterface, v))
+            return list(player.installedOn.search(self.toolRadius(player), self.toolInterface, v))
         return super(ToolAction, self).resolve(player, k, v)
 
 class LookAround(NoTargetAction):
@@ -98,10 +97,10 @@ class LookAround(NoTargetAction):
     expr = pyparsing.Literal("look")
 
     def do(self, player, line):
-        if player.location is None:
+        if player.installedOn.location is None:
             player.send("You are floating in an empty, formless void.", "\n")
         else:
-            player.send(player.location.longFormatTo(player), "\n")
+            player.send(player.installedOn.location.longFormatTo(player.installedOn), "\n")
 
 class LookAt(TargetAction):
     commandName = "look"
@@ -111,23 +110,24 @@ class LookAt(TargetAction):
             pyparsing.White() +
             pyparsing.restOfLine.setResultsName("target"))
 
-    targetNotAvailable = "You don't see that."
+    def targetNotAvailable(self, player, exc):
+        return "You don't see that."
 
     def targetRadius(self, player):
         return 3
 
     def do(self, player, line, target):
-        if player is not target:
+        if player.installedOn is not target:
             evt = events.Success(
-                actor=player,
+                actor=player.installedOn,
                 target=target,
-                actorMessage=target.longFormatTo(player),
-                targetMessage=(player, " looks at you."))
+                actorMessage=target.longFormatTo(player.installedOn),
+                targetMessage=(player.installedOn, " looks at you."))
             evt.broadcast()
         else:
             evt = events.Success(
-                actor=player,
-                actorMessage=target.longFormatTo(player))
+                actor=player.installedOn,
+                actorMessage=target.longFormatTo(player.installedOn))
             evt.broadcast()
 
 class Describe(TargetAction):
@@ -143,9 +143,9 @@ class Describe(TargetAction):
     def do(self, player, line, target, description):
         target.description = description
         evt = events.Success(
-            actor=player,
+            actor=player.installedOn,
             actorMessage=("You change ", target, "'s description."),
-            otherMessage=(player, " changes ", target, "'s description."))
+            otherMessage=(player.installedOn, " changes ", target, "'s description."))
         evt.broadcast()
 
 
@@ -161,9 +161,9 @@ class Name(TargetAction):
 
     def do(self, player, line, target, name):
         evt = events.Success(
-            actor=player,
+            actor=player.installedOn,
             actorMessage=("You change ", target, "'s name."),
-            otherMessage=(player, " changes ", target, "'s name to ", name, "."))
+            otherMessage=(player.installedOn, " changes ", target, "'s name to ", name, "."))
         evt.broadcast()
         target.name = name
 
@@ -179,17 +179,17 @@ class Open(TargetAction):
     def do(self, player, line, target):
         if not target.closed:
             evt = events.ThatDoesntWork(
-                actor=player,
-                target=target,
-                actorMessage=(target, " is already open."))
+                actor=player.installedOn,
+                target=target.installedOn,
+                actorMessage=(target.installedOn, " is already open."))
         else:
             target.closed = False
             evt = events.Success(
-                actor=player,
-                target=target,
-                actorMessage=("You open ", target, "."),
-                targetMessage=(player, " opens you."),
-                otherMessage=(player, " opens ", target, "."))
+                actor=player.installedOn,
+                target=target.installedOn,
+                actorMessage=("You open ", target.installedOn, "."),
+                targetMessage=(player.installedOn, " opens you."),
+                otherMessage=(player.installedOn, " opens ", target.installedOn, "."))
         evt.broadcast()
 
 
@@ -204,17 +204,17 @@ class Close(TargetAction):
     def do(self, player, line, target):
         if target.closed:
             evt = events.ThatDoesntWork(
-                actor=player,
-                target=target,
-                actorMessage=(target, " is already closed."))
+                actor=player.installedOn,
+                target=target.installedOn,
+                actorMessage=(target.installedOn, " is already closed."))
         else:
             target.closed = True
             evt = events.Success(
-                actor=player,
-                target=target,
-                actorMessage=("You close ", target, "."),
-                targetMessage=(player, " closes you."),
-                otherMessage=(player, " closes ", target, "."))
+                actor=player.installedOn,
+                target=target.installedOn,
+                actorMessage=("You close ", target.installedOn, "."),
+                targetMessage=(player.installedOn, " closes you."),
+                otherMessage=(player.installedOn, " closes ", target.installedOn, "."))
         evt.broadcast()
 
 
@@ -254,17 +254,18 @@ class TakeFrom(ToolAction):
             pyparsing.White() +
             commands.targetString("tool"))
 
-    targetNotAvailable = "Nothing like that around here."
-    toolNotAvailable = "Nothing like that around here."
+    def targetNotAvailable(self, player, exc):
+        return "Nothing like that around here."
+    toolNotAvailable = targetNotAvailable
 
     def do(self, player, line, target, tool):
         # XXX Make sure target is in tool
         try:
-            target.moveTo(player)
+            target.moveTo(player.installedOn)
         except epottery.DoesntFit:
-            tooHeavy(player, target).broadcast()
+            tooHeavy(player.installedOn, target).broadcast()
         else:
-            targetTaken(player, target, tool).broadcast()
+            targetTaken(player.installedOn, target, tool).broadcast()
 
 
 
@@ -273,7 +274,8 @@ class PutIn(ToolAction):
     toolInterface = ipottery.IObject
     targetInterface = ipottery.IContainer
 
-    targetNotAvailable = "That doesn't work."
+    def targetNotAvailable(self, player, exc):
+        return "That doesn't work."
 
     expr = (pyparsing.Literal("put") +
             pyparsing.White() +
@@ -285,23 +287,24 @@ class PutIn(ToolAction):
 
     def do(self, player, line, tool, target):
         ctool = ipottery.IContainer(tool, None)
-        if ctool is not None and (ctool.contains(target) or ctool is target):
-            evt = events.ThatDoesntWork(actor=player, target=target, tool=tool,
+        targetObject = target.installedOn
+        if ctool is not None and (ctool.contains(targetObject) or ctool is target):
+            evt = events.ThatDoesntWork(actor=player.installedOn, target=targetObject, tool=tool,
                                         actorMessage="A thing cannot contain itself in euclidean space.")
         else:
             try:
                 tool.moveTo(target)
             except epottery.DoesntFit:
-                evt = events.ThatDoesntWork(actor=player, target=target, tool=tool)
+                evt = events.ThatDoesntWork(actor=player.installedOn, target=targetObject, tool=tool)
             except epottery.Closed:
-                evt = events.ThatDoesntWork(actor=player, target=target, tool=tool, actorMessage=(target, " is closed."))
+                evt = events.ThatDoesntWork(actor=player.installedOn, target=targetObject, tool=tool, actorMessage=(targetObject, " is closed."))
             else:
                 evt = events.Success(
-                    actor=player, target=target, tool=tool,
-                    actorMessage=("You put ", tool, " in ", target, "."),
-                    targetMessage=(player, " puts ", " tool in you."),
-                    toolMessage=(player, " puts you in ", target, "."),
-                    otherMessage=(player, " puts ", tool, " in ", target, "."))
+                    actor=player.installedOn, target=targetObject, tool=tool,
+                    actorMessage=("You put ", tool, " in ", targetObject, "."),
+                    targetMessage=(player.installedOn, " puts ", " tool in you."),
+                    toolMessage=(player.installedOn, " puts you in ", targetObject, "."),
+                    otherMessage=(player.installedOn, " puts ", tool, " in ", targetObject, "."))
         evt.broadcast()
 
 
@@ -310,25 +313,26 @@ class Take(TargetAction):
             pyparsing.White() +
             commands.targetString("target"))
 
-    targetNotAvailable = "Nothing like that around here."
+    def targetNotAvailable(self, player, exc):
+        return "Nothing like that around here."
 
     def targetRadius(self, player):
         return 1
 
     def do(self, player, line, target):
-        if target in (player, player.location) or target.location is player:
+        if target in (player.installedOn, player.installedOn.location) or target.location is player.installedOn:
             evt = events.ThatDoesntMakeSense(
-                actor=player,
+                actor=player.installedOn,
                 actorMessage=("You cannot take ", target, "."))
             evt.broadcast()
             return
 
         try:
-            target.moveTo(player)
+            target.moveTo(player.installedOn)
         except epottery.DoesntFit:
-            tooHeavy(player, target).broadcast()
+            tooHeavy(player.installedOn, target).broadcast()
         else:
-            targetTaken(player, target).broadcast()
+            targetTaken(player.installedOn, target).broadcast()
 
 
 def insufficientSpace(player):
@@ -351,15 +355,16 @@ class Spawn(NoTargetAction):
             pyparsing.Optional(pyparsing.White() +
                                pyparsing.restOfLine.setResultsName("description")))
 
-    def do(self, player, line, name, description='an undescribed monster'):
-        mob = objects.Mob(name, description)
+    def do(self, player, line, name, description=u'an undescribed monster'):
+        mob = objects.Object(store=player.store, name=name, description=description)
+        objects.Actor(store=player.store).installOn(mob)
         try:
-            mob.moveTo(player.location)
+            mob.moveTo(player.installedOn.location)
         except epottery.DoesntFit:
             mob.destroy()
-            insufficientSpace(player).broadcast()
+            insufficientSpace(player.installedOn).broadcast()
         else:
-            creationSuccess(player, mob).broadcast()
+            creationSuccess(player.installedOn, mob).broadcast()
 
 class Create(NoTargetAction):
     expr = (pyparsing.Literal("create") +
@@ -370,78 +375,80 @@ class Create(NoTargetAction):
             pyparsing.Optional(pyparsing.White() +
                                pyparsing.restOfLine.setResultsName("description")))
 
-    def do(self, player, line, typeName, name,
-           description='an undescribed object'):
+    def do(self, player, line, typeName, name, description=None):
+        if not description:
+            description = u'an undescribed object'
         for plug in getPlugins(ipottery.IObjectType, pottery.plugins):
             if plug.type == typeName:
-                o = plug.getType()(name, description)
+                o = plug.getType()(store=player.store, name=name, description=description)
                 break
         else:
             raise ValueError("Can't find " + typeName)
         try:
-            o.moveTo(player)
+            o.moveTo(player.installedOn)
         except epottery.DoesntFit:
             o.destroy()
-            insufficientSpace(player).broadcast()
+            insufficientSpace(player.installedOn).broadcast()
         else:
-            creationSuccess(player, o).broadcast()
+            creationSuccess(player.installedOn, o).broadcast()
 
 class Drop(TargetAction):
     expr = (pyparsing.Literal("drop") +
             pyparsing.White() +
             commands.targetString("target"))
 
-    targetNotAvailable = "Nothing like that around here."
+    def targetNotAvailable(self, player, exc):
+        return "Nothing like that around here."
 
     def targetRadius(self, player):
         return 1
 
     def do(self, player, line, target):
-        if target.location is not player:
+        if target.location is not player.installedOn:
             evt = events.ThatDoesntMakeSense(
-                actor=player,
+                actor=player.installedOn,
                 actorMessage="You can't drop that.")
             evt.broadcast()
         else:
             try:
-                target.moveTo(player.location)
+                target.moveTo(player.installedOn.location)
             except epottery.DoesntFit:
-                insufficientSpace(player).broadcast()
+                insufficientSpace(player.installedOn).broadcast()
             else:
                 evt = events.Success(
-                    actor=player,
+                    actor=player.installedOn,
                     actorMessage=("You drop ", target, "."),
                     target=target,
-                    targetMessage=(player, " drops you."),
-                    otherMessage=(player, " drops ", target, "."))
+                    targetMessage=(player.installedOn, " drops you."),
+                    otherMessage=(player.installedOn, " drops ", target, "."))
                 evt.broadcast()
 
 
 class Dig(NoTargetAction):
     expr = (pyparsing.Literal("dig") +
             pyparsing.White() +
-            (pyparsing.Literal("north") ^
-             pyparsing.Literal("south") ^
-             pyparsing.Literal("west") ^
-             pyparsing.Literal("east")).setResultsName("direction") +
+            (pyparsing.Literal(u"north") ^
+             pyparsing.Literal(u"south") ^
+             pyparsing.Literal(u"west") ^
+             pyparsing.Literal(u"east")).setResultsName("direction") +
             pyparsing.White() +
             pyparsing.restOfLine.setResultsName("name"))
 
     def do(self, player, line, direction, name):
-        if direction in player.location.exits:
+        if player.installedOn.location.getExitNamed(direction, None) is not None:
             evt = events.ThatDoesntMakeSense(
-                actor=player,
+                actor=player.installedOn,
                 actorMessage="There is already an exit in that direction.")
             evt.broadcast()
         else:
-            room = objects.Room(name)
-            player.location.exits[direction] = room
-            room.exits[commands.OPPOSITE_DIRECTIONS[direction]] = player.location
+            room = objects.Object(store=player.store, name=name)
+            objects.Container(store=player.store, capacity=1000).installOn(room)
+            objects.Exit.link(player.installedOn.location, room, direction)
 
             evt = events.Success(
-                actor=player,
+                actor=player.installedOn,
                 actorMessage="You create an exit.",
-                otherMessage=(player, " created an exit to the ", direction, "."))
+                otherMessage=(player.installedOn, " created an exit to the ", direction, "."))
             evt.broadcast()
 
             # XXX Right now there can't possibly be anyone in the
@@ -458,66 +465,69 @@ class Bury(NoTargetAction):
              pyparsing.Literal("east")).setResultsName("direction"))
 
     def do(self, player, line, direction):
-        if direction not in player.location.exits:
-            evt = events.ThatDoesntMakeSense(
-                actor=player,
-                actorMessage="There isn't an exit in that direction.")
-            evt.broadcast()
-        else:
-            room = player.location.exits.pop(direction)
-            try:
-                room.exits.pop(commands.OPPOSITE_DIRECTIONS[direction])
-            except KeyError:
-                pass
-            else:
-                evt = events.Success(
-                    location=room,
-                    otherMessage=(
-                        "The exit to the ",
-                        commands.OPPOSITE_DIRECTIONS[direction], " ",
-                        "crumbles and disappears."))
-                evt.broadcast()
+        for exit in player.installedOn.location.getExits():
+            if exit.name == direction:
+                if exit.sibling is not None:
+                    evt = events.Success(
+                        location=exit.toLocation,
+                        otherMessage=(exit.sibling,
+                                      " crumbles and disappears."))
+                    evt.broadcast()
 
-            evt = events.Success(
-                actor=player,
-                actorMessage="It's gone.",
-                otherMessage=(player, " destroyed the exit to the ", direction, "."))
-            evt.broadcast()
+                evt = events.Success(
+                    actor=player.installedOn,
+                    actorMessage="It's gone.",
+                    otherMessage=(player.installedOn, " destroyed ", exit, "."))
+                evt.broadcast()
+                exit.destroy()
+                return
+
+        evt = events.ThatDoesntMakeSense(
+            actor=player.installedOn,
+            actorMessage="There isn't an exit in that direction.")
+        evt.broadcast()
+
 
 class Go(NoTargetAction):
     expr = (pyparsing.Optional(pyparsing.Literal("go") +
                                pyparsing.White()) +
-            (pyparsing.Literal("north") ^
-             pyparsing.Literal("south") ^
-             pyparsing.Literal("west") ^
-             pyparsing.Literal("east")).setResultsName("direction"))
+            (pyparsing.Literal(u"north") ^
+             pyparsing.Literal(u"south") ^
+             pyparsing.Literal(u"west") ^
+             pyparsing.Literal(u"east")).setResultsName("direction"))
 
     def do(self, player, line, direction):
         try:
-            dest = player.location.exits[direction]
+            exit = player.installedOn.location.getExitNamed(direction)
         except KeyError:
             evt = events.ThatDoesntWork(
-                actor=player,
+                actor=player.installedOn,
                 actorMessage="You can't go that way.")
             evt.broadcast()
         else:
-            location = player.location
+            dest = exit.toLocation
+            location = player.installedOn.location
             try:
-                player.moveTo(dest)
+                player.installedOn.moveTo(dest)
             except epottery.DoesntFit:
                 player.send("There's no room for you there.")
                 return
 
             evt = events.Success(
                 location=location,
-                actor=player,
-                otherMessage=(player, " leaves ", direction, "."))
+                actor=player.installedOn,
+                otherMessage=(player.installedOn, " leaves ", direction, "."))
             evt.broadcast()
+
+            if exit.sibling is not None:
+                arriveDirection = exit.sibling.name
+            else:
+                arriveDirection = object.OPPOSITE_DIRECTIONS[exit.name]
 
             evt = events.Success(
                 location=dest,
-                actor=player,
-                otherMessage=(player, " arrives from the ", commands.OPPOSITE_DIRECTIONS[direction], "."))
+                actor=player.installedOn,
+                otherMessage=(player.installedOn, " arrives from the ", arriveDirection, "."))
             evt.broadcast()
 
             LookAround().do(player, "look") # XXX A convention for
@@ -525,49 +535,39 @@ class Go(NoTargetAction):
                                             # commands?  None as the
                                             # line?
 
-# class Eat(Command):
-#     expr = (pyparsing.Literal("eat") +
-#             pyparsing.White() +
-#             pyparsing.restOfLine.setResultsName("item"))
-
-#     def run(self, player, line, item):
-#         if item == 'flaming death':
-#             player.send("Bye!")
-#             Quit().run(player, line)
-#             return
-#         player.send("Yeuch.")
-
 class Restore(TargetAction):
     expr = (pyparsing.Literal("restore") +
             pyparsing.White() +
             pyparsing.restOfLine.setResultsName("target"))
 
+    targetInterface = ipottery.IActor
+
+    def targetNotAvailable(self, player, exc):
+        for thing in player.search(self.targetRadius(player), ipottery.IObject, exc.partValue):
+            return (thing, " cannot be restored.")
+        return "Who's that?"
+
     def targetRadius(self, player):
         return 3
 
+
     def do(self, player, line, target):
-        if not hasattr(target, 'hitpoints'):
-            evt = events.ThatDoesntMakeSense(
-                actor=player,
-                actorMessage=(target, " cannot be restored."))
+        target.hitpoints.current = target.hitpoints.max
+        target.stamina.current = target.stamina.max
+
+        if player is target:
+            evt = events.Success(
+                actor=player.installedOn,
+                actorMessage="You have fully restored yourself.")
             evt.broadcast()
         else:
-            target.hitpoints.current = target.hitpoints.max
-            target.stamina.current = target.stamina.max
-
-            if player is target:
-                evt = events.Success(
-                    actor=player,
-                    actorMessage="You have fully restored yourself.")
-                evt.broadcast()
-            else:
-                evt = events.Success(
-                    actor=player,
-                    actorMessage=("You have restored ", target, " to full health."),
-                    target=target,
-                    targetMessage=(player, " has restored you to full health."),
-                    otherMessage=(player, " has restored ", target, " to full health."))
-                evt.broadcast()
+            evt = events.Success(
+                actor=player.installedOn,
+                actorMessage=("You have restored ", target.installedOn, " to full health."),
+                target=target.installedOn,
+                targetMessage=(player.installedOn, " has restored you to full health."),
+                otherMessage=(player.installedOn, " has restored ", target.installedOn, " to full health."))
+            evt.broadcast()
 
 
 class Hit(TargetAction):
@@ -577,34 +577,40 @@ class Hit(TargetAction):
             pyparsing.White() +
             pyparsing.restOfLine.setResultsName("target"))
 
+    targetInterface = ipottery.IActor
+
     def targetRadius(self, player):
         return 3
 
     def do(self, player, line, target):
+        toBroadcast = []
         if target is player:
-            player.send("Hit yourself?  Stupid.")
+            toBroadcast.append(events.ThatDoesntMakeSense("Hit yourself?  Stupid.", actor=player.installedOn))
         else:
             cost = random.randrange(1, 5)
             if player.stamina < cost:
-                player.send("You're too tired!")
+                toBroadcast.append(events.ThatDoesntWork("You're too tired!", actor=player.installedOn))
             else:
                 damage = random.randrange(1, 5)
                 player.stamina.decrease(cost)
                 thp = target.hitpoints.decrease(damage)
-                target.send(player, " hits you for ", damage, " hitpoints.")
-                player.send("You hit ", target, " for ", damage, " hitpoints.")
-
+                toBroadcast.append(events.Success(targetMessage=[player.installedOn, " hits you for ", damage, " hitpoints."],
+                                                  actorMessage=["You hit ", target.installedOn, " for ", damage, " hitpoints."],
+                                                  otherMessage=[player.installedOn, " hits ", target.installedOn, "."],
+                                                  actor=player.installedOn, target=target.installedOn))
                 if thp <= 0:
                     xp = target.experience / 2 + 1
-                    player.gainExperience(xp)
-                    player.send("\n",
-                                target, " is dead!", "\n",
-                                "You gain ", xp, " experience!")
-                    target.send("You are dead!")
-                    target.destroy()
-                    player.location.broadcastIf(
-                        isNot(player, target),
-                        player, " has killed ", target, ".")
+                    player.gainExperience(xp) # I LOVE IT
+                    targetIsDead = [target.installedOn, " is dead!", "\n"]
+                    toBroadcast.append(events.Success(
+                        actor=player.installedOn, target=target.installedOn,
+                        actorMessage=["\n", targetIsDead, "You gain ", xp, " experience"],
+                        targetMessage=["You are dead!"],
+                        otherMessage=targetIsDead))
+                    target.installedOn.destroy()
+        for event in toBroadcast:
+            event.broadcast()
+
 
 class Say(NoTargetAction):
     expr = (((pyparsing.Literal("say") + pyparsing.White()) ^
@@ -612,11 +618,10 @@ class Say(NoTargetAction):
             pyparsing.restOfLine.setResultsName("text"))
 
     def do(self, player, line, text):
-        player.send("You say, '" + text + "'\n")
-        player.location.broadcastIf(
-            And(isNot(player),
-                atLeastOne('canSee', player)),
-            player, " says, '", text, "'\n")
+        evt = events.Success(actor=player.installedOn,
+                             actorMessage=["You say, '", text, "'"],
+                             otherMessage=[player.installedOn, " says, '", text, "'"])
+        evt.broadcast()
 
 class Emote(NoTargetAction):
     expr = (((pyparsing.Literal("emote") + pyparsing.White()) ^
@@ -624,11 +629,10 @@ class Emote(NoTargetAction):
             pyparsing.restOfLine.setResultsName("text"))
 
     def do(self, player, line, text):
-        player.send(player.name, " ", text, '\n')
-        player.location.broadcastIf(
-            And(isNot(player),
-                atLeastOne('canSee', player)),
-            player, " ", text, '\n')
+        evt = events.Success(actor=player.installedOn,
+                             actorMessage=[player.installedOn, " ", text],
+                             otherMessage=[player.installedOn, " ", text])
+        evt.broadcast()
 
 # class Rebuild(NoTargetAction):
 #     expr = pyparsing.Literal("rebuild")
@@ -639,7 +643,7 @@ class Emote(NoTargetAction):
 #             if k.startswith('pottery.') and v is not None:
 #                 rebuilt.append(k)
 #                 rebuild.rebuild(v)
-#         player.send("Rebuilt ", ', '.join(rebuilt), ".")
+#         ipottery.IActor(player).send("Rebuilt ", ', '.join(rebuilt), ".")
 
 class Commands(NoTargetAction):
     expr = pyparsing.Literal("commands")
@@ -657,18 +661,19 @@ class Search(NoTargetAction):
             commands.targetString("name"))
 
     def do(self, player, line, name):
-        for thing in player.search(2, ipottery.IObject, name):
-            player.send((thing.longFormatTo(player), '\n'))
+        for thing in player.installedOn.search(2, ipottery.IObject, name):
+            player.send((thing.longFormatTo(player.installedOn), '\n'))
 
 class Score(NoTargetAction):
     expr = pyparsing.Literal("score")
 
     def do(self, player, line):
-        player.send('/', '-' * 76, '\\', '\n',
-                    '|', 'Level: ', player.level, ' Experience: ', player.experience, '\n',
-                    '|', 'Hitpoints: ', player.hitpoints, '\n',
-                    '|', 'Stamina: ', player.stamina, '\n',
-                    '\\', '-' * 76, '/', '\n')
+        player.send(
+            '/', '-' * 76, '\\', '\n',
+            '|', 'Level: ', player.level, ' Experience: ', player.experience, '\n',
+            '|', 'Hitpoints: ', player.hitpoints, '\n',
+            '|', 'Stamina: ', player.stamina, '\n',
+            '\\', '-' * 76, '/', '\n')
 
 class Who(NoTargetAction):
     expr = pyparsing.Literal("who")
@@ -682,7 +687,7 @@ class Who(NoTargetAction):
 
         player.send(self.header + '\n')
         for p in connectedPlayers:
-            player.send(self.entry % {'playerName': p.formatTo(player)} + '\n')
+            player.send(self.entry % {'playerName': p.formatTo(player.installedOn)} + '\n')
         player.send(self.footer % {'playerCount': len(connectedPlayers)} + '\n')
 
 import pprint
@@ -695,7 +700,19 @@ class Scrutinize(TargetAction):
         return 3
 
     def do(self, player, line, target):
-        s = pprint.pformat((target.__class__.__name__, vars(target)))
+        v = dict((k, getattr(target, k))
+                  for (k, ign)
+                  in target.getSchema()
+                  if hasattr(target, k))
+
+        targetContainer = ipottery.IContainer(target, None)
+        if targetContainer is not None:
+            v['contents'] = list(targetContainer.getContents())
+
+        exits = list(target.getExits())
+        if exits:
+            v['exits'] = exits
+        s = pprint.pformat((target.__class__.__name__, v))
         player.send(s, '\n')
 
 class Inventory(NoTargetAction):
@@ -704,14 +721,8 @@ class Inventory(NoTargetAction):
     def do(self, player, line):
         player.send(
             [T.fg.yellow, "Inventory:\n"],
-            [T.fg.green, [(o, '\n') for o in player.contents]])
+            [T.fg.green, [(o, '\n') for o in ipottery.IContainer(player.installedOn).getContents()]])
 
-class Quit(NoTargetAction):
-    actorInterface = ipottery.IPlayer
-    expr = pyparsing.Literal("quit")
-
-    def do(self, player, line):
-        player.proto.terminal.loseConnection()
 
 class Help(NoTargetAction):
     expr = (pyparsing.Literal("help") +
