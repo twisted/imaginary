@@ -18,4 +18,4 @@ potteryOffering = offering.Offering(
     appPowerups = [realm.PotteryRealm],
     benefactorFactories = [],
     loginInterfaces = [],
-    themes = None)
+    themes = [])
