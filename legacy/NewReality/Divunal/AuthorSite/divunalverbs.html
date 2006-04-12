@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+   <META NAME="GENERATOR" CONTENT="XEmacs (X11; I; Linux 2.0.36 i686)">
+</HEAD>
+<body bgcolor=white text=black>
+
+<CENTER><FONT SIZE=+4>Verb Index</FONT></CENTER>
+<P><BR><P><U><FONT SIZE=+1>Divunal Verbs:</FONT></U>
+<BLOCKQUOTE>
+[<A HREF="#discover">discover</A>]
+[<A HREF="#listen">listen/unlisten</A>]
+[<A HREF="#shadowstep">shadowstep</A>]
+[<A HREF="#twin">twin/untwin</A>]
+[<A HREF="#visit">visit</A>]
+</BLOCKQUOTE>
+<P><U><FONT SIZE=+1>Divunal Verb Definitions:</FONT></U></P>
+
+<A NAME="discover"><B>discover [int <I>x</I>] [int <I>y</I>] [int <I>z</I>] to [direction <I>direction</I>]</B><BR>
+<B>discover [int <I>x</I>] [int <I>y</I>] [int <I>z</I>] to [direction <I>direction</I>] except [<i>{n s} </i>(and)<i> {e w} </i>(and)<i>  {u d}</i>]</B><BR>
+<BLOCKQUOTE>
+Creates a (possibly three dimensional) grid of rooms, connected to
+your current room via the <i>direction</i> exit, of the dimensions
+<I>x</I> by <I>y</I> by <I>z</I>, where each room is connected to
+every "adjacent" room but not creating the directional exits specified
+via Except.  <P><TT> Arguements <I>x</I> and <I>y</I> must be integers
+between 1 and 9 (describing the width and length, respectively), and
+<I>z</I> must be a non-zero integer between -9 and 9, which will
+determine the height (positive = up, negative = down). Adjacent rooms
+in the grid are connected via all appropriate exits, but directions
+specified by <i>except</i> will not be built; If you specify <i>e</i>
+or <i>w</i>, no east/west exits will be created. The same goes for
+north-south exits (<i>n</i> or <i>s</i>) and up/down exits (<i>u</i>
+or <i>d</i>).Because of the way Discover parses its arguements, it is
+important to not include any extra spaces or characters, and while the
+<i>except</i> directions can be a letter (or any word beginning with
+the appropriate letter) n, s, e, w, u, or d, you must remember to put
+an "and" between them. </P> <P> The grid will be connected by the
+"middle" of the side where it is attached; A North, South, East, or
+West exit will connect to the middle of the appropriate side of the
+grid, while an Up or Down exit will connect to the "middle" of the
+bottom or top of the grid, respectively (Middle is placed in quotes to
+reflect the fact that there is no exact middle square in a grid with
+an even dimension along one side). Also, keep the vertical direction
+in mind... If your Z axis is more than 1, positive will be going
+upwards, and negative will be going downwards. For example:</P></TT>
+<HR>
+<P align="center"><img src="discover1.png"><BR>
+"<b>discover 3 3 1 to north except u</b>", will create a 3 x 3 set of
+rooms, connected to your current room through the north exit.</P>
+<HR>
+<P align="center"><img src="discover2.png"><BR>
+"<b>discover 3 3 -5 to down except e and n</b>" will build a 3 x 3 grid of
+rooms, three rooms high (downwards), with no east/west or north/south
+exits, the top of which is connected to your current room by the Down
+exit. (essentially, 9 unconnected vertical columns, the middlemost one
+of which is accessible through the down exit of the current room.)</P>
+<HR>
+<P><i>Known Bugs:</i>
+<BLOCKQUOTE>
+I haven't actually tested this... But the docs do currently reflect how it is "supposed" to work. ;-)
+</BLOCKQUOTE></P>
+</BLOCKQUOTE>
+
+<A NAME="listen"><B>listen</B><BR>
+<B>unlisten</B><BR>
+<BLOCKQUOTE>
+<P>Causes any speech your character can hear to pop up in a Response Processor window; This effect ends soon as you use the "<i>unlisten</i>" command, or start talking yourself.
+</P>
+<P><TT>This is handy if you aren't going to pay attention to your character for a while, or have the Faucet window minimized... It causes speech to pop up in a vaguely AOLIM-like way. The "unlisten" command is mostly for convenience (if you don't want to actually have to say anything to turn it off).</P></TT>
+<P><i>Known Bugs:</i>
+<BLOCKQUOTE>
+If you click the "Okay" button on a Listen response window, it will spit out a Null Pointer Exception error. This has no detrimental effects other than mild annoyance, and it's actually due to a bug in Response Processor anyway.
+</BLOCKQUOTE></P>
+</BLOCKQUOTE>
+
+<A NAME="shadowstep"><B>shadowstep</B><BR>
+<B>shadowstep [local-location : <I>location</I>]</B><BR>
+<B>shadowstep in [local-location : <I>location</I>]</B><BR>
+<BLOCKQUOTE>
+A convenience verb for passing between concentric areas, named in deference to some stuff Roger Zelazy wrote. With no arguements, it will move outwards if the next outermost location is not null; With arguements, it will attempt to move the player into a specified <i>location</i> in the same place as themselves. If you step into an uncomfortably small container, any resulting embarassment is your own damned fault.
+</BLOCKQUOTE>
+
+<A NAME="twin"><B>twin [local-thing : <I>thing</I>]</B><BR>
+<B>untwin</B>
+<BLOCKQUOTE>
+</p><b>twin</b> reversibly alters the god's name and description to match that of <i>thing</i>, and <b>untwin</b> does the reversing.</P>
+<P><TT>
+This verb is now safe to use, but it will "back up" your old name, apparent name, and description on your character, and it is important that these aren't removed before you decide to turn back. Currently, it's very easily to tell the two apart (If Twin <b>twins</b> Tenth, and Maxwell attempts to refer to Tenth, he will always get the real one) but this will probably be remedied at a later time. (At some point, it would choose between the "Twin" Tenth and the real Tenth randomly when someone requested Tenth.) Note that this does not affect your clothes or your inventory in any way.</P>
+<P><B>twin</B> and <B>untwin</B> are also smart enough to refuse to operate if you are already Twinned (or not Twinned, respectively) but once again, mess with the string properties it applies at your own risk.
+</TT></P>
+</BLOCKQUOTE>
+
+<A NAME="visit"><B>visit [global-thing : <I>thing</I>]</B></p>
+<BLOCKQUOTE>
+<P>Teleports the God to the room where <i>thing</i> is currently located, after a short delay.</P>
+<TT><P>
+There is a visible effect before and after the teleportation takes place, giving some ammount of warning before the god will actually appear, and the visit destination will not change if <i>thing</i> happens to leave before then.
+</P>
+<P>The color of the distortions that appear as the god "locks on" to the location currently default to <font color="blue">blue</font>, but you can choose your own by placing a "visit color" string property on your character, which should fit into the phrase "Streaks of [visit color] light appear in the air...". Tenth's are <font color="green">greenish</font>, Maxwell's are <font color="#AAAAA">ghostly</font>, etc...</P>
+</TT></BLOCKQUOTE>
+
+</BODY>
+</HTML>

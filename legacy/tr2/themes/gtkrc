@@ -1,0 +1,3 @@
+# -- NOT AUTO THEME-DO WRITTEN EDIT
+include "./themes/default/gtkrc"
+

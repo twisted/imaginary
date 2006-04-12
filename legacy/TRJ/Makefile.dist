@@ -1,0 +1,83 @@
+
+RESDIR=$(CURDIR)/../resource
+
+DISTDIR=$(CURDIR)/../dist
+
+SWINGJAR=$(JARDIR)/swing.jar
+
+IMAGESJAR=$(JARDIR)/images.jar
+
+MRJSTUBSJAR=$(JARDIR)/mrjstubs.jar
+
+REMAKE=$(MAKE) -f Makefile.make
+
+dist-make: 
+	$(REMAKE) $(DISTDIR).d
+	$(REMAKE) $(DISTDIR)/pumpdoc.tar.gz
+	$(REMAKE) $(DISTDIR)/pumpdoc.zip
+	$(REMAKE) $(DISTDIR)/pumpdoc.tar.gz
+	$(REMAKE) $(DISTDIR)/pump.tar.gz
+	$(REMAKE) $(DISTDIR)/inheritance-pump.tar.gz
+	$(REMAKE) $(DISTDIR)/demo-pump.tar.gz
+	$(REMAKE) $(DISTDIR)/faucet.tar.gz
+	$(REMAKE) $(DISTDIR)/faucet.zip
+	$(REMAKE) $(DISTDIR)/faucet_with_swing.tar.gz
+	$(REMAKE) $(DISTDIR)/faucet_with_swing.zip
+
+
+dist-clean-make:
+	rm -rf $(DISTDIR)
+
+# $(DISTDIR).d
+
+%.tar.gz: %
+	cd $(*D); tar czf $(*F).tar.gz $(*F)
+
+%.zip: %
+	cd $(*D);\
+	 zip -qr $(*F).zip $(*F)
+
+$(DISTDIR)/pump: class-targets
+	cp -af $(RESDIR)/pump $@
+	cp -f $(CURDIR)/divunal/README $@/README.$*
+	cat $(CURDIR)/divunal/map.por >> $@/map.por
+	CLASSLIST=`find $(BINDIR) -name "*.class" | $(DROPSTAT) "$(BINDIR)"`; for i in $$CLASSLIST ; do install -D $(BINDIR)/$$i $@/$$i; done;
+
+$(DISTDIR)/%-pump: class-targets
+	cp -af $(RESDIR)/pump $@
+	cp -f $*/README $@/README.$*
+	cat $*/map.por >> $@/map.por
+	CLASSLIST=`sh -c "find $(BINDIR)/twisted -name \"*.class\"; find $(BINDIR)/$* -name \"*.class\"" | $(DROPSTAT) "$(BINDIR)"`; for i in $$CLASSLIST ; do install -D $(BINDIR)/$$i $@/$$i; done;
+
+DROPSTAT=perl -e 'while(<STDIN>){s/$$ARGV[0]/$$ARGV[1]/g; print;}'
+
+%.class-to: %.d
+	CLASSLIST=`find $(BINDIR) -name "*.class"|$(DROPSTAT) "$(BINDIR)"`; for i in $$CLASSLIST ; do install -D $(BINDIR)/$$i $*/$$i; rm -f $(BINDIR)/$$i; done;
+
+%.class-from: %.d
+	CLASSLIST=`find $* -name "*.class"|$(DROPSTAT) "$*"`; for i in $$CLASSLIST ; do install -D $*/$$i $(BINDIR)/$$i; rm -f $*/$$i; done; rm -rf $*
+
+
+FTMP=$(CURDIR)/../faucet_classes
+OTMP=$(CURDIR)/../TEMP
+
+$(DISTDIR)/faucet:
+	if [ -d $(FTMP) ]; then echo 'ok'; else mkdir $(FTMP); fi
+	$(JAVA_HOME)/bin/javac -classpath .:$(CLASSZIP):$(JARDIR)/swing.jar:$(JARDIR)/mrjstubs.jar -d $(FTMP) twisted/reality/client/Faucet.java
+	rm -rf $@
+	cp -af $(RESDIR)/faucet $@
+	cd $(FTMP); $(JAVA_HOME)/bin/jar cf faucet.jar *
+	mv $(FTMP)/faucet.jar $@/faucet.jar
+	cp $(IMAGESJAR) $@/images.jar
+	cp $(MRJSTUBSJAR) $@/mrjstubs.jar
+	cd $@; sh -c 'for i in *.bat; do sed `echo -e -n "s/\$$/\r/g"` < $$i > $$i.b2; rm -f $$i; mv $$i.b2 $$i; done;'
+	rm -rf $(FTMP)
+
+$(DISTDIR)/faucet_with_swing: $(DISTDIR)/faucet $(DISTDIR)/faucet_with_swing.d
+	rm -rf $@
+	cp -af $< $@
+	cp $(SWINGJAR) $@/swing.jar
+
+$(DISTDIR)/pumpdoc:
+	cp -af $(RESDIR)/pumpdoc $(DISTDIR)/pumpdoc
+	$(JAVA_HOME)/bin/javadoc -classpath $(CLASSPATH) -d $@ twisted.reality twisted.reality.plugin twisted.reality.plugin.furniture twisted.reality.plugin.door twisted.reality.author twisted.util twisted.util.awt twisted.util.swing

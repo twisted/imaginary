@@ -1,0 +1,91 @@
+# style <name> [= <name>]
+# {
+#   <option>
+# }
+#
+# widget <widget_set> style <style_name>
+# widget_class <widget_class_set> style <style_name>
+
+pixmap_path "./themes/grey/"
+
+style "default"
+{
+  font = "-*-lucida-medium-r-normal-*-10-*-*-*-*-*-iso8859-1"
+
+# base, text, bg, fg are possible
+fg[NORMAL] = { 0.77, 0.77, 0.77 }
+fg[SELECTED] = { 0.67, 0.67, 0.67 }
+fg[INSENSITIVE] = { 0.77, 0.77, 0.77 }
+fg[ACTIVE] = { 0.67, 0.67, 0.67 }
+fg[PRELIGHT] = { 0.80, 0.82, 0.84 }
+bg_pixmap[NORMAL] = "test.xpm"
+bg[NORMAL] = { 0.4, 0.4, 0.4 }
+bg[SELECTED] = { 0.5, 0.5, 0.5 }
+bg[INSENSITIVE] = { 0.7, 0.5, 0.5}
+bg[ACTIVE] = { 0.6, 0.6, 0.6 }
+bg[PRELIGHT] = { 0.7, 0.7, 0.7 }
+
+text[INSENSITIVE] = { 0.60, 0.65, 0.57 }
+
+}
+
+style "button"="default"
+{
+	base[NORMAL]={0.0,0.0,0.0}
+	base[SELECTED]={0.0,0.0,0.0}
+	base[ACTIVE]={0.0,0.0,0.0}
+	base[PRELIGHT]={0.0,0.0,0.0}
+	base[INSENSITIVE]={0.0,0.0,0.0}
+
+}
+
+style "progress"="button"
+{
+	bg[NORMAL] = { 0.2,0.2, 0.2 }
+	bg[SELECTED] = { 0.2, 0.2, 0.2 }
+	bg[INSENSITIVE] = { 0.3, 0.3, 0.3}
+	bg[ACTIVE] = { 0.4, 0.4, 0.4 }
+	bg[PRELIGHT] = { 0.2, 0.2, 0.4 }
+}
+
+style "textclass"
+{
+
+fg[NORMAL] = { 0.0, 0.0, 0.0 }
+fg[SELECTED] = { 0.0, 0.0, 0.0 }
+fg[INSENSITIVE] = { 0.4, 0.4, 0.4 }
+fg[ACTIVE] = { 0.1, 0.1, 0.1 }
+fg[PRELIGHT] = { 0.2, 0.2, 0.2 }
+
+bg[NORMAL] = { 1.0, 1.0, 1.0 }
+bg[SELECTED] = { 0.8, 0.8, 0.9 }
+bg[ACTIVE] = { 0.6, 0.6, 0.9 }
+bg[PRELIGHT] = { 0.9, 0.9, 0.9 }
+
+text[NORMAL] = { 0.0, 0.0, 0.0 }
+text[SELECTED] = { 0.0, 0.0, 0.0 }
+text[PRELIGHT] = { 0.0, 0.0, 0.0 }
+text[ACTIVE] = { 0.0, 0.0, 0.0 }
+
+base[NORMAL] = { 1.0, 1.0, 1.0 }
+base[SELECTED] = { 1.0, 1.0, 1.0 }
+base[PRELIGHT] = { 1.0, 1.0, 1.0 }
+base[ACTIVE] = {1.0, 1.0, 1.0}
+
+}
+
+style "ruler" = "default"
+{
+  font = "-adobe-helvetica-medium-r-normal--*-80-*-*-*-*-*-*"
+}
+
+widget_class "*List*" style "textclass"
+widget_class "*Ruler*" style "ruler"
+widget_class "*" style "default"
+widget_class "*Text*" style "textclass"
+#widget_class "*Field*" style "textclass"
+widget_class "*Entry*" style "textclass"
+widget_class "*List*" style "textclass"
+widget_class "*Button*" style "button"
+widget_class "*Menu*" style "button"
+widget_class "*GtkProgressBar*" style "progress"

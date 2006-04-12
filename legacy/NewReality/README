@@ -1,0 +1,12 @@
+The New New New Twisted Reality
+===============================
+
+This is formally Complete Rewrite #5 of the Twisted Reality (AKA "reality
+pencil") engine that has never quite worked.
+
+While I usually detest calling things "new", this one does have the unique
+distinction of being loosely based on Zope Corporation's "New Religion" object
+model.  I was originally planning to call the module "Heresy", but that might
+have been a bit too obscure.
+
+

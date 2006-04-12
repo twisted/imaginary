@@ -1,0 +1,6 @@
+#!/bin/sh
+
+python py2c/py2ctree.py notebook c_notebook
+touch c_notebook/__init__.py
+rm c_notebook/__init__module.so
+echo "import notebook.dimentest" | python

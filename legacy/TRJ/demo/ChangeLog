@@ -1,0 +1,132 @@
+2000-01-09  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* GuymelefGo.java: Moved verbs from /divunal/tenth/
+
+	* OpenGuymelef.java: Moved verbs from /divunal/tenth/
+
+	* GuymelefLook.java: Moved verbs from /divunal/tenth/
+
+	* FrameSit.java: Construction frame sit verb for Giant Robots.
+
+	* EnterGuymelef.java: Moved verbs from /divunal/tenth/
+
+	* GuestLogin.java: Now gives the guest characters synonyms of
+	"guest" and their "color". Well, at least, it didn't do both
+	before. now it does.
+
+	* WaterOff.java: Vastly simplified now that FountainDrink does all
+	the work.
+
+	* FountainPush.java: Redid the way FountainPush/Drink
+	works... Simpler and less hacky now. Contains most of the code for
+	the behavior of the fountain, as it should have to begin with.
+
+	* FountainDrink.java: Redid the way FountainDrink works... Simpler
+	and less hacky now.
+
+	* BobsFunkyVerb.java: Added the verb from the Make Your Own Verb
+	tutorial... I figured it should probably be in the demo, lame as
+	it is.
+
+1999-12-30  Glyph Lefkowitz  <glyph@twistedmatrix.com>
+
+	* DemoOver.java: A 'game over' event for the demo.  This should
+	log you out 'n' everything.
+
+	* DollFlush.java: erm.  Spoiler.
+
+1999-12-30  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* WarningOff.java: An event handler to make the Alert rooms go
+	back to normal.
+
+	* DispenserLeverPull.java: A silly verb to take the place of the
+	toilet paper dispenser verb I never got around to writing and that
+	was a stupid idea anyway... Maybe later.
+
+	* ScreenSaverOn.java: Event handler which turns the
+	screensaver/password bit back on, hopefully.
+
+	* DemoComputerType.java: Can now be unlocked.
+
+	* DemoComputerLocked.java: This is the verb enabled when the Demo
+	Computer is "locked", e.g. in XEmacs, giving out sarcastic
+	descriptions instead of doing anything.
+
+	* DemoComputerType.java: Now stores the "password" as a string,
+	and has a delete key, so that we can eventually determine if
+	they've typed the correct password.
+
+1999-12-29  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* WaterDrink.java: Verb for drinking water directly.
+
+	* FountainPush.java: Verb for activating the fountain.
+
+	* FountainDrink.java: Verb for drinking from the fountain.
+
+1999-12-29  Glyph Lefkowitz  <glyph@twistedmatrix.com>
+
+	* ToiletStand.java: You don't need to be able to sit on the
+	toilet, really.  Only to stand from it, since that's when the
+	magic happens.
+
+	* DemoComputerType.java: small fixes for more intuitiveness after
+	a simple play-testing.
+
+1999-12-28  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* DemoComputerType.java: This is a simple silly verb allowing
+	people to fail to break into my demo center computer's password
+	protected screensaver.
+
+	* Repop.java: Added a verb to manually repop objects on account of
+	I'm a lazy bastard after midnight on weekdays.
+
+	* RoachMove.java: Totally reworked behavior to be Location
+	friendly. Will probably need a great deal of debugging (no pun
+	intended.)
+
+	* BrassWind.java: Fixed some of the potential problems with
+	Wind... But we need to redo the way events work, unfortunately.
+
+1999-12-27  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* RoachMove.java: Changed the delays around, now uses topRoom()
+
+1999-12-24  Glyph Lefkowitz  <glyph@twistedmatrix.com>
+
+	* *.java: Several verbs from Divunal were moved here, since
+	they're really being used in the Demo...
+
+	* map.por: actually put the Demo map from the online demo
+
+1999-12-23  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* PagerPress.java: Now much more friendly (and somewhat
+	informative) to the painting's receiver being set to null.
+
+	* PaintingDescription.java: Now is much more friendly to strange
+	circumstances, such as, say, the person specified as the reciever
+	not being in the map.
+
+---------- Twisted Reality 1.2.1 Released ----------
+
+1999-12-22  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* ToySqueeze.java: Squeezy toy verb. You can squeeze it, or
+	squeeze it at people or yourself.
+
+	* ToyDrop.java: When you drop Squeezy toys, they squeak.
+
+	* PagerPress.java: A Push/press verb for Pager Paintings... When
+	you press the button, the person whose
+
+	* DrawerOpenClose.java: Fixed the comment, and made it not
+	screw up the object properties like it used to.
+
+	* DollPull.java: Made the John Romero Action Figure's speech
+	a little more interesting.
+
+	* PaintingDescription.java: Added a dynamic description for
+	Pager Paintings... It shows the subject's current location.

@@ -1,0 +1,95 @@
+
+(a note from glyph: this is a MODIFIED VERSION, I made a few changes to g.s.
+and b.t.'s py2c, to get it to work with my py2ctree.py.)
+
+Python2C is a Python to C translator. It was initialiy developed by
+Greg Stein and Bill Tutt. Bill is now spearheading the development.
+
+Language features that aren't currently supported, (and probably won't
+ever be supported):
+* Restricted execution mode
+* Switching threads every N Python instructions
+
+95% of all other language features are believed to be supported.
+
+Design Decisions:
+
+Keep most of Python's flexibility and avoid breaking things:
+* All global variables are kept in the module dictionary. This allows
+module clients to read/write the globals in the same fashion as the
+orignal Python module.
+
+
+Allow for better optimizations:
+* If an error occurs inside a translated function, the function won't
+appear in the traceback object. This is worth mentioning because Jon
+Riehl's PyFront that he presented at IPC 7 preserved this property in
+his C translation.
+
+Currently implemented optimizations:
+
+* All global functions are called directly via C, instead of via
+PyEval_CallObjectWithKeyword().
+
+* A module level constant pool for strings and integers. String
+constants are always interned because extension modules can never be
+unloaded.
+
+* Inlining code for binary operations on integers.
+
+* Function locals are C local variables, as are temporary variables to
+store subexpression results.
+
+* The ability to optimize builtins if they aren't overridden at the
+local or global level. This feature will be optional in a later release.
+
+The currently enabled optimizations are len() and range/xrange()
+
+range() and xrange() are only optimized when their argument is known
+to be an integer constant and when they're used for the only part of
+the "in" clause in a for loop. Currently this means your Python code
+has to have a hard coded integer in order for this optimization to
+kick in.
+
+e.g.:
+for i in range(5000):
+	.....
+
+translates into code that includes a special case of a normal C for loop:
+for( long_x = 0; long_x < 5000; long_x+=1)
+{
+	Py_XDECREF(l_i);
+	l_i = PyInt_FromLong(long_x);
+	.......
+}
+
+Forthcoming optimized builtins:
+* type() with detection of type.IntType, etc.  (This one will be turned
+on only on request) str(), repr(), cmp(), apply(), etc..
+
+* Any Python function that exists in the module dictionary
+(modulename.function() doesn't throw an exception) will be called
+directly in C instead of via PyEval_CallObjectWithKeyword()
+
+
+Unimplemented features:
+* Currently there aren't any. I'm sure some are lurking somewhere though.
+
+How to use it:
+
+The main module of importance is gencode.py. To translate pystone.py
+you would enter the following:
+	python gencode.py pystone.py __pystone.c _pystone.py
+
+This will generate a C extension module __pystone.c and a wrapper _pystone.py.
+_pystone.py currently contains nothing but:
+from __pystone import *
+
+_pystone.py will probably disappear in the next release.
+
+Python2C does NOT currently generate a Makefile, that part of the
+problem is left to you for right now.
+
+Python2C is ditributed under a Python style license. See COPYRIGHT
+more exact wording.
+

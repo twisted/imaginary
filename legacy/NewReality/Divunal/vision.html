@@ -1,0 +1,987 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html> <head>
+<title>Divunal Vision</title>
+
+<style>
+.narrator { color: #cef }
+.player { color: #f0e }
+</style>
+</head>
+
+<body bgcolor="black" text="white">
+<h1>Divunal 2002 - It's Cold. It's Dark. Forever.</h1>
+<h2>Kenaan's Back, and He's Mad</h2>
+
+<div align="center"><img src="http://yellow5.com/pokey/archive/pokey233_1.gif" /></div>
+
+<p> This is an attempt to commit to paper the stuff that I've been repeating
+over and over and over again every time I talk about the <q>New Divunal</q>
+with someone over the phone.  It will probably be incomplete.  For brevity, I
+am going to assume you know a little about what the old Divunal was, what
+Twisted is, and a little bit about the previous implementation (TR/J, and the
+infamous tr2.tar.gz.)  If any references to these various arcana are confusing
+to you, you probably want to ask one of: <ul>
+  <li>glyph</li>
+  <li>dash</li>
+  <li>tenth</li>
+</ul>
+Sadly, that's probably all the people who remember it at this point :-(
+</p>
+
+<p>On with the story.</p>
+
+<h2>Problems That Lead Me to This Point</h2>
+
+<p>The old Divunal had many problems.
+<ol>
+  <li>The core gameplay (renewable activity) was rather difficult to
+  express.</li>
+  
+  <li>The game world was centered around a group of characters created by the
+  authors, not the players.</li>
+
+  <li>Much of the multiplayer content was not actually multiplayer; it was an
+  environment multiple people could have joined and observed, but only one
+  could really be playing at once.</li>
+
+  <li>The game was supposed to be based on a consistent feel, and although it
+  was better than most MUDs, there was a huge variation between different
+  authors' areas and there was nothing that tied them all together.</li>
+
+  <li>Automatic generation of environments was poorly specified and was never
+  implemented.</li>
+
+  <li>Authoring new areas required knowledge (probably expert-level intimate
+  knowledge) of the game's, <em>and the infrastructure's</em>
+  implementation. </li>
+
+  <li>Everything was closely tied to a 3-panes-of-text interface; no abstract
+  world model.</li>
+
+  <li>The parser sucked.  Oh god, how the parser sucked.  This may seem minor,
+  but in a game that was entirely based around text, it was fundamental. </li>
+
+  <li>We spent so much time on infrastructure that the game never got written.
+  (You could view this as a good thing.  We wouldn't have twisted if not for my
+  annoying habit of getting distracted by shiny new ideas.  Python is sooo
+  shiny.)</li>
+  
+  <li>Many of the assumptions about the infrastructure, in terms of things like
+  method dispatch and remote authoring, were wrong, and although the people
+  arguing with us were in general <strong>more</strong> wrong, we (okay, maybe
+  <q>I</q> would be more appropriate...) were to improve upon very naive
+  techniques that we discovered early on in the project.</li>
+
+  <li>Unique objects made many things difficult.  Among them, storage
+  management and user interface.  User interface was a problem because every
+  author had to come up with a <strong>globally</strong> unique identifier with
+  no indications of what was unique or display of information regarding
+  uniqueness.  The extreme dynamicism expected of the system made it completely
+  insane to design a good back-end for it.  ZODB might have worked but it is
+  unlikely.</li>
+
+  <li>Much of the documentation had to concern itself with work-arounds and
+  technical errata, making it harder to read than it should have been.  This
+  was a really noticeable symptom of the implementation-focused vision behind
+  the project.</li>
+  
+  <li>The central problem: <strong>It was not humanly possible for even the
+  largest supportable team of authors to generate content fast enough that even
+  the smallest supportable player base would always have something to
+  do.</strong>
+  </li>
+
+
+</ol>
+
+But it wasn't all bad.
+
+<ol>
+  
+  <li>It was targeted at a literate audience, which allowed for more
+  experimental approaches to the art of game making.</li>
+
+  <li>Much of the world that was made was just fucking cool, if I do say so
+  myself.</li>
+
+  <li>Talking about and working on the game was fun, which was a good
+  indication that people playing it would have fun, too (if we could ever
+  straighten out what "playing it" meant, anyway.</li>
+
+  <li>The characters of the gods, while too central, had some interesting
+  motifs associated with them, particularly the notion of archetypes which are
+  NOT the major arcana, which represent values relevant to the modern
+  man. (this should have been taken further!)
+  </li>
+
+  <li>The story around those gods was also interesting.  I found the most
+  interesting bits the shadowy corners of their pasts that were left
+  only implied, and we sometimes contemplated. (More on this later.)</li>
+
+  <li>The notion of 'memory' and 'psyche' as central game elements was NEAT!
+  It was close to the beginnings of a totally non-violent game system.</li>
+
+  <li>Archaeology was also cool.</li>
+
+  <li>And dreaming.  Did I mention dreaming?  The notion of a dream sequence
+  where you would not 'awaken' into the game gave players something to do every
+  day that set their emotional context for the play-session.  Again, really
+  revolutionary concept. </li>
+  
+  <li>Character description elements were the most advanced I've ever seen, in
+  ANY game, text or graphics... and we had only just begun prototyping them at
+  the end of the project.</li>
+
+  <li>We had <strong>terrific docs</strong>.  Despite my previous complaint
+  about them, they were fun to read, very interesting, informative,
+  comprehensive, and current.  Even given the cruddy state of the technology,
+  it was possible to get into the code by reading the docs carefully.
+  <div align="center"><img src="http://yellow5.com/pokey/archive/pokey52_4.gif"
+></div>
+  
+  I've said it before, and I'll say it again; tenth was the only reason we had
+  those docs.  He did some terrific work on that project, and if you've gotten
+  the mails from reality-list about them, you should go read them.  I think
+  they're a pretty good example of how to write documentation that people will
+  actually read.  I hope to give him a chance to write docs for tech that isn't
+  quite so bad.
+  
+  </li>
+
+  <li>We spent a lot more time focusing on mood and environment than on story
+  (or even gameplay).  This was, all in all, a good thing because it allowed us
+  to have a feel to the world.  This is very important in online worlds,
+  because it's not just an activity the player engages in, it's also a place
+  for them to go. </li>
+  
+</ol>
+</p>
+
+<p>So there are things that I want to keep about the old style of the game, but
+keeping it wholesale would be far too hard.</p>
+
+<p>This list, combined with my experiences at Origin and Ninjaneering, (and a
+form of fusion) allowed me to make the following observations about how the
+game ought to work: </p>
+
+<ol>
+
+  <li>The renewable activity needs to be the first and most central thing that
+  gets thought about.  This is more important than the story, more important
+  than the world, more important even than the theme (although marginally) --
+  it is the heart of the game, and without it, players won't play.  </li>
+
+  <li><strong>Players like numbers that go up.</strong> <div
+  align="center"><img src="http://yellow5.com/pokey/archive/pokey90_7.gif"
+  ></div>
+  
+  We need to give them a number that will go up.  Even <q>real role-players</q>
+like numbers that go up; they want to know the most efficient manner to advance
+so they can focus on role-playing.
+  They like mechanisms in place to limit the audacity of new power-gamer
+  upstarts, and power to smash trash-talking old hands.</li>
+
+  <li>Death is not something that the player should experience first hand.  It
+  is just a lose-lose proposition, both in terms of retention and overall fun
+  value.  </li>
+  
+  <li>However, I strongly believe that this does not mean that
+  death should be swept under the rug and not treated seriously; that just
+  means that within the narrative of the game world, players
+  should not be able to die.  That is not dead which can get up and walk around
+  again and fuck with your shit immediately after you've ganked it, or
+  something.
+  </li>
+
+  <li>Now for the deep crack.  <strong>Having a bible in a
+  game world is a terrible idea, and the story you tell will only serve to piss
+  the players off.</strong> I bet you thought that was the crack, huh?  Nope.
+  </li>
+
+  <li>THIS is the crack.  <strong>Divunal should have no story at all, and make
+  everything up as you go along, establishing the mechanics and explaining them
+  retroactively.</strong> Especially, we should pay attention to player
+  commentary on what things in the game world might mean.  This harnesses the
+  vast creativity and perverse patience of the player base to our advantage;
+  also, we never have to retconn, because nothing's ever been explained.  I
+  will expand on this more later, because I think it says something really deep
+  about MMP worlds.</li>
+  
+</ol>
+
+<p>While I still, sadly, have not had the experience of working on a shipped
+game, I've learned a lot from the game designers and programmers in the game
+industry that I worked with, about what to do and what not to do.  They have
+some keen insights; they have a lot of experience.</p>
+
+<div align="center"><img src="http://yellow5.com/pokey/archive/pokey350_4.gif"
+/></div>
+
+<p>They also continue to make some very dumb decisions.  This is for two
+central reasons.  One, they have had some really horrible experiences which
+could be blamed on any number of things that went wrong, which they didn't
+really learn from. (designers blame it on the programmers (programmers blame it
+on the artists (artists blame it on the programmers (who shift the reciprocal
+blame around to the designers (do the hokey pokey, etc))))).  Two, they are
+swayed by perceived economic forces which encourage the production of pure
+tripe.  I will probably have to remove this paragraph later, as more people
+join in, but at least I can be frank with this small initial group.  The game
+industry is pretentious about their understanding of business and money, and
+has let art fall by the wayside, which is what they're really <em>good</em> at.
+We can't follow all of their examples otherwise we'll just end up making the
+same regurgitated D&amp;D that Verant and Origin are pumping out, which is
+really just doubly-regurgitated Tolkien.</p>
+
+<p>Thankfully, Divunal doesn't have to face the full burden of correcting all
+these mistakes.  The <a href="http://netsu.org/" >Netsu</a> project will be
+addressing many of them beforehand.  As I plan for Divunal to be a multi-year
+project culminating sometime after the release of a few other games on this
+platform, I'm taking a long view of things.  Most of what you read in this
+document will probably have been changed or at least improved in some way by
+the time it's done, not to mention TONS of other stuff being added.</p>
+
+<p>So if I'm not doing an immediate, <q>hack the world</q> project with Divunal
+this time, determined to make a living for myself, make a bold artistic
+statement, and change the game industry at once, what is it?  It's a launching
+point to that goal.  I'm sure that if you're reading this document you have
+some interest in online virtual worlds, and probably in asbahr.com.</p>
+
+<div align="center"><img src="http://yellow5.com/pokey/archive/pokey172_3.gif"
+/></div>
+
+
+<p>Divunal will be our <q>place with a memory</q> (apologies to Allen Short),
+the virtual world that Twisted hackers actually work and live in.  Hopefully it
+will also be a publicly accessible game for the open source community before
+it's officially <q>launched</q>.</p>
+
+<h2>Solving the Problem of Infrastructure: Using What I've Learned</h2>
+
+<div align="center"><img src="http://yellow5.com/pokey/archive/pokey23_3.gif"
+/></div>
+
+<p>Obviously one part of the infrastructure solution for Divunal is Twisted.
+Another major component of the solution is Beyond, which we have begun
+implementing a spike of in the Reality source tree.</p>
+
+<p>This is a continuation (and combination) of the research into game design
+that Jason Asbahr and I have been doing for the last ... 5 years each, I guess?
+It's quite comprehensive, especially because we have both had mobility between
+games and worlds into account, something that most game infrastructure
+designers either pay lip service to or vocally ignore.</p>
+
+<p>A lot of what's here is unsurprising.  It's been in progress for quite some
+time, after all, and almost all of you reading this doc have likely come into
+contact with me due to the Twisted project.  We're going to use Python for
+scripting.  We're going to make heavy use of reflection.  I plan to have very
+dynamic game behavior.</p>
+
+<div align="center"><img src="http://yellow5.com/pokey/archive/pokey81_3.gif"
+/></div>
+
+<p>There are some new things, though; most notably, I consider the problem of
+infrastructure wholly separate from the problem of game design, and I think
+that it's feasible to support this.  The biggest reason it's feasible to support is that we've spent 2 years developing infrastructure first ;-)</p>
+
+<p> One of the biggest structural changes to the code is that everything is
+broken into lots of little pieces, and the code is centered around designing
+game <em>systems</em> rather than game <em>objects</em>.  The idea being that
+you code classes which specify an object's behavior in a particular context,
+not its entire state; a sword might also be a magic wand, but except in special
+circumstances, the spellcasting bits don't care about the sword-wielding bits;
+the code for them can be separate and still be applied to the same object
+(without creating a new class and figuring out the nightmares that result from
+multiple inheritance!). </p>
+
+<p>So rather than writing a SwordOfSmiting class and a SwordOfKilling class and
+a SwordOfNoSeriouslyYouAreSoDead class, you can just write IAttackTool
+interface and a DefaultAttackTool class, which can have some data plugged into
+it that satisfies most of the various kinds of sword one can have, with special
+subclasses for very unusual behavior.  In fact, the "sword" behavior of a
+physical object in the world can be a separate Python object from the actual
+physical object, enabling us to do cool things like temporarily imbue a Sword
+of Smiting with the attack properties of a Sword of OMFG You are *Toast*, in a
+very well-defined way.</p>
+
+<p>Focusing on game systems instead of game objects is the real thrust of the
+architectural tsunami currently going through the Reality code.  By the time
+it's done, I think that the game code will be <em>significantly</em> easier to
+read, especially with regard to questions like <q>what happens when I hit
+somebody with a sword? how can I change that?</q>. </p>
+
+<p>So what are we going to do with all this infrastructure?  Nothing.  A very
+<em>special</em> kind of nothing, though.</p>
+
+<h2>The Zero Story</h2>
+
+<h3>Where Divunal Mk. 2 got started</h3>
+
+<p>Okay, this is the good part, kids.
+</p>
+<div align="center"><img src="http://yellow5.com/pokey/archive/pokey203_2.gif" ></div>
+
+<p>With the re-design of Divunal, I really wanted to focus on that feel that we
+got from the eerie and weird parts of the world, and emphasize it.  The
+inspiration that I drew on was the endlessly amusing conversations I would have
+with people speculating about the real meaning behind really obscure games.
+The first such conversation I can remember that really impressed me was when
+Tenth and I were talking about Silent Hill, and he brought up the fellow who
+claimed he had gotten in an ambulance and hot-wired it and driven all over the
+town with a nuclear torpedo launcher strapped to his roof or something.  It was
+intriguing to debate the true meaning of the game, perhaps more interesting
+than playing the game itself.</p>
+
+<p>One of the last of these, which (in a roundabout fashion) got me started on
+this design path was a conversation I had with Allen about Deus Ex.  The men in
+black, at various points throughout the game, say spooky things that hint at
+their cruel and distorting training.  These were once human, but it is clear
+that they are no longer, from the pale hue of their skin to the faint echo in
+their voice.  The particular line that got me thinking was:</p>
+
+<blockquote>
+Cold.  Cold and dark.  It goes on forever.
+</blockquote>
+
+<p>This simple statement is beautiful.  It's incredibly vague.  It's a topic
+for hours of conversation.  Better yet, I doubt the game designers themselves
+knew what they were talking about when they put it in; it just sounded creepy.
+(I haven't checked with Ion Storm yet; I'll let you know if I found out.)  Our
+initial discussion, of course, was about what the MiBs could mean by this
+statement, based on scraps and clues we'd found throughout the game about the
+history of the MiBs.  </p>
+
+<p>Then I started thinking about it in a more general sense: what would be a
+cold darkness that really went on <em>forever</em> be like? Where would it be?
+What would it be doing there? Would the sheer weight of its infinity cause it
+to be sentient?</p>
+
+<p>And I realized that these questions were probably better for a game than any
+of the answers that I could come up with to solve them.
+</p>
+
+<h3>Why Zero Story is Better: Who Are We Trying to Kid, Here?</h3>
+
+<p>The tradition of <q>design the world first, then write the history, then
+write the story</q> is in the venerable tradition Tolkien and the numerous
+Tolkien-imitators that followed.  For many it has worked excellently.  For most
+computer games, it has, in my humble but correct opinion, been a dismal
+failure.  I suppose you could disagree with this, but like, if you thought the
+plot to <q>Anarchy Online</q> or <q>EverQuest</q> or <q>Dark Cloud</q> or
+<q>Ultima Online</q> or <q>Shadow Hearts</q> was a gripping and dramatic tale
+with keen insights into the human condition, I've got a bridge in Brooklyn for
+you at very reasonable rates.  </p>
+
+<p>Online games suffer especially badly.  For some unknown reason, possibly
+conceit, the designers believe that the players will care about the plot.  Some
+designers eventually come to realize that nobody cares.  Strangely, most who do
+take away from that the notion that players don't care about <em>any kind of
+narrative whatsoever</em>, because they don't want to walk around a bunch of
+fixed points on the terrain, collecting plot coupons at half-hour intervals in
+order to read some half-assed backstory that was written by four different
+interns who were only allowed to communicate with tin cans and a string. </p>
+
+<p>Obviously I am somewhat overstating the case here, but the problems are
+real.  There are three issues at the heart of this:
+
+<ul>
+  <li>Most designers are not J.R.R. Tolkien, since they design games and don't
+  write stories, and</li>
+  
+  <li>even if they were, Tolkien spent the better part of FOUR YEARS writing
+  <em>just</em> the backstory to his NOVELS which he only had to interest a
+  reader in for at most THREE DAYS (not the better part of their adult lives),
+  but even if those were the constraints designers had to work with, </li>
+
+  <li>they are working with large teams of people, all of whom want to have
+  creative input.</li>
+</ul>
+
+</p>
+
+<p>Who are we kidding here, really?  Working under the same sort of rules that
+Tolkein did doesn't make any sense.  Our medium is vastly different.</p>
+
+<h3>The Rules for Zero Story</h3>
+
+<p>There are a few rules I'd like to outline for the beginning of this
+experiment in cutting-edge design techniques:
+
+<ul>
+  <li>Keep a list of all the phenomena that can occur in the world,
+  so that we have some sense of what we can't contradict in the fiction.</li>
+  
+  <li>Keep a list of readable plot material that all authors have
+  put into the world, and the context in which it is available so we can work
+  out the plausibility of its being false.</li>
+
+  <li>Keep a close eye on what the players are saying about the
+  world, and talking about any cool ideas.</li>
+
+  <li>Have a hierarchical autocracy with regard to mechanics, whereby a
+  particular creative decision may be made by someone responsible for an
+  area, but overridden by the one managing the mechanics above that. (This I am
+  the least sure about; we will need to experiment.) </li>
+
+  <li>Add content over time, both to the story and the mechanics.
+  Introductions to the mechanics should be done as artifacts, and only very
+  rarely new intrinsic characteristics of the players.</li>
+
+</ul>
+
+Now that I've outlined that, this document will serve as the initial
+repositories.  This will have to be broken out eventually, but here's the brain
+dump of what I've got so far.</p>
+
+<h3>Mood and Metaphysics</h3>
+
+<p class="narrator">You start the game in the dark.</p>
+
+<p class="narrator">It's dark, it's cold, you hear noises.</p>
+
+<p class="narrator">Eventually the noises subside and you can see a point of
+light coming towards you.  It's a table illuminated by a spotlight, and on the
+table there are various implements.</p>
+
+<p>This will be repeated several times - it is the game tutorial.  The
+implements on the table will be a knife and a worm, for example, or a lock and
+a key.  The table will slide away as soon as you've finished doing whatever's
+supposed to be done with them.  This should be a complete enough set of
+interactions to get you through your first ten or twenty hours of gameplay.</p>
+
+<p>Interesting note here: no <q>guess-the-verb</q> style puzzles.  Most, if not
+all, of the verbs required for routine play are found in this initial,
+half-hour-or-less tutorial.  For those which aren't there, there should be help
+functionality, which describes all the possible actions that an object can
+play.</p>
+
+<p>Puzzle solving should be at more of a macro level, since it's all about
+conserving time to gain things.  Players will need to be doing similar tasks in
+ways that seem novel to them, but using mechanics they understand.</p>
+
+<p class="narrator">As the final table slides from view, you find yourself in
+the darkness again, alone.</p>
+<p class="player">go north</p>
+<p class="narrator">You stumble around in the dark for a moment.</p>
+<p class="player">look</p>
+
+<p class="narrator"><strong>[ Complete Darkness ]</strong> You are standing in
+the middle of a completely dark plain, which, as far as you can tell, is
+perfectly flat.  Wait - not complete darkness.  Off in the far distance to the
+north, you can see a faint haze of light spilling out of a doorway. </p>
+<p class="player">go north</p>
+<p class="narrator">
+You walk until you reach the light.  You seem to get there quite a bit faster
+than you were walking...<br/>
+
+<strong>[ Entrance to the Library ]</strong> You are at the foot of a white
+stone staircase, at the top of which is an enormous, open pair of double doors.
+This place gives you a strong impression of being a boundary.  To the south,
+there is nothing but an infinite abyss of blackness, from which you feel a
+faint chill.  To the north, up a white stone staircase and through the doors,
+there is light, a little warmth. </p>
+
+<p class="player">go north</p>
+
+<p class="narrator"><strong>[ Just Inside the Library ]</strong> You are at one
+entrance to a grand library.  A bright light suffuses the room, though there is
+no glare, as the whole ceiling is glowing evenly, brightly, and softly.  To
+your south, there are a pair of double doors that open onto pure blackness.  To
+your north, you can look out over rows and rows of shelves, all stocked with
+various books.  Far to the north, you can see a wall punctuated at intervals
+with various doors; some of them look like elevators.
+</p>
+
+<p class="narrator">You notice can see yourself clearly for the first time.
+</p>
+
+<p>A few notes about this environment.  One; the hallway is infinite, and it
+loops -- walking east or west from here will loop after you do it some number
+of times.  As new players join the game, new 'door' rooms will be added,
+increasing the effective length of this hallway.</p>
+
+<p>The doors in the back lead to various places in the library.  You can go
+everywhere from here -- literally.  There are warp gates that you can activate,
+linking books that you can read, and odd passageways in the library itself that
+end up in curious places.</p>
+
+<p>There are really far too many of these to cover here.  I'll talk about a few
+more in the "environments" section.</p>
+
+<p class="player">look at me</p>
+
+<p class="narrator">You are completely featureless!  You are wearing a white
+long-sleeved shirt, loose-fitting white slacks, and white shoes.  Your skin is
+completely white.  The one distinguishing feature is a mark on the palm of your
+left hand. </p>
+
+<p>All players start as identical clones of a completely featureless albino.
+Though you can't see it without a mirror; you have completely white eyes (no
+pupils) no hair.  The character customization system is built around artifacts
+found in-game.  (When you grow hair initially it will, unsurprisingly, be
+white.)</p>
+
+<p>This is really the central mystery of the game.  All the players emerge from
+the dark, hairless, genderless automata with very unusual tolerances to the
+elements.  When they die, they return to the darkness (mechanics of death
+later).  </p>
+
+<p class="player">look mark</p>
+
+<p class="narrator">The mark appears to be a bar-code of some kind, with three
+numbers below it: 000 000 999 </p>
+
+<p>These three numbers are the core statistics that make up the game.  Most
+other numbers that affect your character won't be visible, at least initially.
+These three numbers are, respectively, CHARGE, SCORE, and HEALTH, which we will
+abbreviate, for historical reasons, to ZAP, WIN, and HP.  (Just kidding.)  They
+will be discussed below in the section on mechanics.</p>
+
+<p>The next stage of the player's introduction will come from a genderless,
+emotionless voice giving them instructions, instructing them to one of the
+doors set into the back wall.  They have to enter an apartment key-code which
+allows them access to their living quarters.  There is a strong implication
+that these living quarters are not physically connected to the library by any
+meaningful tether, and the elevators are not just going up and down.  One of
+the indications is that although the elevator takes about 15 seconds for a
+player to get from one room to another, it only takes about 1 second for the
+next elevator to be available from outside.</p>
+
+<p>Players curious enough to explore before going upstairs will note that the
+books on the shelves are actually full-text copies of Gutenberg Project books,
+complete with turning pages.  If they do this now (rather than after visiting
+their apartment), they will be treated to a brief explanation of how to borrow
+books from the library.  You can borrow any book, and do anything you like with
+it, for 7 days, provided you don't damage it.  If you do damage it, or you fail
+to return it... well, someone will get upset, and make sure to take the book
+from you, as well as whatever you're carrying at the time.  This is an effect
+more or less like Paradox from Mage: The Ascension.  Lots of different kinds of
+horrible things can happen to you, but it always happens, and they always get
+the book back.  (The more bad-ass you are at the time, the worse whatever it is
+that's sent after you is.)</p>
+
+<h4>Core Mechanics</h4>
+
+<h5>Acquiring Charge</h5>
+
+<p>You can acquire charge through various mechanisms.</p>
+
+<p>There are various low-output sparkly faucets that you can use in the
+library, which will drop a certain amount of charge in a day; if you can find
+one, you can get its charge for the day.  Think TRON, but really small
+pools.</p>
+
+<p>There are one-use items throughout the world that give you far greater
+amounts of charge than those faucets (2x-4x as much, on average).  A sample of
+one of these would be a <q>charge card</q>; a white plastic card about the size
+of a pack of cigarettes, but about 1/8 the depth.  When the player cracks it in
+half, it sparks brightly, smokes and vanishes, and their charge goes up.</p>
+
+<p>As the game progresses you will find more and more ways that you can get
+electricity.  You will find generators, but none of them have a steady supply
+of fuel; if you find a diesel engine, for example, it can power you up
+significantly, but you have to find fuel and transport it there and not have it
+evaporate or explode and kill you.  All interesting potential challenges for a
+player.</p>
+
+<p>Batteries can hold charge -- you can spend it to charge up a battery.  There
+is a slight loss in charge each time you do this, between 0.5 and 0.95,
+depending on the quality of the battery.  Retrieving the charge from the
+batteries is not lossy.</p>
+
+<p>When you acquire charge, your score goes up by double the charge you have
+acquired.</p>
+
+<p>There will only ever be 3 numbers on your hand.  They start out in base 10.  As you acquire more and more charge, the numbers will shift base, and a smaller number will appear describing what base they're in.   </p>
+
+<h5>Spending Charge</h5>
+
+<p>Pretty much anything worth doing will either require spending charge, or an
+object that you had to spend charge to get.  (This can be indirected a ridiculous
+number of times, to the point where it's very hard to tell that charge is even
+important, but it is the root of the resource tree.)  Spending charge is not
+really a willful act on the part of the player.  They can 'activate' a device,
+or 'touch' a contact, and they will spend an appropriate amount of electricity.
+Various spell-like effects later in the game will allow spending it more
+directly; 'cast frotz' will have the player mumble something, produce a brief
+smell of ozone, and their charge will go down.</p>
+
+<p>Each time a player spends charge, either to put it into storage, convert its
+format, or to activate a device directly, they lose the same number of score
+points as the charge they've spent.</p>
+
+<p>Some things cost a certain fixed amount of charge to do, others cost a
+variable random amount constrained within a range.  With mechanical devices,
+you always run the risk of having them <q>short out</q> and cost you far more
+charge than they're worth, or damage you.</p>
+
+<h5>Character Customization</h5>
+
+<p>One of the things that you can get by spending charge is character
+customizations.  This is not nearly completely thought out yet, but the basic
+plan so far is that there will be a listing of color and style categories
+ordered by cost.  Each tier costs about an order of magnitude more than the
+last; there are enough of these that the top tier is ridiculously expensive.
+Colors can be applied to: skin, eyes (the 'whites' of the eyes are actually
+colored; the players have no pupils or irises), hair, shirt, pants, and shoes.
+The garments a player is wearing are part of them, to some extent; for the time
+being (until we start discussing implications of the <q>adult</q> version of
+this) we'll assume that they can never remove them.  Artifacts found throughout
+the world can change the styling of the clothes, the length of their hair, and
+these colors.  All these artifacts require charge.  Most are fairly easy to
+find.</p>
+
+<p>Dying has an adverse effect on all these elements.  Every character
+customization is decreased in intensity by one point, and each customization
+has ten points of intensity.  For example, if you got yourself very long black
+hair, and then got yourself killed, you'd find yourself with long very dark
+gray hair.</p>
+
+<p>I also plan to allow players to add to their <q>living</q> space; these
+additions will not be affected by death or defeat.  They will also be
+considerably more expensive.  One of the cheaper additions to living space will
+be extensions; additional storage blocs where you can keep stuff.</p>
+
+<h5>Losing Charge (also known as <q>Death</q>)</h5>
+
+<p>This isn't fully thought through yet, but players will take damage as normal
+for other games.  One caveat; think mega-damage, not regular damage scales.  A
+MAC truck smashing into them at 80 or 90 miles per hour is about the smallest
+amount of damage that's really going to get their attention.  They are
+especially impervious to temperatures; a Divunal character could go swimming in
+liquid nitrogen and it would only feel a little chilly.  Given that they're so
+tough, health is a fairly difficult thing to get back; healing artifacts won't
+be found until the player has a score of a couple thousand.</p>
+
+<p>Dying is when health reaches -100.  When a player reaches 0 health,
+they start to appear more and more translucent, and start slowly losing health
+over time (1 pt / 30 seconds -- goal of this number is to make it so the player
+can run away and/or hide their stuff before knocking off, but not making people
+wait too long before they die).  As they get close to 0 (-25 or so) the
+translucency fades, and they become chalky and blue in splotches.  At 0, they
+become pure cobalt blue and shatter, and continue shattering, until only a
+very, very fine blue dust is left behind, so fine it looks like smoke.  This
+dust settles and sublimates in a few seconds.  Okay, we can say
+<q>evaporates</q> if players don't know what sublimation is ^_^. </p>
+
+<p>When a player <q>dies</q>, he is returned to the outer darkness from which
+he came.  The above changes described to their customizations happen, but they
+should rarely (if ever!) lose a significant amount of stuff.  In this game, you
+are your stuff.  Also, corpse retrieval is a <em>terrible</em> idea.</p>
+
+<p>One of the most common items -- perhaps even available automatically in your
+apartment -- will be a backpack that will automatically teleport to your
+apartment when you disappear.  Players will have a limited inventory and so
+will keep most things in this container.  Whatever they've left outside of it
+will have to be retrieved, but given the somewhat lax limits on stash, this
+should not be a major problem.  (These items also won't disappear unless
+another player picks them up.  There may be some way to tag an item for
+ownership.)</p>
+
+<p>There is a penalty, however.  Any charge that the player has acquired at the
+time is lost, and double the amount of score is lost for that charge.</p>
+
+<p>The Darkness itself has a score, and any time somebody engages in PvP combat
+and <q>dies</q>, the Darkness's score goes up by an amount equal to that of the
+player's lost charge.  As-yet-indeterminate Bad Things will happen if the
+Darkness's score goes up to certain levels.</p>
+
+<h5>Translocation</h5>
+
+<p>Most of the actual gameplay is not within the walls of the library itself.
+The library provides access to lots of different worlds, through different
+mechanisms.  The three I'm currently planning on are:
+
+<ol>
+  <li>Warp Gates</li>
+  <li>Linking Books</li>
+  <li>Obscure Passages</li>
+</ol>
+
+Warp gates require charge to activate, and are by far the most common way out.
+Linking books are going to be the way that player-generated worlds get linked
+into the game; they don't require charge to activate, but then, usually you
+won't be able to affect your charge or score in one of those worlds (and
+sometimes your avatar there may be significantly different than the one in
+Divunal). </p>
+
+<p>Obscure passages will be difficult to find, but they will not cost anything
+to travel through.  These are like the ways you would get to things in the
+original Divunal; you'll be walking down a hallway, it will begin slanting
+downwards, and you'll find yourself knee deep in water, books floating around
+you.  Or, you'll be in an art gallery, and every few hours, when the sun is
+shining through a window at a particular angle, one of the paintings isn't a
+painting, it's an open window.</p>
+
+<p>Also, obscure passages will typically lead to very difficult, high-level
+areas.  These areas will have a high risk/reward ratio.</p>
+
+<p>(TODO: better description of what a warp gate looks and behaves like)</p>
+
+<h3>Gameplay Design Guide</h3>
+
+<p>Divunal is a game about archaeology.  The satisfied Divunal player will
+basically be gorging themselves on the sort of schizophrenic kleptomania that
+all adventure games have, taken to its logical conclusion.  The world belongs
+to you and you are trying to pick it all up.</p>
+
+<p>This means; if it isn't nailed down, you pick it up.  If it <em>is</em>
+nailed down, you pick it up.  If it's buried, you dig it up.  If it's buried
+under six feet of reinforced concrete and guarded by a legion of crack
+marines... well, you become an expert in explosives and tactical combat, then
+you pick it up.  When you've gotten whatever it is, you put it in your bag and
+take it back to your apartment, where you squirrel it away until you figure out
+what it's good for.</p>
+
+<p>Most of the constructed gameplay (quests) in Divunal will revolve around
+finding particular items and combining them with each other.  The player will
+have to engage in some combination of adventuring, archaeology, sociology,
+burglary and robbery in order to accomplish this.  The game should be balanced
+in favor of <q>good</q> players who get stuff either from the environment or
+from willing, voluntary other players or NPCs.  While brief spates of rapid
+advancement may be possible with violence, that should often come back to haunt
+you.</p>
+
+<p>Self-defense, however, is a necessary part of tomb robbing.  Being light and
+nimble -- collecting all the treasure before the nasties figure out where you
+are and come after you -- will be an advantage, but eventually you're going to
+need parties of 3 or more Divunal players to go to an area and have 2 or more
+fend off the bad guys while one extracts the treasure. </p>
+
+<h3>Features of the World</h3>
+
+<h4>Emotional Factors</h4>
+
+<p>Since characters don't experience death directly, there needs to be
+something in the world to motivate them to care about victory and defeat.  This
+is perhaps the most obvious answer, but it's rarely implemented; the whole
+world is a hostage situation.  Players won't experience death directly (who
+ever does?), but they will experience death by proxy; the things they care
+about can be destroyed.</p>
+
+<p>In most games, sympathetic characters are disposable.  They are <q>pets</q>,
+which has come to mean (in game industry parlance) nethack-style pets.  These
+characters, while sympathetic, are better to sacrifice than to protect, since
+you can always get another pet, but you can't always get another <em>you</em>.
+The sympathetic characters in Divunal, most often, won't join you in combat,
+since they are mortal and you aren't.</p>
+
+<p>In collecting your various bits of detritus around the world, you'll often
+have to gain the trust of a group of semi-intelligent NPCs.  No characters in
+Divunal should be expected to speak English intelligently, with the exception
+of shopkeepers in some of the more advanced worlds (and they will have a fairly
+limited vocabulary and probably won't be so sympathetic).  These could range
+from small, tribble-like <q>fuzzies</q> to honor-bound, warlike orcs.</p>
+
+<p>While some quests will require a single item to be retrieved from a group of
+potentially friendly creatures, a player can also acquire a <q>herd</q>, e.g. a
+group of friendly creatures that create disposable charge-producing or
+converting items for them.  Damage to that herd (whether from other players or
+environmental factors) will reduce their income.  The friendlies that a
+particular player becomes the protector of will likely be based on their
+personality, and conflicts between groups of potential friendlies may cause
+opposed players to come into conflict.</p>
+
+<p>Some friendlies will be amorphous faces in the crowd; some will be unique
+characters that interact with the player and learn from them.  The former will
+be a lot more common from the latter, and over time the latter should really
+start to stand out. </p>
+
+<p>The image that I want you to get in reading this is a player sitting on a
+rock, playing with a group of cheerful, cute-looking fuzzy creatures, sort of
+like Teddy-bears, making warbling and squeaking noises.  Another character,
+more sinister looking, appears from thin air with a *bamf*, and starts talking
+trash to the first player.  The fuzzies huddle behind the first player, and
+some start running away.  To make a point, the second player zaps the first;
+the first doesn't like that, but tries to talk him down.  The second player's
+clearly a griefer and doesn't want to hear about calming down; so he ups the
+ante by zapping one of the uniquely colored fuzzies.  That pisses the first
+player off.  He shoos the fuzzies away from behind him, exhorting them to run
+away, and then turns to square off with the second player.</p>
+
+<p>Optionally, the first player calls their defense network on a
+cell-phone-like device, bringing the hurt down on player 2 even worse.  The
+defender should have a sizeable advantage in situations like this; an
+unsuccessful raid is no reason for someone to stop playing, but getting your
+carefully-cultivated village of friendlies wiped out might be.  The attackers
+should want to be discreet, quiet, and cause as little damage as possible;
+griefers will end up doing things that are visibly unpleasant to the world, and
+it should come around to hurt them as much as it hurt their victims.  </p>
+
+<h3>Creator Character Archetypes</h3>
+
+<p>The archetype characters in Divunal Mk.1 were interesting, but too limited.
+In this iteration, I'd like the archetypes to be separate from their specific
+instances; we should be able to have multiple author characters playing into a
+particular archetype.  While archetypes and their instances can figure into the
+storyline (and even metaphysics) prominently, there should always be some
+indication that they are slightly less cool, less currently relevant, or at
+least less powerful, than player characters.  </p>
+
+<p>The two archetypes that I'd really like to take from Divunal 1 are the
+Chronicler and the Artificer.</p>
+
+<h4>The Artificer</h4>
+
+<p>This is definitely the archetype that I want to devote the most initial
+treatment to; perhaps even the prime archetype.  It was represented in Divunal
+1 by the character of Tenth.  Given the mechanically oriented nature of the
+players' avatars, the artificer archetype figures prominently somehow into the
+"beginning of the end", the creation of the library and perhaps even the void.
+</p>
+
+<p>The existing Tenth character, along with his brass menagerie and improbable
+household, is a good example of what the first instance of this archetype
+should be like.  I will refrain from commenting too much on what he should be
+like until Dave Sturgis gets a pass at either editing this document or writing
+up his own character description/motivation.</p>
+
+<p>The Artificer builds things.  He creates art.  He builds them to any end;
+mostly because they must be built.  He is the technologist and engineer.
+Development, not research.</p>
+
+<p>Again, Tenth is a good example here, because the Artificer has two sides,
+much as technology does.  He builds interesting things, he builds toys, but he
+also builds weapons.  He is liberating mankind with his works, but also a slave
+to his creations.</p>
+
+<h4>The Chronicler</h4>
+
+<p>This was a part of Maxwell's poorly-defined and sprawling archetype ;-).
+Maxwell had a lot of things going on though, not the least of which was a god
+complex on my part, so I don't know if he'd make a good initial pass at this
+archetype.  Definitely I'd like to see him brought in at some point, refined a
+little, but Roland (IIRC Benjamin <q>Bento</q> Moore's initial Divunal
+character, the archivist) might be a better frame of reference. </p>
+
+<p>The Chronicler records things and learns things.  He is a teacher and a
+historian, not an actor.  He tries to apply the mistakes of the past to lessons
+of the present, and the lessons of the present to the future.  His mantra is
+<q>those who do not understand the past are doomed to repeat it</q>.  If you
+don't know enough about this kind of person, look at Usenet political
+discussions for mentions of Hitler and Bosnia.  It will become readily
+apparent.  </p>
+
+<p>This archetype explains the character's purpose in the game, although not
+their origins.  They are to search out artifacts and try to understand their
+past.</p>
+
+<h4>Others</h4>
+
+<p>There are a couple of other ideas for archetypes knocking around in my head,
+but I'm not sufficiently certain of them yet.  The Mediator would be a useful
+one to have around, which would be the distillation of OPN's definition of a
+catalyst.  The Explorer/Adventurer (Jedin) would be a good foil to the
+Chronicler; it's what the players are actually doing, not what's being done for
+them.  There are others, such as the Honest Merchant and the Good Samaritan
+that I'm not sure how to express as succinctly.  </p>
+
+<p>Frameworks that describe the archetypes should therefore be open-ended.
+There should be no temples with X pillars lining the edge, for example, that
+are supposed to describe them all.  There may be civilizations that worship
+only 3 or 4 of them, in some configuration, but never more than that. </p>
+
+<p>The implication that there were <em>original</em> versions of these
+archetypes, and that they are representations of actual people who existed at
+some point, might be raised repeatedly but should never, ever be confirmed.
+</p>
+
+<h3>Worlds</h3>
+
+<h4>Common Themes</h4>
+
+<p>Entropy is winning right now, but not fatally.  The players have ways to
+reverse that trend locally, perhaps even start a more fundamental reversal.  In
+every world, something really big has been ruined in some way, and it's up to
+the players to fix it, or to start anew.</p>
+
+<h4>Stone: A Beginner's World</h4>
+
+<p>Stone is a world which the player can gate to very close to entering the
+game.  The initial impression upon entering it is that it is an idyllic,
+pastoral place, a green world with lots of grass and trees.  In times that are
+<em>far</em> lost to the mist of unwritten history, there were castles here,
+that looked like they were built for slightly larger-than-average humanoids.
+Most of these are rubble now.  In fact, they're sufficiently demolished that
+they may be mistaken for natural rock formations initially.</p>
+
+<p>There are still underground areas that show that a very high tech level
+civilization was here at one point.  These are modeled after the castle
+greysen's West Wing, the Cloud Balcony et. al. from the original Divunal.  The
+entrances to many of them are on beaches.  (If you have no idea what I'm
+talking about here, fine... this is an area that I want to write myself anyway
+^_^)</p>
+
+<p>There is basically no combat here, except far <q>underground</q>, where there
+are dreamlike dark cloud creatures which may attack you sporadically.  They are
+not openly malicious but they can do damage.</p>
+
+<p>This is the world where the fuzzies live.  They look like colored
+Teddy-bears; unique ones will be more brightly colored and sometimes
+irridescent.  They are very shy, but not at all violent.  The fuzzies are
+pretty safe from natural predators.  Strangely, they seem to have a similar
+biochemistry to the players; when you zap them, they enjoy it.  They can build
+crude strange, crude-looking devices which can serve as batteries; high-level
+unique fuzzies (as described above) can cause groups of them to build simple
+charge converters and rare character customization devices as well.</p>
+
+<h4>Dust: A High-Level World</h4>
+
+<p>Dust is a much higher-level world, with a deeper and darker motif.  It is
+very dangerous and quite violent.</p>
+
+<p>You emerge inside an office building.  The corridor you're in is unmarked
+and deathly silent.  Everything is coated with a few millimeters of fine,
+yellow dust.  Through the windows and onto the street, you can see that this
+dust is outside as well.</p>
+
+<p>After a few minutes of walking, you'll come across a corridor which is
+marred with charred black plastic, all centered around a particular area.  Very
+soon after seeing that, a machine gun will drop out of the ceiling and point
+straight at you. Clunk!  Clunk clunk... clank.  The machine gun is out of
+ammunition and is harmless.  It is rusted straight through.  Obviously this
+building has been in disrepair for quite some time.</p>
+
+<p>Eventually you will come across a work area, with chairs at desks.  On each
+of the chairs, the thin coating of dust will be piled as high as 10 or 20cm.
+The occasional deep pile of dust will litter the floor.  </p>
+
+<p>Out in the street, self-repairing self-evolving combat machines have had
+quite a bit of time to adjust to this new reality and will destroy anything
+that comes into the street with brutal efficiency.  You had better be prepared
+to do battle with some of your more primitive mechanical cousins if you're
+going to make it out of the city alive.</p>
+
+<p>There are very few artifacts within the city; mostly, small capsules of a
+liquid spray which will near-instantly corrode any organic materials you're
+holding.  (The dust it leaves behind -- a faint yellow color -- is completely
+inert.)</p>
+
+<p>Once you get to the edge of the city, you'll find it's surrounded by a wall
+which is several hundred meters high.  You can climb it, or rocket over it if
+you have a jet-pack of some kind.  Once you've gotten over it, though, there is
+a civilization on the outside of the wall which is definitely not happy to see
+you coming over it.  Things do occasionally make it over the wall, but they're
+always met with the best-armed army that the medium tech-level civilization
+living outside can muster.  You especially they don't like.</p>
+
+<p>It's pretty much impossible to make friends with anybody there, if they see
+you coming over the wall.  There are other ways to get there, though, although
+they will involve puzzle-solving.</p>
+
+<p>The friendlies in this world are the humans on the outside of the wall.
+They're tough to befriend, but they can make you some really kick-ass stuff if
+you manage it.  They're also under attack periodically from their environment;
+animals from the surrounding forests or machines who make it over the wall.
+They are pretty well armed though, so raids on a <q>herd</q> here will almost
+certainly fail unless the attacker is very well prepared indeed.</p>
+
+<hr />
+
+# Later... 
+Divunal is more like an epic poem than the typical prose of other online games.
+
+
+<hr/>
+<address><a href="mailto:glyph@twistedmatrix.com">Glyph Lefkowitz</a></address>
+<!-- hhmts start --> Last modified: Sun Jul  7 20:57:00 CDT 2002 <!-- hhmts end -->
+</body> </html>

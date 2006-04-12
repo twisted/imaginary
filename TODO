@@ -10,12 +10,8 @@ Near term
 
 Long term
 
-    Non-monolithic, non-forking persistence system
-
     Working rebuild command, either using become-based rebuild() or service
     migration
-
-    Command plugin system (maybe, eh, I dunno)
 
     Detailed state and state transition documentation for all objects
     (ongoing)

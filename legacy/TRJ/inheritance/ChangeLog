@@ -1,0 +1,46 @@
+1999-12-28  Glyph Lefkowitz  <glyph@twistedmatrix.com>
+
+	* GunPut.java: Now you can load the gun while sitting down!  How
+	novel!
+
+1999-12-28  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* Translate.java: Added a tranlate verb for Lord Rutherford's
+	Practical Guide To Egyptology. Should be interesting.
+
+1999-12-07  Glyph Lefkowitz  <glyph@twistedmatrix.com>
+
+	* inheritance/GameOver.java: ***** You have died. *****
+
+	* inheritance/mummy/MummyDistracted.java:
+	* inheritance/mummy/MummyTake.java:
+	* inheritance/mummy/RotHandler.java:
+	* inheritance/mummy/SarcophagusOpenEvent.java:
+	A first pass at implementing a mummy.
+
+1999-12-06  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* inheritance/gun/RackSlide.java: Now handles many situations
+	correctly that it could not before, not appearing to eject phantom
+	bullets (and not getting null pointer exceptions). And fixed the
+	descriptive text that I unfixed in a brief scuffle with CVS.
+
+	* inheritance/gun/BulletGet.java: Now has more better grammer in
+	that there descriptive text. (okay, well, more commas.)
+
+	* inheritance/gun/ClipLook.java: It seems strange to me that all
+	of the gun verbs are so totally broken. You can't even look at the
+	clip... Wasn't this all working the last time we were working in
+	Inheritance?
+
+	* inheritance/gun/BulletGet.java: Either I'm confused or this verb
+	is. I think I fixed it. Again.
+
+	* inheritance/gun/BulletPut.java: Fixed a typo... Bullets and
+	Clips now have different identifying properties, thank goodness.
+
+	* inheritance/gun/RackSlide.java: Added a sanity check in
+	RackSlide... The gun still needs to start it's career with the
+	slide locked, though, or it will get null pointers, and be
+	physically impossible as well.
+

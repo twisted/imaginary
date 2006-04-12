@@ -1,0 +1,104 @@
+1999-12-22  Glyph Lefkowitz  <glyph@twistedmatrix.com>
+
+	* SpellRead.java: addAbility now shouldn't throw exceptions so much!
+
+1999-12-22  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* divunal/common/Stand.java: Added first version of the separate "get off of
+	furniture" verb, to prevent verb collisions.
+
+	* divunal/common/SitAt.java: No longer has potentially conflictory stand/go
+	synonyms, and relies on a separate Stand/Go verb.
+
+	* divunal/common/Sit.java: No longer has potentially conflictory stand/go
+	synonyms, and relies on a separate Stand/Go verb.
+
+	* divunal/common/Lie.java: No longer has potentially conflictory stand/go
+	synonyms, and relies on a separate Stand/Go verb.
+
+1999-12-21  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* divunal/common/OpenCloseContainer.java: Now doesn't mess with
+	broadcast! A good thing. We should put this (or maybe a more
+	wieldily named version of it) into twisted.reality.plugin
+	sometime. And what the hell... Now it will also check for "open
+	description" and "closed description" elements.
+
+1999-12-13  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* divunal/tenth/WatchDraw.java: Now automatically renames numbered
+	objects, and lets you know what number you're on... We might want
+	to consider making draw do this by default, or maybe have a
+	synonym that does... Stuff to think about.
+	
+1999-12-12  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* divunal/tenth/SpectacleSet.java: Now turn into X-Ray Spectacles(tm) if you set
+	them to be blue, a la "Tomorrow Is Not Enough". Thanks, Rikyu. ;-)
+
+1999-12-11  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* divunal/common/author/ShadowStep.java: Added first
+	version... Allows you to quickly move to the location of your
+	current location, if available, or into Rooms that are in your
+	current Location.
+
+	* divunal/rikyu/XRayVision.java: Now uses the new, correctly
+	intercapped topPlace() that we just made.
+
+	* divunal/rikyu/WhoWhere.java: Now uses the new, correctly
+	intercapped topPlace() that we just made.
+
+	* divunal/rikyu/UseGondola.java: Now uses the new, correctly
+	intercapped topPlace() that we just made.
+
+	* divunal/rikyu/TeaHouseOpen.java: Now uses the new, correctly
+	intercapped topPlace() that we just made.
+
+	* divunal/rikyu/TapestryMove.java: Now uses the new, correctly
+	intercapped topPlace() that we just made.
+
+	* divunal/rikyu/SummonGondola.java: Now uses the new, correctly
+	intercapped topPlace() that we just made.
+
+	* divunal/rikyu/SmokePipe.java: Now uses the new, correctly
+	intercapped topPlace() that we just made.
+
+	* divunal/rikyu/FireplacePassage.java: Now uses the new, correctly
+	intercapped topPlace() that we just made.
+
+	* divunal/rikyu/Drift.java: Now uses the new, correctly
+	intercapped topPlace() that we just made.
+
+1999-12-10  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* divunal/common/author/SpeechNotify.java: Now looks nicer, and
+	turns off automagically when you start talking again (and allows
+	you to see the first thing you said. ;-)
+
+	* divunal/common/author/Listen.java: Added a verb to turn
+	SpeechNotify on and off.
+
+	* divunal/common/author/SpeechNotify.java: Added first version of
+	an event handler that will inform gods that they are being
+	addressed with a response request window (a la AOLIM). Eventually,
+	this might make them able to respond back, and I'll also make a
+	verb allowing you to turn it on and off more easily.
+
+1999-12-07  Glyph Lefkowitz  <glyph@twistedmatrix.com>
+
+	* divunal/rikyu/WanderHandler.java: Fixed this to use vectors rather than
+	stacks, since *which* Stack class was being used differed from VM
+	version to version and was ambiguous...
+
+1999-12-05  Mr. Tenth  <tenth@twistedmatrix.com>
+
+	* divunal/common/author/Visit.java: Started remembering to use
+	the Changelog... Changed the order of "Concentration" and
+	"Streaks" descriptive text, so it wouldn't look weird if you
+	teleported to another point in the same room.
+
+1999-11-07  Glyph Lefkowitz  <glyph@twistedmatrix.com>
+
+	* Added ChangeLog so future changes can be logged.
+

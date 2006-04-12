@@ -1,0 +1,85 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+<style type="text/css">
+a {
+    cursor: pointer;
+}
+form {
+    padding: 0;
+}
+#output {
+    padding: 0.5em;
+    background-color: #99ffbb;
+}
+#input {
+    padding: 0.5em;
+}
+#movement {
+    padding: 0.5em;
+    background-color: #bbbbff;
+}
+#room-contents {
+    padding: 0.5em;
+    height: 100%;
+    background-color: cccccc;
+}
+#woven_firstResponder {
+    width: 100%;
+}
+.item {
+    border-left: 1px dashed green;
+    padding-left: 0.5em;
+    margin: 0.25em;
+    cursor: pointer;
+}
+</style>
+</head>
+<body>
+    <table id="outer" width="100%" height="100%" border="0">
+        <tr valign="bottom">
+            <td id="output" width="75%" valign="top" model="latestOutput">
+                <div pattern="listItem" view="html">
+                
+                </div>
+            </td>
+    
+            <td id="room-contents" valign="bottom">
+                <strong>Stuff you have</strong>
+                <div model="playerInventory" view="List">
+                    <div pattern="emptyList" class="item">Nothing</div>
+                    <div pattern="listItem" view="item" controller="look"></div>
+                </div>
+                <strong>Stuff that's here</strong>
+                <div model="roomContents" view="List">
+                    <div pattern="emptyList" class="item">Nothing here</div>
+                    <div pattern="listItem" view="item" controller="look"></div>
+                </div>
+                <strong>Exits</strong>
+                <div model="roomExits" view="List">
+                    <div pattern="emptyList" class="item">No exits</div>
+                    <div pattern="listItem" view="item" controller="exit"></div>
+                </div>
+                <span id="movement">
+                <table width="100%" model="roomExits" view="compassRose" border="1">
+                    <tr pattern="row">
+                        <td width="33%" align="center" pattern="element"/>
+                    </tr>
+                </table>
+                </span>
+            </td>
+        </tr>
+        <tr>
+            <td id="input" colspan="2">
+                <form controller="submitInput" view="Widget">
+                        <input id="woven_firstResponder" type="text" clearOnFocus="1" />
+                </form>
+            </td>
+        </tr>
+    </table>
+<script language="javascript">
+document.getElementById('woven_firstResponder').focus()
+</script>
+<div style="display: none" view="webConduitGlue" />
+</body>
+</html>

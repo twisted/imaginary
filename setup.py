@@ -1,16 +1,16 @@
 from epsilon.setuphelper import autosetup
 
-import pottery
+import imaginary
 
 distobj = autosetup(
     name="Imaginary",
-    version=pottery.version.short(),
+    version=imaginary.version.short(),
     maintainer="Divmod, Inc.",
     maintainer_email="support@divmod.org",
     url="http://divmod.org/trac/wiki/DivmodImaginary",
     license="MIT",
     platforms=["any"],
-    description=pottery.__doc__,
+    description=imaginary.__doc__,
     classifiers=[
         "Intended Audience :: Developers",
         "Intended Audience :: Education",

@@ -1,0 +1,19 @@
+Useful AstroNav Functions
+    Full stop
+        Orient counter to direction of velocity
+        Thrust to counter velocity
+
+    Match course
+        Determine tangent velocity
+        Orient counter to direction of tangent velocity
+        Thrust to counter tangent velocity
+        Orient in direction of target
+        Match velocity with target
+
+    Intercept
+        Determine
+
+Gameplay
+    Get needs a message.  Weight checking, item count checking.
+    Look needs work.  "in" for containers.  "on" for surfaces.
+        Collapsing for identical items ("(3) A radio is here.")

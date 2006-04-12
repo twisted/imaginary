@@ -1,5 +1,0 @@
-POTTERY %(potteryVersion)s
-TWISTED %(twistedVersion)s
-PYTHON %(pythonVersion)s
-
-Written by Jp Calderone (exarkun@twistedmatrix.com)

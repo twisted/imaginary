@@ -1,0 +1,47 @@
+Python2C alpha release 1.0a4
+
+Python2C is a Python to C translator that attempts to speed up Python
+code by removing a significant fraction of the CPython VM overhead.
+
+This is an alpha release. There are quite likely some remaining bugs,
+but Greg Stein's edna.py works flawlessly when compiled, so I figured
+I should release the source again. (See http://www.lyra.org/greg/edna/)
+
+Next on the list of things to do:
+* See if Grail and Python2C get along together.
+* Reorganize the guts of Python2C to make it easier to do more
+optimizations.
+
+Python2C can be downloaded off of its homepage:
+http://lima.mudlib.org/~rassilon/p2c
+
+Changes since 1.0a3:
+* Fix typo to really not allow the calling of globals()
+* Add a missing error check for subscripting an object.
+* Don't call Py_FatalError() if __modulename_run_main() returns NULL.
+* Fix a refernce counting problem in list construction. (n_list)
+* Fix handling empty slice's in transformer.py (e.g.: x[:])
+* Remove bogus int2object call in n_while.
+
+Changes since 1.0a2:
+* detect continue, break outside of loops.
+* Python2C now correctly handles logical binary operators.
+  e.g. before it would do this:
+	"blah" or "foo" -> 1
+	1 and 2 and 3 -> 1
+  now it actually does what Python does:
+	"blah" or "foo" -> "blah"
+ 	1 and 2 and 3 -> 3
+* Fixed all known bugs in keyword/variable argument handling.
+* Fixed exception handling to match how Python 1.5 handles them.
+* Fixed all known bugs in default argument handling.
+* Fixed all other known bugs.
+
+Changes since 1.0a1:
+
+* Fixed handling of packages. (import x.y.z)
+* Added support for non-global named imports (from x import a,b,c)
+* Fixed binary operator handling thinko.
+* Tweaked string outputting so it works.
+
+

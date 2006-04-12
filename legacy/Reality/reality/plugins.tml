@@ -1,0 +1,6 @@
+
+register("Reality Automated TAP builder",
+         "reality.tap",
+         description="automated Reality TAP building",
+         type="tap",
+         tapname="reality")
