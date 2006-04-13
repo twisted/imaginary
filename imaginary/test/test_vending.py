@@ -67,7 +67,7 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
                     "Test Player puts quarter4 in vendy."])
 
     def testProgrammaticQuichePurchase(self):
-        location = objects.Object(store=self.store, name=u"room")
+        location = objects.Thing(store=self.store, name=u"room")
         icloc = objects.Container(store=self.store, capacity=500)
         icloc.installOn(location)
 

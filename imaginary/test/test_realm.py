@@ -8,7 +8,7 @@ from imaginary.wiring import realm
 class RealmTestCase(unittest.TestCase):
     def setUp(self):
         self.store = store.Store()
-        self.origin = objects.Object(store=self.store, name=u"origin")
+        self.origin = objects.Thing(store=self.store, name=u"origin")
         objects.Container(store=self.store, capacity=1000).installOn(self.origin)
         self.realm = realm.ImaginaryRealm(store=self.store)
         self.realm.installOn(self.store)

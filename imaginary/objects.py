@@ -15,6 +15,22 @@ from axiom import item, attributes
 from imaginary import iimaginary, eimaginary, text as T, iterutils, events
 
 
+def installedOn():
+    def get(self):
+        return self.thing
+    def set(self, value):
+        self.thing = value
+    def delete(self):
+        del self.thing
+    doc = """
+    A proxy for the C{thing} attribute, intended to be used only by
+    L{item.InstallableMixin}, since it expects this attribute to have a
+    particular name, while we want another one.
+    """
+    return property(get, set, delete, doc)
+installedOn = installedOn()
+
+
 def merge(d1, *dn):
     """
     da = {a: [1, 2]}
@@ -119,8 +135,8 @@ class Exit(item.Item):
 
 
 
-class Object(item.Item):
-    implements(iimaginary.IObject)
+class Thing(item.Item):
+    implements(iimaginary.IThing)
 
     weight = attributes.integer(doc="""
     Units of weight of this object.
@@ -194,7 +210,7 @@ class Object(item.Item):
         @type name: C{str}
         @param name: The name of the stuff.
 
-        @return: An iterable of L{iimaginary.IObject} providers which are found.
+        @return: An iterable of L{iimaginary.IThing} providers which are found.
         """
         seen = {}
         visited = {self: True}
@@ -322,9 +338,9 @@ class Containment(object):
         return False
 
     def getContents(self):
-        if self.installedOn is None:
+        if self.thing is None:
             return []
-        return self.store.query(Object, Object.location == self.installedOn)
+        return self.store.query(Thing, Thing.location == self.thing)
 
     def add(self, obj):
         if self.closed:
@@ -332,13 +348,13 @@ class Containment(object):
         containedWeight = self.getContents().getColumn("weight").sum()
         if containedWeight + obj.weight > self.capacity:
             raise eimaginary.DoesntFit(self, obj)
-        assert self.installedOn is not None
-        obj.location = self.installedOn
+        assert self.thing is not None
+        obj.location = self.thing
 
     def remove(self, obj):
         if self.closed:
             raise eimaginary.Closed(self, obj)
-        if obj.location is self.installedOn:
+        if obj.location is self.thing:
             obj.location = None
 
     # ILinkContributor
@@ -377,7 +393,8 @@ class Container(item.Item, Containment, item.InstallableMixin):
     Indicates whether the container is currently closed or open.
     """, allowNone=False, default=False)
 
-    installedOn = attributes.reference(doc="""
+    installedOn = installedOn
+    thing = attributes.reference(doc="""
     The object this container powers up.
     """)
 
@@ -414,7 +431,7 @@ class Actable(object):
 
     # IDescriptionContributor
     def longFormatTo(self, who):
-        return ([T.bold, T.fg.yellow, self.installedOn.formatTo(who)],
+        return ([T.bold, T.fg.yellow, self.thing.formatTo(who)],
                 " is ",
                 [T.bold, T.fg.red, self._condition()],
                 ".",
@@ -433,7 +450,7 @@ class Actable(object):
     def send(self, *event):
         if len(event) != 1 or isinstance(event[0], (str, tuple)):
             event = events.Success(
-                actor=self.installedOn,
+                actor=self.thing,
                 actorMessage=event)
         else:
             event = event[0]
@@ -446,11 +463,11 @@ class Actable(object):
         level = int(math.log(experience) / math.log(2))
         if level > self.level:
             evt = events.Success(
-                actor=self.installedOn,
+                actor=self.thing,
                 actorMessage=("You gain ", level - self.level, " levels!\n"))
         elif level < self.level:
             evt = events.Success(
-                actor=self.installedOn,
+                actor=self.thing,
                 actorMessage=("You lose ", self.level - level, " levels!\n"))
         self.send(evt)
         self.level = level
@@ -470,8 +487,9 @@ class Actor(item.Item, Actable, item.InstallableMixin):
     The intelligence provider associated with this actor, generally a L{wiring.player.Player} instance.
     """)
 
-    installedOn = attributes.reference(doc="""
-    The L{IObject} that this is installed on.
+    installedOn = installedOn
+    thing = attributes.reference(doc="""
+    The L{IThing} that this is installed on.
     """)
 
     level = attributes.integer(doc="""

@@ -39,7 +39,7 @@ class HitTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertEquals(x[1].groups(), y[0].groups())
 
 
-        monster = objects.Object(store=self.store, name=u"monster")
+        monster = objects.Thing(store=self.store, name=u"monster")
         objects.Actor(store=self.store).installOn(monster)
         monster.moveTo(self.location)
         x, y = self._test(
@@ -55,7 +55,7 @@ class HitTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["Who's that?"],
             [])
 
-        obj = objects.Object(store=self.store, name=u"quiche")
+        obj = objects.Thing(store=self.store, name=u"quiche")
         obj.moveTo(self.location)
         self._test(
             "hit quiche",

@@ -72,18 +72,18 @@ class ObjectTestCase(unittest.TestCase):
         self.store = store.Store()
 
     def testCreation(self):
-        obj = objects.Object(store=self.store, name=u"test object", description=u"lame description")
+        obj = objects.Thing(store=self.store, name=u"test object", description=u"lame description")
         self.assertEquals(obj.name, u"test object")
         self.assertEquals(obj.description, u"lame description")
 
 
     def testDestroy(self):
-        obj = objects.Object(store=self.store, name=u"x")
+        obj = objects.Thing(store=self.store, name=u"x")
         obj.destroy()
 
-        room = objects.Object(store=self.store, name=u"test location")
+        room = objects.Thing(store=self.store, name=u"test location")
         objects.Container(store=self.store, capacity=1000).installOn(room)
-        obj = objects.Object(store=self.store, name=u"y")
+        obj = objects.Thing(store=self.store, name=u"y")
         obj.moveTo(room)
 
         obj.destroy()
@@ -93,8 +93,8 @@ class ObjectTestCase(unittest.TestCase):
 
 
     def testFind(self):
-        obj = objects.Object(store=self.store, name=u"z")
-        room = objects.Object(store=self.store, name=u"location")
+        obj = objects.Thing(store=self.store, name=u"z")
+        room = objects.Thing(store=self.store, name=u"location")
         objects.Container(store=self.store, capacity=1000).installOn(room)
         obj.moveTo(room)
 
@@ -108,8 +108,8 @@ class ObjectTestCase(unittest.TestCase):
 
 
     def testMoving(self):
-        obj = objects.Object(store=self.store, name=u"DOG")
-        room = objects.Object(store=self.store, name=u"HOUSE")
+        obj = objects.Thing(store=self.store, name=u"DOG")
+        room = objects.Thing(store=self.store, name=u"HOUSE")
         objects.Container(store=self.store, capacity=1000).installOn(room)
         obj.moveTo(room)
         self.assertIdentical(obj.location, room)
@@ -122,12 +122,12 @@ class ObjectTestCase(unittest.TestCase):
         """
         Test that the C{portable} flag is respected and prevents movement between locations.
         """
-        obj = objects.Object(store=self.store, name=u"mountain")
+        obj = objects.Thing(store=self.store, name=u"mountain")
         obj.portable = False
-        room = objects.Object(store=self.store, name=u"place")
+        room = objects.Thing(store=self.store, name=u"place")
         objects.Container(store=self.store, capacity=1000).installOn(room)
         obj.moveTo(room)
-        elsewhere = objects.Object(store=self.store, name=u"different place")
+        elsewhere = objects.Thing(store=self.store, name=u"different place")
         container = objects.Container(store=self.store, capacity=1000)
         container.installOn(elsewhere)
         self.assertRaises(eimaginary.CannotMove, obj.moveTo, elsewhere)
@@ -137,11 +137,11 @@ class ObjectTestCase(unittest.TestCase):
 
 
     def testObjectProvidesIDescribeable(self):
-        obj = objects.Object(store=self.store, name=u"mountain")
+        obj = objects.Thing(store=self.store, name=u"mountain")
         self.assertTrue(iimaginary.IDescribeable.providedBy(iimaginary.IDescribeable(obj)))
 
     def testDescriptionOverridableByPowerup(self):
-        obj = objects.Object(store=self.store, name=u"mountain")
+        obj = objects.Thing(store=self.store, name=u"mountain")
         obj.powerUp(Describeable(store=self.store), iimaginary.IDescribeable)
 
         out = iimaginary.IDescribeable(obj).longFormatTo("hello")

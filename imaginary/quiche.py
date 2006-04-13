@@ -27,14 +27,15 @@ class Coinage(object):
 
 
 class Quarter(item.Item, Coinage, item.InstallableMixin):
-    installedOn = attributes.reference(doc="""
+    installedOn = objects.installedOn
+    thing = attributes.reference(doc="""
     The object this coin powers up.
     """)
 
 
 
 def createCoin(store, name, description=u""):
-    o = objects.Object(store=store, name=name, description=description)
+    o = objects.Thing(store=store, name=name, description=description)
     Quarter(store=store).installOn(o)
     return o
 
@@ -51,7 +52,8 @@ class VendingMachine(item.Item, objects.Containment, item.InstallableMixin):
     Indicates whether the container is currently closed or open.
     """, allowNone=False, default=True)
 
-    installedOn = attributes.reference(doc="""
+    installedOn = objects.installedOn
+    thing = attributes.reference(doc="""
     The object this container powers up.
     """)
 
@@ -73,18 +75,18 @@ class VendingMachine(item.Item, objects.Containment, item.InstallableMixin):
                 obj = iter(self.getContents()).next()
             except StopIteration:
                 evt = events.Success(
-                    actor=self.installedOn,
+                    actor=self.thing,
                     target=obj,
-                    otherMessage=(self.installedOn, " thumps loudly."))
+                    otherMessage=(self.thing, " thumps loudly."))
             else:
                 evt = events.Success(
-                    actor=self.installedOn,
+                    actor=self.thing,
                     target=obj,
-                    otherMessage=(self.installedOn, " thumps loudly and spits out ", obj, " onto the ground."))
+                    otherMessage=(self.thing, " thumps loudly and spits out ", obj, " onto the ground."))
                 state = self.closed
                 self.closed = False
                 try:
-                    obj.moveTo(self.installedOn.location)
+                    obj.moveTo(self.thing.location)
                 finally:
                     self.closed = state
             evt.broadcast()
@@ -100,12 +102,12 @@ class VendingMachine(item.Item, objects.Containment, item.InstallableMixin):
 
 
 def createVendingMachine(store, name, description=u""):
-    o = objects.Object(store=store, name=name, description=description)
+    o = objects.Thing(store=store, name=name, description=description)
     VendingMachine(store=store).installOn(o)
     return o
 
 
 
 def createQuiche(store, name, description=u""):
-    return objects.Object(store=store, name=name, description=description)
+    return objects.Thing(store=store, name=name, description=description)
 Quiche = createQuiche

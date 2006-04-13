@@ -18,25 +18,25 @@ class ActorTest(unittest.TestCase):
         self.store = store.Store()
 
     def testPoweringUp(self):
-        o = objects.Object(store=self.store, name=u"wannabe")
+        o = objects.Thing(store=self.store, name=u"wannabe")
         self.assertEquals(iimaginary.IActor(o, "hah"), "hah")
         a = objects.Actor(store=self.store)
         a.installOn(o)
         self.assertEquals(iimaginary.IActor(o, None), a)
 
     def testLongFormat(self):
-        o = objects.Object(store=self.store, name=u"wannabe")
+        o = objects.Thing(store=self.store, name=u"wannabe")
         objects.Actor(store=self.store).installOn(o)
         self.failUnless("great" in hate(o.longFormatTo(None)))
 
     def testHitPoints(self):
-        o = objects.Object(store=self.store, name=u"hitty")
+        o = objects.Thing(store=self.store, name=u"hitty")
         a = objects.Actor(store=self.store)
         a.installOn(o)
         self.assertEquals(a.hitpoints, 100)
 
     def testExperience(self):
-        o = objects.Object(store=self.store, name=u"hitty")
+        o = objects.Thing(store=self.store, name=u"hitty")
         a = objects.Actor(store=self.store)
         a.installOn(o)
         self.assertEquals(a.experience, 0)

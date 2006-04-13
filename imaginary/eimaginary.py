@@ -37,7 +37,7 @@ class AmbiguousArgument(ImaginaryError):
     @type partValue: C{str}
     @ivar partValue: The string which was supplied by the user for the indicated part.
 
-    @type objects: C{list} of C{IObject}
+    @type objects: C{list} of C{IThing}
     @ivar objects: The objects which were involved in the ambiguity.
     """
 

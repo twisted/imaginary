@@ -9,10 +9,10 @@ from imaginary import eimaginary, iimaginary, objects
 class ContainerTestCase(unittest.TestCase):
     def setUp(self):
         self.store = store.Store()
-        self.containmentCore = objects.Object(store=self.store, name=u"container")
+        self.containmentCore = objects.Thing(store=self.store, name=u"container")
         self.container = objects.Container(store=self.store, capacity=1)
         self.container.installOn(self.containmentCore)
-        self.object = objects.Object(store=self.store, name=u"object")
+        self.object = objects.Thing(store=self.store, name=u"object")
 
 
     def testAdd(self):

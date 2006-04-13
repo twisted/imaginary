@@ -25,7 +25,7 @@ class PlayerCredentials(item.Item):
     """, allowNone=False)
 
     actor = attributes.reference(doc="""
-    A reference to the L{objects.Object} with which these credentials are
+    A reference to the L{objects.Thing} with which these credentials are
     associated.
     """)
 
@@ -39,18 +39,18 @@ class ImaginaryRealm(item.Item, item.InstallableMixin):
     """)
 
     connected = attributes.inmemory(doc="""
-    A list of player L{objects.Object} which are currently associated with a
+    A list of player L{objects.Thing} which are currently associated with a
     network connection.
     """)
 
-    installedOn = attributes.reference(doc="""
+    thing = attributes.reference(doc="""
     The item on which this realm is installed.
     """)
 
 
     def __init__(self, **kw):
         super(ImaginaryRealm, self).__init__(**kw)
-        self.origin = objects.Object(store=self.store, name=u"The Place")
+        self.origin = objects.Thing(store=self.store, name=u"The Place")
         objects.Container(store=self.store,
                           capacity=1000).installOn(self.origin)
 
@@ -66,7 +66,7 @@ class ImaginaryRealm(item.Item, item.InstallableMixin):
 
 
     def create(self, username, password):
-        playerObj = objects.Object(store=self.store, name=username.lower())
+        playerObj = objects.Thing(store=self.store, name=username.lower())
         objects.Container(store=self.store, capacity=10).installOn(playerObj)
         objects.Actor(store=self.store).installOn(playerObj)
         PlayerCredentials(

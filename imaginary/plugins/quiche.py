@@ -3,12 +3,12 @@ from zope.interface import implements
 
 from twisted import plugin
 
-from imaginary.iimaginary import IObjectType
+from imaginary.iimaginary import IThingType
 from imaginary import quiche
 
 
 class _ObjectPluginHelper(object):
-    implements(plugin.IPlugin, IObjectType)
+    implements(plugin.IPlugin, IThingType)
 
     def __init__(self, typeName, typeObject):
         self.type = typeName

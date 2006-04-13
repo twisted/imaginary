@@ -7,9 +7,9 @@ from imaginary import iimaginary, action, objects
 class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def setUp(self):
         r = commandutils.CommandTestCaseMixin.setUp(self)
-        self.object = objects.Object(store=self.store, name=u"foo")
+        self.object = objects.Thing(store=self.store, name=u"foo")
         self.object.moveTo(self.player)
-        self.container = objects.Object(store=self.store, name=u"bar")
+        self.container = objects.Thing(store=self.store, name=u"bar")
         self.containerContainer = objects.Container(store=self.store, capacity=1)
         self.containerContainer.installOn(self.container)
         self.container.moveTo(self.location)
@@ -62,7 +62,7 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
     def testNestedContainment(self):
-        another = objects.Object(store=self.store, name=u"another")
+        another = objects.Thing(store=self.store, name=u"another")
         objects.Container(store=self.store, capacity=1).installOn(another)
         self.containerContainer.add(another)
 
@@ -75,10 +75,10 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
     def testIndirectNestedContainment(self):
-        innermost = objects.Object(store=self.store, name=u"innermost")
+        innermost = objects.Thing(store=self.store, name=u"innermost")
         innermostContainer = objects.Container(store=self.store, capacity=1)
         innermostContainer.installOn(innermost)
-        middle = objects.Object(store=self.store, name=u"middle")
+        middle = objects.Thing(store=self.store, name=u"middle")
         middleContainer = objects.Container(store=self.store, capacity=1)
         middleContainer.installOn(middle)
         middleContainer.add(innermost)

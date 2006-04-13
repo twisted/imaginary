@@ -150,7 +150,7 @@ class TextServer(insults.TerminalProtocol):
         return 'IGNORE'
 
     def _cbLogin(self, (iface, avatar, logout)):
-        self.player = player.Player(avatar.installedOn)
+        self.player = player.Player(avatar.thing)
         self.logout = logout
         self.player.setProtocol(self)
         self.state = 'COMMAND'

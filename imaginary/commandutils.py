@@ -14,7 +14,7 @@ from imaginary.wiring import player
 E = re.escape
 
 def _makePlayer(store, name):
-    obj = objects.Object(store=store, name=name)
+    obj = objects.Thing(store=store, name=name)
     obj.weight = 100
     actor = objects.Actor(store=store)
     actor.installOn(obj)
@@ -35,7 +35,7 @@ class CommandTestCaseMixin:
     def setUp(self):
         self.store = store.Store()
 
-        self.location = objects.Object(
+        self.location = objects.Thing(
             store=self.store,
             name=u"Test Location",
             description=u"Location for testing.")

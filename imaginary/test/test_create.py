@@ -25,13 +25,13 @@ class Foo(item.Item):
 
 
 def createFoo(store, name, description):
-    o = objects.Object(store=store, name=name, description=description)
+    o = objects.Thing(store=store, name=name, description=description)
     Foo(store=store).installOn(o)
     return o
 
 
 class FooPlugin(object):
-    directlyProvides(iimaginary.IObjectType)
+    directlyProvides(iimaginary.IThingType)
 
     type = 'foo'
 
@@ -43,7 +43,7 @@ class FooPlugin(object):
 
 class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def _getPlugins(self, iface, package):
-        self.assertIdentical(iface, iimaginary.IObjectType)
+        self.assertIdentical(iface, iimaginary.IThingType)
         self.assertIdentical(package, plugins)
         return [FooPlugin]
 

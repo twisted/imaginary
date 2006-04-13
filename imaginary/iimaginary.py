@@ -28,7 +28,7 @@ class IDescribeable(Interface):
 
 
 
-class IObjectType(Interface):
+class IThingType(Interface):
     """
     Plugin interface for kinds of objects which can be created in the realm.
     """
@@ -38,7 +38,7 @@ class IObjectType(Interface):
         """
         Return a two-argument callable which will be invoked with C{name},
         C{description} to create a new instance of this type.  Should return an
-        L{IObject} provider.
+        L{IThing} provider.
         """
 
 
@@ -47,13 +47,13 @@ class ILinkContributor(Interface):
     A powerup interface which can add more connections between objects in the
     world graph.
 
-    All ILinkContributors which are powered up on a particular Object will be
-    given a chance to add to the L{IObject.link} method's return value.
+    All ILinkContributors which are powered up on a particular Thing will be
+    given a chance to add to the L{IThing.link} method's return value.
     """
 
     def links():
         """
-        Return a C{dict} mapping names of connections to C{IObjects}.
+        Return a C{dict} mapping names of connections to C{IThings}.
         """
 
 
@@ -72,12 +72,12 @@ class IDescriptionContributor(Interface):
 
 
 
-class IObject(IDescribeable):
+class IThing(IDescribeable):
     """
     A thing in the world.  In addition to the behavior described by
     L{IDescribeable}, this has a location and and might be relocateable.
     """
-    location = Attribute("An IObject which contains this IObject")
+    location = Attribute("An IThing which contains this IThing")
 
     def canSee(observer):
         """
@@ -125,7 +125,7 @@ class IContainer(Interface):
     """)
 
 #     lid = Attribute("""
-#     A reference to an L{IObject} which serves as this containers lid, or
+#     A reference to an L{IThing} which serves as this containers lid, or
 #     C{None} if there is no lid.
 #     """)
 
@@ -137,7 +137,7 @@ class IContainer(Interface):
         """
         Place the given object into this container.
 
-        @type object: L{IObject}
+        @type object: L{IThing}
         @param object: The world object to be added to this container.  Its
         C{location} attribute will be updated if it is successfully added.
 
@@ -150,7 +150,7 @@ class IContainer(Interface):
         """
         Remove the given object from this container.
 
-        @type object: L{IObject}
+        @type object: L{IThing}
 
         @param object: The world object which is currently in this container
         which is to be removed.  If it is successfully removed, its C{location}

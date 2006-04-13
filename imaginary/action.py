@@ -65,14 +65,14 @@ class TargetAction(NoTargetAction):
     """
     infrastructure = True
 
-    targetInterface = iimaginary.IObject
+    targetInterface = iimaginary.IThing
 
     def targetRadius(self, player):
         return 2
 
     def resolve(self, player, k, v):
         if k == "target":
-            return list(player.installedOn.search(self.targetRadius(player), self.targetInterface, v))
+            return list(player.thing.search(self.targetRadius(player), self.targetInterface, v))
         return super(TargetAction, self).resolve(player, k, v)
 
 
@@ -82,14 +82,14 @@ class ToolAction(TargetAction):
     """
     infrastructure = True
 
-    toolInterface = iimaginary.IObject
+    toolInterface = iimaginary.IThing
 
     def toolRadius(self, player):
         return 2
 
     def resolve(self, player, k, v):
         if k == "tool":
-            return list(player.installedOn.search(self.toolRadius(player), self.toolInterface, v))
+            return list(player.thing.search(self.toolRadius(player), self.toolInterface, v))
         return super(ToolAction, self).resolve(player, k, v)
 
 class LookAround(NoTargetAction):
@@ -97,10 +97,10 @@ class LookAround(NoTargetAction):
     expr = pyparsing.Literal("look")
 
     def do(self, player, line):
-        if player.installedOn.location is None:
+        if player.thing.location is None:
             player.send("You are floating in an empty, formless void.", "\n")
         else:
-            player.send(player.installedOn.location.longFormatTo(player.installedOn), "\n")
+            player.send(player.thing.location.longFormatTo(player.thing), "\n")
 
 class LookAt(TargetAction):
     commandName = "look"
@@ -117,17 +117,17 @@ class LookAt(TargetAction):
         return 3
 
     def do(self, player, line, target):
-        if player.installedOn is not target:
+        if player.thing is not target:
             evt = events.Success(
-                actor=player.installedOn,
+                actor=player.thing,
                 target=target,
-                actorMessage=target.longFormatTo(player.installedOn),
-                targetMessage=(player.installedOn, " looks at you."))
+                actorMessage=target.longFormatTo(player.thing),
+                targetMessage=(player.thing, " looks at you."))
             evt.broadcast()
         else:
             evt = events.Success(
-                actor=player.installedOn,
-                actorMessage=target.longFormatTo(player.installedOn))
+                actor=player.thing,
+                actorMessage=target.longFormatTo(player.thing))
             evt.broadcast()
 
 class Describe(TargetAction):
@@ -143,9 +143,9 @@ class Describe(TargetAction):
     def do(self, player, line, target, description):
         target.description = description
         evt = events.Success(
-            actor=player.installedOn,
+            actor=player.thing,
             actorMessage=("You change ", target, "'s description."),
-            otherMessage=(player.installedOn, " changes ", target, "'s description."))
+            otherMessage=(player.thing, " changes ", target, "'s description."))
         evt.broadcast()
 
 
@@ -161,9 +161,9 @@ class Name(TargetAction):
 
     def do(self, player, line, target, name):
         evt = events.Success(
-            actor=player.installedOn,
+            actor=player.thing,
             actorMessage=("You change ", target, "'s name."),
-            otherMessage=(player.installedOn, " changes ", target, "'s name to ", name, "."))
+            otherMessage=(player.thing, " changes ", target, "'s name to ", name, "."))
         evt.broadcast()
         target.name = name
 
@@ -179,17 +179,17 @@ class Open(TargetAction):
     def do(self, player, line, target):
         if not target.closed:
             evt = events.ThatDoesntWork(
-                actor=player.installedOn,
-                target=target.installedOn,
-                actorMessage=(target.installedOn, " is already open."))
+                actor=player.thing,
+                target=target.thing,
+                actorMessage=(target.thing, " is already open."))
         else:
             target.closed = False
             evt = events.Success(
-                actor=player.installedOn,
-                target=target.installedOn,
-                actorMessage=("You open ", target.installedOn, "."),
-                targetMessage=(player.installedOn, " opens you."),
-                otherMessage=(player.installedOn, " opens ", target.installedOn, "."))
+                actor=player.thing,
+                target=target.thing,
+                actorMessage=("You open ", target.thing, "."),
+                targetMessage=(player.thing, " opens you."),
+                otherMessage=(player.thing, " opens ", target.thing, "."))
         evt.broadcast()
 
 
@@ -204,17 +204,17 @@ class Close(TargetAction):
     def do(self, player, line, target):
         if target.closed:
             evt = events.ThatDoesntWork(
-                actor=player.installedOn,
-                target=target.installedOn,
-                actorMessage=(target.installedOn, " is already closed."))
+                actor=player.thing,
+                target=target.thing,
+                actorMessage=(target.thing, " is already closed."))
         else:
             target.closed = True
             evt = events.Success(
-                actor=player.installedOn,
-                target=target.installedOn,
-                actorMessage=("You close ", target.installedOn, "."),
-                targetMessage=(player.installedOn, " closes you."),
-                otherMessage=(player.installedOn, " closes ", target.installedOn, "."))
+                actor=player.thing,
+                target=target.thing,
+                actorMessage=("You close ", target.thing, "."),
+                targetMessage=(player.thing, " closes you."),
+                otherMessage=(player.thing, " closes ", target.thing, "."))
         evt.broadcast()
 
 
@@ -261,17 +261,17 @@ class TakeFrom(ToolAction):
     def do(self, player, line, target, tool):
         # XXX Make sure target is in tool
         try:
-            target.moveTo(player.installedOn)
+            target.moveTo(player.thing)
         except eimaginary.DoesntFit:
-            tooHeavy(player.installedOn, target).broadcast()
+            tooHeavy(player.thing, target).broadcast()
         else:
-            targetTaken(player.installedOn, target, tool).broadcast()
+            targetTaken(player.thing, target, tool).broadcast()
 
 
 
 ## <allexpro> dash: put me in a tent and give it to moshez!
 class PutIn(ToolAction):
-    toolInterface = iimaginary.IObject
+    toolInterface = iimaginary.IThing
     targetInterface = iimaginary.IContainer
 
     def targetNotAvailable(self, player, exc):
@@ -287,24 +287,24 @@ class PutIn(ToolAction):
 
     def do(self, player, line, tool, target):
         ctool = iimaginary.IContainer(tool, None)
-        targetObject = target.installedOn
+        targetObject = target.thing
         if ctool is not None and (ctool.contains(targetObject) or ctool is target):
-            evt = events.ThatDoesntWork(actor=player.installedOn, target=targetObject, tool=tool,
+            evt = events.ThatDoesntWork(actor=player.thing, target=targetObject, tool=tool,
                                         actorMessage="A thing cannot contain itself in euclidean space.")
         else:
             try:
                 tool.moveTo(target)
             except eimaginary.DoesntFit:
-                evt = events.ThatDoesntWork(actor=player.installedOn, target=targetObject, tool=tool)
+                evt = events.ThatDoesntWork(actor=player.thing, target=targetObject, tool=tool)
             except eimaginary.Closed:
-                evt = events.ThatDoesntWork(actor=player.installedOn, target=targetObject, tool=tool, actorMessage=(targetObject, " is closed."))
+                evt = events.ThatDoesntWork(actor=player.thing, target=targetObject, tool=tool, actorMessage=(targetObject, " is closed."))
             else:
                 evt = events.Success(
-                    actor=player.installedOn, target=targetObject, tool=tool,
+                    actor=player.thing, target=targetObject, tool=tool,
                     actorMessage=("You put ", tool, " in ", targetObject, "."),
-                    targetMessage=(player.installedOn, " puts ", " tool in you."),
-                    toolMessage=(player.installedOn, " puts you in ", targetObject, "."),
-                    otherMessage=(player.installedOn, " puts ", tool, " in ", targetObject, "."))
+                    targetMessage=(player.thing, " puts ", " tool in you."),
+                    toolMessage=(player.thing, " puts you in ", targetObject, "."),
+                    otherMessage=(player.thing, " puts ", tool, " in ", targetObject, "."))
         evt.broadcast()
 
 
@@ -320,19 +320,19 @@ class Take(TargetAction):
         return 1
 
     def do(self, player, line, target):
-        if target in (player.installedOn, player.installedOn.location) or target.location is player.installedOn:
+        if target in (player.thing, player.thing.location) or target.location is player.thing:
             evt = events.ThatDoesntMakeSense(
-                actor=player.installedOn,
+                actor=player.thing,
                 actorMessage=("You cannot take ", target, "."))
             evt.broadcast()
             return
 
         try:
-            target.moveTo(player.installedOn)
+            target.moveTo(player.thing)
         except eimaginary.DoesntFit:
-            tooHeavy(player.installedOn, target).broadcast()
+            tooHeavy(player.thing, target).broadcast()
         else:
-            targetTaken(player.installedOn, target).broadcast()
+            targetTaken(player.thing, target).broadcast()
 
     def match(cls, player, line):
         # TOTALLY wrong, just trying to avoid getting recognized as TakeFrom,
@@ -365,15 +365,15 @@ class Spawn(NoTargetAction):
                                pyparsing.restOfLine.setResultsName("description")))
 
     def do(self, player, line, name, description=u'an undescribed monster'):
-        mob = objects.Object(store=player.store, name=name, description=description)
+        mob = objects.Thing(store=player.store, name=name, description=description)
         objects.Actor(store=player.store).installOn(mob)
         try:
-            mob.moveTo(player.installedOn.location)
+            mob.moveTo(player.thing.location)
         except eimaginary.DoesntFit:
             mob.destroy()
-            insufficientSpace(player.installedOn).broadcast()
+            insufficientSpace(player.thing).broadcast()
         else:
-            creationSuccess(player.installedOn, mob).broadcast()
+            creationSuccess(player.thing, mob).broadcast()
 
 class Create(NoTargetAction):
     expr = (pyparsing.Literal("create") +
@@ -387,19 +387,19 @@ class Create(NoTargetAction):
     def do(self, player, line, typeName, name, description=None):
         if not description:
             description = u'an undescribed object'
-        for plug in getPlugins(iimaginary.IObjectType, imaginary.plugins):
+        for plug in getPlugins(iimaginary.IThingType, imaginary.plugins):
             if plug.type == typeName:
                 o = plug.getType()(store=player.store, name=name, description=description)
                 break
         else:
             raise ValueError("Can't find " + typeName)
         try:
-            o.moveTo(player.installedOn)
+            o.moveTo(player.thing)
         except eimaginary.DoesntFit:
             o.destroy()
-            insufficientSpace(player.installedOn).broadcast()
+            insufficientSpace(player.thing).broadcast()
         else:
-            creationSuccess(player.installedOn, o).broadcast()
+            creationSuccess(player.thing, o).broadcast()
 
 class Drop(TargetAction):
     expr = (pyparsing.Literal("drop") +
@@ -413,23 +413,23 @@ class Drop(TargetAction):
         return 1
 
     def do(self, player, line, target):
-        if target.location is not player.installedOn:
+        if target.location is not player.thing:
             evt = events.ThatDoesntMakeSense(
-                actor=player.installedOn,
+                actor=player.thing,
                 actorMessage="You can't drop that.")
             evt.broadcast()
         else:
             try:
-                target.moveTo(player.installedOn.location)
+                target.moveTo(player.thing.location)
             except eimaginary.DoesntFit:
-                insufficientSpace(player.installedOn).broadcast()
+                insufficientSpace(player.thing).broadcast()
             else:
                 evt = events.Success(
-                    actor=player.installedOn,
+                    actor=player.thing,
                     actorMessage=("You drop ", target, "."),
                     target=target,
-                    targetMessage=(player.installedOn, " drops you."),
-                    otherMessage=(player.installedOn, " drops ", target, "."))
+                    targetMessage=(player.thing, " drops you."),
+                    otherMessage=(player.thing, " drops ", target, "."))
                 evt.broadcast()
 
 
@@ -444,20 +444,20 @@ class Dig(NoTargetAction):
             pyparsing.restOfLine.setResultsName("name"))
 
     def do(self, player, line, direction, name):
-        if player.installedOn.location.getExitNamed(direction, None) is not None:
+        if player.thing.location.getExitNamed(direction, None) is not None:
             evt = events.ThatDoesntMakeSense(
-                actor=player.installedOn,
+                actor=player.thing,
                 actorMessage="There is already an exit in that direction.")
             evt.broadcast()
         else:
-            room = objects.Object(store=player.store, name=name)
+            room = objects.Thing(store=player.store, name=name)
             objects.Container(store=player.store, capacity=1000).installOn(room)
-            objects.Exit.link(player.installedOn.location, room, direction)
+            objects.Exit.link(player.thing.location, room, direction)
 
             evt = events.Success(
-                actor=player.installedOn,
+                actor=player.thing,
                 actorMessage="You create an exit.",
-                otherMessage=(player.installedOn, " created an exit to the ", direction, "."))
+                otherMessage=(player.thing, " created an exit to the ", direction, "."))
             evt.broadcast()
 
             # XXX Right now there can't possibly be anyone in the
@@ -474,7 +474,7 @@ class Bury(NoTargetAction):
              pyparsing.Literal("east")).setResultsName("direction"))
 
     def do(self, player, line, direction):
-        for exit in player.installedOn.location.getExits():
+        for exit in player.thing.location.getExits():
             if exit.name == direction:
                 if exit.sibling is not None:
                     evt = events.Success(
@@ -484,15 +484,15 @@ class Bury(NoTargetAction):
                     evt.broadcast()
 
                 evt = events.Success(
-                    actor=player.installedOn,
+                    actor=player.thing,
                     actorMessage="It's gone.",
-                    otherMessage=(player.installedOn, " destroyed ", exit, "."))
+                    otherMessage=(player.thing, " destroyed ", exit, "."))
                 evt.broadcast()
                 exit.destroy()
                 return
 
         evt = events.ThatDoesntMakeSense(
-            actor=player.installedOn,
+            actor=player.thing,
             actorMessage="There isn't an exit in that direction.")
         evt.broadcast()
 
@@ -507,25 +507,25 @@ class Go(NoTargetAction):
 
     def do(self, player, line, direction):
         try:
-            exit = player.installedOn.location.getExitNamed(direction)
+            exit = player.thing.location.getExitNamed(direction)
         except KeyError:
             evt = events.ThatDoesntWork(
-                actor=player.installedOn,
+                actor=player.thing,
                 actorMessage="You can't go that way.")
             evt.broadcast()
         else:
             dest = exit.toLocation
-            location = player.installedOn.location
+            location = player.thing.location
             try:
-                player.installedOn.moveTo(dest)
+                player.thing.moveTo(dest)
             except eimaginary.DoesntFit:
                 player.send("There's no room for you there.")
                 return
 
             evt = events.Success(
                 location=location,
-                actor=player.installedOn,
-                otherMessage=(player.installedOn, " leaves ", direction, "."))
+                actor=player.thing,
+                otherMessage=(player.thing, " leaves ", direction, "."))
             evt.broadcast()
 
             if exit.sibling is not None:
@@ -535,8 +535,8 @@ class Go(NoTargetAction):
 
             evt = events.Success(
                 location=dest,
-                actor=player.installedOn,
-                otherMessage=(player.installedOn, " arrives from the ", arriveDirection, "."))
+                actor=player.thing,
+                otherMessage=(player.thing, " arrives from the ", arriveDirection, "."))
             evt.broadcast()
 
             LookAround().do(player, "look") # XXX A convention for
@@ -552,7 +552,7 @@ class Restore(TargetAction):
     targetInterface = iimaginary.IActor
 
     def targetNotAvailable(self, player, exc):
-        for thing in player.search(self.targetRadius(player), iimaginary.IObject, exc.partValue):
+        for thing in player.search(self.targetRadius(player), iimaginary.IThing, exc.partValue):
             return (thing, " cannot be restored.")
         return "Who's that?"
 
@@ -566,16 +566,16 @@ class Restore(TargetAction):
 
         if player is target:
             evt = events.Success(
-                actor=player.installedOn,
+                actor=player.thing,
                 actorMessage="You have fully restored yourself.")
             evt.broadcast()
         else:
             evt = events.Success(
-                actor=player.installedOn,
-                actorMessage=("You have restored ", target.installedOn, " to full health."),
-                target=target.installedOn,
-                targetMessage=(player.installedOn, " has restored you to full health."),
-                otherMessage=(player.installedOn, " has restored ", target.installedOn, " to full health."))
+                actor=player.thing,
+                actorMessage=("You have restored ", target.thing, " to full health."),
+                target=target.thing,
+                targetMessage=(player.thing, " has restored you to full health."),
+                otherMessage=(player.thing, " has restored ", target.thing, " to full health."))
             evt.broadcast()
 
 
@@ -594,29 +594,29 @@ class Hit(TargetAction):
     def do(self, player, line, target):
         toBroadcast = []
         if target is player:
-            toBroadcast.append(events.ThatDoesntMakeSense("Hit yourself?  Stupid.", actor=player.installedOn))
+            toBroadcast.append(events.ThatDoesntMakeSense("Hit yourself?  Stupid.", actor=player.thing))
         else:
             cost = random.randrange(1, 5)
             if player.stamina < cost:
-                toBroadcast.append(events.ThatDoesntWork("You're too tired!", actor=player.installedOn))
+                toBroadcast.append(events.ThatDoesntWork("You're too tired!", actor=player.thing))
             else:
                 damage = random.randrange(1, 5)
                 player.stamina.decrease(cost)
                 thp = target.hitpoints.decrease(damage)
-                toBroadcast.append(events.Success(targetMessage=[player.installedOn, " hits you for ", damage, " hitpoints."],
-                                                  actorMessage=["You hit ", target.installedOn, " for ", damage, " hitpoints."],
-                                                  otherMessage=[player.installedOn, " hits ", target.installedOn, "."],
-                                                  actor=player.installedOn, target=target.installedOn))
+                toBroadcast.append(events.Success(targetMessage=[player.thing, " hits you for ", damage, " hitpoints."],
+                                                  actorMessage=["You hit ", target.thing, " for ", damage, " hitpoints."],
+                                                  otherMessage=[player.thing, " hits ", target.thing, "."],
+                                                  actor=player.thing, target=target.thing))
                 if thp <= 0:
                     xp = target.experience / 2 + 1
                     player.gainExperience(xp) # I LOVE IT
-                    targetIsDead = [target.installedOn, " is dead!", "\n"]
+                    targetIsDead = [target.thing, " is dead!", "\n"]
                     toBroadcast.append(events.Success(
-                        actor=player.installedOn, target=target.installedOn,
+                        actor=player.thing, target=target.thing,
                         actorMessage=["\n", targetIsDead, "You gain ", xp, " experience"],
                         targetMessage=["You are dead!"],
                         otherMessage=targetIsDead))
-                    target.installedOn.destroy()
+                    target.thing.destroy()
         for event in toBroadcast:
             event.broadcast()
 
@@ -627,9 +627,9 @@ class Say(NoTargetAction):
             pyparsing.restOfLine.setResultsName("text"))
 
     def do(self, player, line, text):
-        evt = events.Success(actor=player.installedOn,
+        evt = events.Success(actor=player.thing,
                              actorMessage=["You say, '", text, "'"],
-                             otherMessage=[player.installedOn, " says, '", text, "'"])
+                             otherMessage=[player.thing, " says, '", text, "'"])
         evt.broadcast()
 
 class Emote(NoTargetAction):
@@ -638,9 +638,9 @@ class Emote(NoTargetAction):
             pyparsing.restOfLine.setResultsName("text"))
 
     def do(self, player, line, text):
-        evt = events.Success(actor=player.installedOn,
-                             actorMessage=[player.installedOn, " ", text],
-                             otherMessage=[player.installedOn, " ", text])
+        evt = events.Success(actor=player.thing,
+                             actorMessage=[player.thing, " ", text],
+                             otherMessage=[player.thing, " ", text])
         evt.broadcast()
 
 # class Rebuild(NoTargetAction):
@@ -670,8 +670,8 @@ class Search(NoTargetAction):
             commands.targetString("name"))
 
     def do(self, player, line, name):
-        for thing in player.installedOn.search(2, iimaginary.IObject, name):
-            player.send((thing.longFormatTo(player.installedOn), '\n'))
+        for thing in player.thing.search(2, iimaginary.IThing, name):
+            player.send((thing.longFormatTo(player.thing), '\n'))
 
 class Score(NoTargetAction):
     expr = pyparsing.Literal("score")
@@ -696,7 +696,7 @@ class Who(NoTargetAction):
 
         player.send(self.header + '\n')
         for p in connectedPlayers:
-            player.send(self.entry % {'playerName': p.formatTo(player.installedOn)} + '\n')
+            player.send(self.entry % {'playerName': p.formatTo(player.thing)} + '\n')
         player.send(self.footer % {'playerCount': len(connectedPlayers)} + '\n')
 
 import pprint
@@ -730,7 +730,7 @@ class Inventory(NoTargetAction):
     def do(self, player, line):
         player.send(
             [T.fg.yellow, "Inventory:\n"],
-            [T.fg.green, [(o, '\n') for o in iimaginary.IContainer(player.installedOn).getContents()]])
+            [T.fg.green, [(o, '\n') for o in iimaginary.IContainer(player.thing).getContents()]])
 
 
 class Help(NoTargetAction):

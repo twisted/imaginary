@@ -27,15 +27,15 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
         # Give 'em something and make sure
         # they show up
-        playerContainer.add(objects.Object(store=self.store, name=u"foobar"))
+        playerContainer.add(objects.Thing(store=self.store, name=u"foobar"))
         self._test(
             "inventory",
             ["Inventory:",
              "foobar"])
 
         # Give 'em a couple more things
-        playerContainer.add(objects.Object(store=self.store, name=u"barbaz"))
-        playerContainer.add(objects.Object(store=self.store, name=u"barbaz"))
+        playerContainer.add(objects.Thing(store=self.store, name=u"barbaz"))
+        playerContainer.add(objects.Thing(store=self.store, name=u"barbaz"))
         self._test(
             "inventory",
             ["Inventory:",
@@ -72,7 +72,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertEquals(self.location.location, None)
 
         # Make an object and try to get it
-        o = objects.Object(store=self.store, name=u"foo")
+        o = objects.Thing(store=self.store, name=u"foo")
         iimaginary.IContainer(self.location).add(o)
         self._test(
             "get foo",
@@ -92,12 +92,12 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "get baz from bar",
             ["Nothing like that around here."])
 
-        c = objects.Object(store=self.store, name=u"bar")
+        c = objects.Thing(store=self.store, name=u"bar")
         cContainer = objects.Container(store=self.store, capacity=1)
         cContainer.installOn(c)
 
         iimaginary.IContainer(self.location).add(c)
-        o = objects.Object(store=self.store, name=u"baz")
+        o = objects.Thing(store=self.store, name=u"baz")
         cContainer.add(o)
         self._test(
             "get baz from bar",
@@ -120,7 +120,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "drop foo",
             ["Nothing like that around here."])
 
-        o = objects.Object(store=self.store, name=u"bar")
+        o = objects.Thing(store=self.store, name=u"bar")
         iimaginary.IContainer(self.player).add(o)
         self._test(
             "drop bar",
@@ -166,7 +166,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["Test Player looks at you."])
 
 
-        o = objects.Object(store=self.store, name=u"foo")
+        o = objects.Thing(store=self.store, name=u"foo")
         iimaginary.IContainer(self.location).add(o)
         self._test(
             "look at foo",
@@ -403,7 +403,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["There isn't an exit in that direction."])
         self.assertEquals(list(self.location.getExits()), [])
 
-        room = objects.Object(store=self.store, name=u"destination")
+        room = objects.Thing(store=self.store, name=u"destination")
         objects.Container(store=self.store, capacity=1000).installOn(room)
         objects.Exit.link(room, self.location, u'north')
 
@@ -435,7 +435,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "west",
             ["You can't go that way."])
 
-        room = objects.Object(store=self.store, name=u"destination")
+        room = objects.Thing(store=self.store, name=u"destination")
         objects.Container(store=self.store, capacity=1000).installOn(room)
         objects.Exit.link(self.location, room, u"west")
 
@@ -461,10 +461,10 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         STOREID = "\\d+"
         self._test(
             "scrutinize me",
-            [E("('Object',"),
+            [E("('Thing',"),
              E(" {'contents': [],"),
              E("  'description': u'',"),
-             E("  'location': Object(description=u'Location for testing.', "
+             E("  'location': Thing(description=u'Location for testing.', "
                "location=None, name=u'Test Location', portable=True, weight=1, "
                "storeID=1)@0x") + "[A-F0-9]{1,8}" + E(","),
              E("  'name': u'Test Player',"),
@@ -474,9 +474,9 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
         self._test(
             "scrutinize here",
-            [E("('Object',"),
-             E(" {'contents': [Object(description=u'', location=reference(") + STOREID + E("), name=u'Test Player', portable=True, weight=100, storeID=6)@0x") + PTR + E(","),
-             E("               Object(description=u'', location=reference(") + STOREID + E("), name=u'Observer Player', portable=True, weight=100, storeID=18)@0x") + PTR + E("],"),
+            [E("('Thing',"),
+             E(" {'contents': [Thing(description=u'', location=reference(") + STOREID + E("), name=u'Test Player', portable=True, weight=100, storeID=6)@0x") + PTR + E(","),
+             E("               Thing(description=u'', location=reference(") + STOREID + E("), name=u'Observer Player', portable=True, weight=100, storeID=18)@0x") + PTR + E("],"),
              E("  'description': u'Location for testing.',"),
              E("  'location': None,"),
              E("  'name': u'Test Location',"),
@@ -486,7 +486,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
     def testOpenClose(self):
-        container = objects.Object(store=self.store, name=u"container")
+        container = objects.Thing(store=self.store, name=u"container")
         objects.Container(store=self.store, capacity=1).installOn(container)
         iimaginary.IContainer(self.location).add(container)
         self._test(

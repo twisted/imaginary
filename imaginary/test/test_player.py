@@ -24,7 +24,7 @@ class PlayerTest(unittest.TestCase):
     def setUp(self):
         self.store = store.Store()
 
-        self.bob = objects.Object(store=self.store, name=u"bob")
+        self.bob = objects.Thing(store=self.store, name=u"bob")
         self.actor = objects.Actor(store=self.store)
         self.actor.installOn(self.bob)
 
@@ -42,7 +42,7 @@ class PlayerTest(unittest.TestCase):
         self.assertEquals(self.transport.value(), "Hi\n")
 
     def testFormatting(self):
-        obj = objects.Object(store=self.store, name=u"name", description=u"descr")
+        obj = objects.Thing(store=self.store, name=u"name", description=u"descr")
         self.assertEquals(self.player.format(obj), "name")
 
         longFormat = self.player.format(obj.longFormatTo(self.player))
