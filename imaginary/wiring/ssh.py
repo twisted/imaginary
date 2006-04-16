@@ -1,21 +1,22 @@
 
-from Crypto.PublicKey import RSA
+from zope.interface import implements
 
-from zope.interface import implements, Interface
 from twisted.python.components import registerAdapter
-
-from twisted.protocols import basic
-from twisted.internet import defer
-from twisted.application import internet
-from twisted.conch.ssh import factory, userauth, keys, common, session
-from twisted.conch.interfaces import IConchUser, ISession
+from twisted.internet import defer, reactor
+from twisted.application import service
+from twisted.protocols import policies
+from twisted.conch.ssh import factory, userauth, keys, session
+from twisted.conch.interfaces import IConchUser
 from twisted.conch import avatar
-from twisted.cred import portal, credentials
+from twisted.cred import portal, credentials, checkers
 
 from twisted.conch.insults import insults
+from twisted.conch.scripts import ckeygen
+
+from axiom import item, attributes, userbase
 
 from imaginary import iimaginary
-from imaginary.wiring import telnet, textserver
+from imaginary.wiring import textserver
 
 class ConchUser(avatar.ConchUser):
     def __init__(self, factory):
@@ -96,11 +97,13 @@ class ConchFactory(factory.SSHFactory):
         self.services = self.services.copy()
         self.services['ssh-userauth'] = lambda: server
 
+
     def login(self, username, password):
         return self.portal.login(
             credentials.UsernamePassword(username, password),
             None,
             iimaginary.IActor)
+
 
     def create(self, username, password):
         return self.realm.create(username, password)
@@ -111,19 +114,90 @@ class ConchFactory(factory.SSHFactory):
 
 
 
-def makeService(realm, port, pubKeyFile=None, privKeyFile=None):
-    p = portal.Portal(realm)
-    p.registerChecker(realm)
+class SSHService(item.Item, item.InstallableMixin, service.Service):
+    implements(iimaginary.ISSHService)
 
-    if pubKeyFile is None or privKeyFile is None:
-        key = RSA.generate(1024, common.entropy.get_bytes)
+    portNumber = attributes.integer(
+        "The TCP port to bind to serve SSH.",
+        default=4022)
 
-    f = ConchFactory(
-        realm, p,
-        {"ssh-rsa": keys.getPublicKeyString(data=file(pubKeyFile).read())},
-        {"ssh-rsa": keys.getPrivateKeyObject(data=file(privKeyFile).read())})
+    publicKeyFile = attributes.path(doc="""
+    Path to a file containing a public key for this SSH server.
+    """, allowNone=False)
 
-    netsvc = internet.TCPServer(port, f)
+    privateKeyFile = attributes.path(doc="""
+    Path to a file containing a private key for this SSH server.
+    """, allowNone=False)
 
-    return netsvc
+    # These are for the Service stuff
+    parent = attributes.inmemory()
+    running = attributes.inmemory()
 
+    # A cred portal, a Twisted TCP factory and a IListeningPort.
+    portal = attributes.inmemory()
+    factory = attributes.inmemory()
+    port = attributes.inmemory()
+
+    # When enabled, toss all traffic into logfiles.
+    debug = False
+
+    def __init__(self, **kw):
+        store = kw['store']
+        if 'publicKeyFile' not in kw:
+            privateKeyFile = store.newFilePath('ssh', 'ssh_key')
+            publicKeyFile = privateKeyFile.sibling('ssh_key.pub')
+            tmp = privateKeyFile.temporarySibling()
+
+            privateKeyFile.parent().makedirs()
+
+            # XXX oh god oh god oh god :(
+            ckeygen.generateRSAkey({
+                'bits': 1024,
+                'filename': tmp.path,
+                'pass': 'no passphrase'})
+            tmp.moveTo(privateKeyFile)
+            tmp.sibling(tmp.basename() + '.pub').moveTo(publicKeyFile)
+
+            kw['privateKeyFile'] = privateKeyFile
+            kw['publicKeyFile'] = publicKeyFile
+        super(SSHService, self).__init__(**kw)
+
+
+    def activate(self):
+        self.portal = None
+        self.factory = None
+        self.port = None
+
+
+    def installOn(self, other):
+        super(SSHService, self).installOn(other)
+        other.powerUp(self, service.IService)
+        other.powerUp(self, iimaginary.ISSHService)
+        self.setServiceParent(other)
+
+
+    def privilegedStartService(self):
+        ls = self.store.findUnique(userbase.LoginSystem)
+        appStore = ls.accountByAddress(u'Imaginary', None)
+        realm = portal.IRealm(appStore)
+        chk = checkers.ICredentialsChecker(appStore)
+        p = portal.Portal(realm, [chk])
+
+        self.factory = ConchFactory(
+            realm, p,
+            {"ssh-rsa": keys.getPublicKeyString(data=self.publicKeyFile.open().read())},
+            {"ssh-rsa": keys.getPrivateKeyObject(data=self.privateKeyFile.open().read(), passphrase='no passphrase')})
+
+        if self.debug:
+            self.factory = policies.TrafficLoggingFactory(self.factory, 'ssh')
+
+        if self.portNumber is not None:
+            self.port = reactor.listenTCP(self.portNumber, self.factory)
+
+
+    def stopService(self):
+        L = []
+        if self.port is not None:
+            L.append(defer.maybeDeferred(self.port.stopListening))
+            self.port = None
+        return defer.DeferredList(L)

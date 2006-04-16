@@ -11,6 +11,14 @@ class ITelnetService(Interface):
 
 
 
+class ISSHService(Interface):
+    """
+    Really lame tag interface used by the Mantissa offering system to uniquely
+    identify a powerup that runs an ssh server.
+    """
+
+
+
 class IThingType(Interface):
     """
     Plugin interface for kinds of objects which can be created in the realm.

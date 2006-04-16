@@ -79,7 +79,7 @@ class TextServer(insults.TerminalProtocol):
     def _clearInput(self):
         if self.state == 'COMMAND':
             self.terminal.saveCursor()
-            self.terminal.cursorPosition(0, self.height)
+            self.terminal.cursorPosition(0, self.height - 1)
             self.terminal.eraseLine()
             self.terminal.restoreCursor()
         else:

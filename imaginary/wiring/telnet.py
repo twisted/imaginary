@@ -3,7 +3,7 @@ from zope.interface import implements
 
 from twisted.internet import protocol, reactor, defer
 from twisted.cred import credentials, portal, checkers
-from twisted.application import internet, service
+from twisted.application import service
 from twisted.protocols import policies
 
 from twisted.conch import telnet
@@ -41,33 +41,18 @@ class ImaginaryTelnetFactory(protocol.ServerFactory):
 
 
 
-def makeService(realm, port, applicationProtocolFactory=textserver.TextServer, debug=True):
-    p = portal.Portal(realm)
-    p.registerChecker(realm)
-
-    factory = ImaginaryTelnetFactory(realm, p, applicationProtocolFactory)
-
-    if debug:
-        factory = policies.TrafficLoggingFactory(factory, 'telnet')
-
-    netsvc = internet.TCPServer(port, factory)
-
-    return netsvc
-
-
 class TelnetService(item.Item, item.InstallableMixin, service.Service):
     implements(iimaginary.ITelnetService)
 
     portNumber = attributes.integer(
-        "The TCP port to bind to serve SMTP.",
+        "The TCP port to bind to serve telnet.",
         default=4023)
 
     # These are for the Service stuff
     parent = attributes.inmemory()
     running = attributes.inmemory()
 
-    # A cred portal, a Twisted TCP factory and as many as two
-    # IListeningPorts
+    # A cred portal, a Twisted TCP factory and an IListeningPort.
     portal = attributes.inmemory()
     factory = attributes.inmemory()
     port = attributes.inmemory()
