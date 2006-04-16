@@ -4,16 +4,10 @@ from axiom import store
 
 from imaginary import iimaginary, objects
 
-def hate(l):
-    if not isinstance(l, (tuple, list)):
-        yield l
-    else:
-        for x in l:
-            for crap in hate(x):
-                yield crap
+from imaginary.test import commandutils
 
 
-class ActorTest(unittest.TestCase):
+class ActorTest(unittest.TestCase, commandutils.LanguageMixin):
     def setUp(self):
         self.store = store.Store()
 
@@ -24,10 +18,11 @@ class ActorTest(unittest.TestCase):
         a.installOn(o)
         self.assertEquals(iimaginary.IActor(o, None), a)
 
-    def testLongFormat(self):
+    def testCondition(self):
         o = objects.Thing(store=self.store, name=u"wannabe")
-        objects.Actor(store=self.store).installOn(o)
-        self.failUnless("great" in hate(o.longFormatTo(None)))
+        actor = objects.Actor(store=self.store)
+        actor.installOn(o)
+        self.failUnless("great" in self.flatten(actor.conceptualize().plaintext(o)))
 
     def testHitPoints(self):
         o = objects.Thing(store=self.store, name=u"hitty")

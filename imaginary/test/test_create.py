@@ -7,7 +7,7 @@ from twisted.trial import unittest
 from axiom import item, attributes
 
 from imaginary.test import commandutils
-from imaginary import iimaginary, plugins, action, objects
+from imaginary import iimaginary, plugins, action, objects, quiche
 
 
 class IFoo(Interface):
@@ -24,10 +24,7 @@ class Foo(item.Item):
         other.powerUp(self, IFoo)
 
 
-def createFoo(store, name, description):
-    o = objects.Thing(store=store, name=name, description=description)
-    Foo(store=store).installOn(o)
-    return o
+createFoo = quiche.createCreator(Foo)
 
 
 class FooPlugin(object):
@@ -62,7 +59,7 @@ class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def testCreate(self):
         self._test(
             "create foo bar",
-            ["bar created."],
+            ["Bar created."],
             ["Test Player creates bar."])
         foobar = self.player.find("bar")
         self.assertEquals(foobar.name, "bar")
@@ -72,7 +69,7 @@ class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
         self._test(
             "create foo 'bar foo'",
-            ["bar foo created."],
+            ["Bar foo created."],
             ["Test Player creates bar foo."])
         barfoo = self.player.find("bar foo")
         self.assertEquals(barfoo.name, "bar foo")
@@ -81,7 +78,7 @@ class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
         self._test(
             "create foo 'described thing' This is the things description.",
-            ["described thing created."],
+            ["Described thing created."],
             ["Test Player creates described thing."])
         thing = self.player.find("described thing")
         self.assertEquals(thing.name, "described thing")

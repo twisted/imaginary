@@ -105,6 +105,12 @@ class ConchFactory(factory.SSHFactory):
     def create(self, username, password):
         return self.realm.create(username, password)
 
+
+    def loggedIn(self, avatar):
+        return self.realm.loggedIn(avatar)
+
+
+
 def makeService(realm, port, pubKeyFile=None, privKeyFile=None):
     p = portal.Portal(realm)
     p.registerChecker(realm)

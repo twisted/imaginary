@@ -6,13 +6,11 @@ import math
 
 from zope.interface import implements
 
-from twisted.python import reflect
-
-from epsilon import structlike
+from twisted.python import reflect, components
 
 from axiom import item, attributes
 
-from imaginary import iimaginary, eimaginary, text as T, iterutils, events
+from imaginary import iimaginary, eimaginary, text as T, iterutils, events, language
 
 
 def installedOn():
@@ -89,8 +87,6 @@ OPPOSITE_DIRECTIONS = {
 
 
 class Exit(item.Item):
-    implements(iimaginary.IDescribeable)
-
     fromLocation = attributes.reference(doc="""
     Where this exit leads from.
     """, allowNone=False, whenDeleted=attributes.reference.CASCADE)
@@ -124,15 +120,10 @@ class Exit(item.Item):
         self.deleteFromStore()
 
 
-    # IDescribeable
-    def formatTo(self, who):
-        return ('the exit to ',
-                iimaginary.IDescribeable(self.toLocation).formatTo(who))
-
-
-    def longFormatTo(self, who):
-        raise NotImplemented("Please implement this.")
-
+    # NOTHING
+    def conceptualize(self):
+        return language.ExpressList([u'the exit to ', language.Noun(self.toLocation).nounPhrase()])
+components.registerAdapter(lambda exit: exit.conceptualize(), Exit, iimaginary.IConcept)
 
 
 class Thing(item.Item):
@@ -157,6 +148,15 @@ class Thing(item.Item):
     description = attributes.text(doc="""
     What this object looks like.
     """, default=u"")
+
+    gender = attributes.integer(doc="""
+    The grammatical gender of this thing.  One of L{language.Gender.MALE},
+    L{language.Gender.FEMALE}, or L{language.Gender.NEUTER}.
+    """, default=language.Gender.NEUTER, allowNone=False)
+
+    proper = attributes.boolean(doc="""
+    Whether my name is a proper noun.
+    """, default=False, allowNone=False)
 
 
     def destroy(self):
@@ -262,34 +262,6 @@ class Thing(item.Item):
             iimaginary.IContainer(oldLocation).remove(self)
 
 
-    def formatTo(self, who):
-        return self.name
-
-
-    def longFormatTo(self, who):
-        exitNames = list(self.getExitNames())
-        if exitNames:
-            exits = ([T.fg.blue, '( ', [T.fg.cyan,
-                                        iterutils.interlace(' ', exitNames)],
-                      ' )'], '\n')
-        else:
-            exits = ''
-
-        description = ''
-        if self.description:
-            description = (self.description, '\n')
-
-        descriptionComponents = []
-        for pup in self.powerupsFor(iimaginary.IDescriptionContributor):
-            descriptionComponents.append(pup.longFormatTo(who))
-
-        return (
-            [T.fg.magenta, '[ ', [T.fg.yellow, self.name], ' ]'], '\n',
-            exits,
-            [T.fg.green, description],
-            descriptionComponents)
-
-
     def getExits(self):
         return self.store.query(Exit, Exit.fromLocation == self)
 
@@ -308,7 +280,7 @@ class Thing(item.Item):
         if result is self._marker:
             raise KeyError(name)
         return result
-
+components.registerAdapter(lambda thing: language.Noun(thing).nounPhrase(), Thing, iimaginary.IConcept)
 
 
 class Containment(object):
@@ -367,11 +339,8 @@ class Containment(object):
 
 
     # IDescriptionContributor
-    def longFormatTo(self, who):
-        contentStuff = [c for c in self.getContents() if c is not who]
-        if contentStuff:
-            return [iterutils.interlace(', ', contentStuff), '\n']
-        return ''
+    def conceptualize(self):
+        return ExpressSurroundings(self.getContents())
 
 
     def installOn(self, other):
@@ -379,6 +348,14 @@ class Containment(object):
         other.powerUp(self, iimaginary.IContainer)
         other.powerUp(self, iimaginary.ILinkContributor)
         other.powerUp(self, iimaginary.IDescriptionContributor)
+
+
+
+class ExpressSurroundings(language.ItemizedList):
+    def concepts(self, observer):
+        return [iimaginary.IConcept(o)
+                for o in super(ExpressSurroundings, self).concepts(observer)
+                if o is not observer]
 
 
 
@@ -398,6 +375,16 @@ class Container(item.Item, Containment, item.InstallableMixin):
     The object this container powers up.
     """)
 
+
+
+class ExpressCondition(language.BaseExpress):
+    implements(iimaginary.IConcept)
+
+    def vt102(self, observer):
+        return [
+            [T.bold, T.fg.yellow, language.Noun(self.original.thing).shortName().plaintext(observer)],
+            u" is ",
+            [T.bold, T.fg.red, self.original._condition(), u".\n"]]
 
 
 class Actable(object):
@@ -430,12 +417,8 @@ class Actable(object):
         other.powerUp(self, iimaginary.IDescriptionContributor)
 
     # IDescriptionContributor
-    def longFormatTo(self, who):
-        return ([T.bold, T.fg.yellow, self.thing.formatTo(who)],
-                " is ",
-                [T.bold, T.fg.red, self._condition()],
-                ".",
-                "\n")
+    def conceptualize(self):
+        return ExpressCondition(self)
 
 
     def _condition(self):
@@ -461,6 +444,7 @@ class Actable(object):
     def gainExperience(self, amount):
         experience = self.experience + amount
         level = int(math.log(experience) / math.log(2))
+        evt = None
         if level > self.level:
             evt = events.Success(
                 actor=self.thing,
@@ -469,9 +453,10 @@ class Actable(object):
             evt = events.Success(
                 actor=self.thing,
                 actorMessage=("You lose ", self.level - level, " levels!\n"))
-        self.send(evt)
         self.level = level
         self.experience = experience
+        if evt is not None:
+            self.send(evt)
 
 
 

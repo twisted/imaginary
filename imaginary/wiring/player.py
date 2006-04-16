@@ -61,7 +61,6 @@ class Player(object):
         return d
 
 
-
     def disconnect(self):
         if self.proto and self.proto.terminal:
             self.proto.player = None
@@ -70,40 +69,16 @@ class Player(object):
             self.player.intelligence = None
 
 
-    def format(self, *args):
-        L = []
-        it = T.flatten(args, currentAttrs=self.termAttrs)
-        while True:
-            try:
-                obj = it.next()
-            except StopIteration:
-                break
-            else:
-                if iimaginary.IDescribeable.providedBy(obj):
-                    it = itertools.chain(
-                        T.flatten(obj.formatTo(self),
-                                  currentAttrs=self.termAttrs), it)
-                else:
-                    if self.useColors:
-                        L.append(str(obj))
-                    else:
-                        if (hasattr(obj, 'startswith')
-                            and hasattr(obj, 'endswith')
-                            and obj.startswith('\x1b[')
-                            and obj.endswith('m')):
-                            continue
-                        L.append(str(obj))
-
-        return ''.join(L)
-
-
     def send(self, event):
         if self.proto is not None:
-            self.lowLevelSend(event.formatTo(self.actor))
+            self.lowLevelSend(event.vt102(self.actor))
 
 
     def lowLevelSend(self, stuff):
-        bytes = self.format(stuff)
+        #FIXME: Encoding should be done *inside* flatten, not here.
+        flatterStuff = T.flatten(stuff, useColors=self.useColors, currentAttrs=self.termAttrs)
+        txt = u''.join(list(flatterStuff))
+        bytes = txt.encode('utf-8')
         self.proto.write(bytes)
 
 

@@ -7,17 +7,17 @@ from imaginary.test import commandutils
 class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def testTheyExist(self):
         self._test("create 'vending machine' vendy",
-                   ["vendy created."],
+                   ["Vendy created."],
                    ["Test Player creates vendy."])
 
 
     def testPopulateVendingMachine(self):
         self._test("create 'vending machine' vendy",
-                   ["vendy created."],
+                   ["Vendy created."],
                    ["Test Player creates vendy."])
 
         self._test("create quiche quiche",
-                   ["quiche created."],
+                   ["Quiche created."],
                    ["Test Player creates quiche."])
 
         self._test("open vendy",
@@ -30,7 +30,7 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
     def testBuyingQuiche(self):
         self._test("create 'vending machine' vendy",
-                   ["vendy created."],
+                   ["Vendy created."],
                    ["Test Player creates vendy."])
 
         self._test("drop vendy",
@@ -38,7 +38,7 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
                    ["Test Player drops vendy."])
 
         self._test("create quiche quiche",
-                   ["quiche created."],
+                   ["Quiche created."],
                    ["Test Player creates quiche."])
 
         self._test("open vendy",
@@ -51,7 +51,7 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
         for i in range(5):
             self._test("create quarter quarter%s " % i,
-                       ["quarter%s created." % i],
+                       ["Quarter%s created." % i],
                        ["Test Player creates quarter%s." % i])
 
         for i in range(4):
@@ -61,9 +61,9 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
         # XXX - This order is wrong, fix it.
         self._test("put quarter4 in vendy",
-                   ["vendy thumps loudly and spits out quiche onto the ground.",
+                   ["Vendy thumps loudly and spits out quiche onto the ground.",
                     "You put quarter4 in vendy."],
-                   ["vendy thumps loudly and spits out quiche onto the ground.",
+                   ["Vendy thumps loudly and spits out quiche onto the ground.",
                     "Test Player puts quarter4 in vendy."])
 
     def testProgrammaticQuichePurchase(self):
@@ -71,12 +71,12 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
         icloc = objects.Container(store=self.store, capacity=500)
         icloc.installOn(location)
 
-        vm = quiche.createVendingMachine(self.store, u"Vendy", u"VEEEENDYYYYY")
+        vm = quiche.createVendingMachine(store=self.store, name=u"Vendy", description=u"VEEEENDYYYYY")
         vm.moveTo(location)
 
         icvm = iimaginary.IContainer(vm)
         icvm.closed = False
-        theQuiche = quiche.createQuiche(self.store, u"quiche")
+        theQuiche = quiche.createQuiche(store=self.store, name=u"quiche")
         icvm.add(theQuiche)
         icvm.closed = True
 

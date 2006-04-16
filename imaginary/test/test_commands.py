@@ -76,8 +76,8 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         iimaginary.IContainer(self.location).add(o)
         self._test(
             "get foo",
-            ["You take foo."],
-            ["Test Player takes foo."])
+            ["You take a foo."],
+            ["Test Player takes a foo."])
         self.assertEquals(o.location, self.player)
 
         # Try to get the observer
@@ -101,8 +101,8 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         cContainer.add(o)
         self._test(
             "get baz from bar",
-            ["You take baz from bar."],
-            ["Test Player takes baz from bar."])
+            ["You take a baz from the bar."],
+            ["Test Player takes a baz from the bar."])
         self.assertEquals(o.location, self.player)
 
         # Can't get things from a closed container
@@ -124,8 +124,8 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         iimaginary.IContainer(self.player).add(o)
         self._test(
             "drop bar",
-            ["You drop bar."],
-            ["Test Player drops bar."])
+            ["You drop a bar."],
+            ["Test Player drops a bar."])
         self.assertEquals(o.location, self.location)
 
     def testLook(self):
@@ -266,7 +266,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self._test(
             "name here CRAP of CRAPness",
             ["You change Test Location's name."],
-            ["fooix changes Test Location's name to CRAP of CRAPness."])
+            ["Fooix changes Test Location's name to CRAP of CRAPness."])
         self.assertEquals(self.location.name,
                           "CRAP of CRAPness")
 
@@ -308,9 +308,9 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         x, y = self._test(
             "score",
             [".*",
-             ".*Level: (\\d+) Experience: (\\d+)",
-             ".*Hitpoints: (\\d+)/(\\d+)",
-             ".*Stamina: (\\d+)/(\\d+)",
+             ".*Level: +(\\d+) Experience: +(\\d+)",
+             ".*Hitpoints: +(\\d+)/(\\d+)",
+             ".*Stamina: +(\\d+)/(\\d+)",
              ".*"])
         self.assertEquals(x[0].groups(), ()) # Extra line for the command
         self.assertEquals(x[1].groups(), ())
@@ -329,9 +329,9 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         x, y = self._test(
             "score",
             [".*",
-             ".*Level: (\\d+) Experience: (\\d+)",
-             ".*Hitpoints: (\\d+)/(\\d+)",
-             ".*Stamina: (\\d+)/(\\d+)",
+             ".*Level: +(\\d+) Experience: +(\\d+)",
+             ".*Hitpoints: +(\\d+)/(\\d+)",
+             ".*Stamina: +(\\d+)/(\\d+)",
              ".*"])
         self.assertEquals(x[0].groups(), ())
         self.assertEquals(x[1].groups(), ())
@@ -344,8 +344,8 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def testSpawn(self):
         self._test(
             "spawn foobar",
-            ["foobar created."],
-            ["Test Player creates foobar."])
+            ["A foobar created."],
+            ["Test Player creates a foobar."])
         foobar = self.player.find("foobar")
         self.assertEquals(foobar.name, "foobar")
         self.assertEquals(foobar.description, "an undescribed monster")
@@ -353,8 +353,8 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
         self._test(
             'spawn "bar foo"',
-            ["bar foo created."],
-            ["Test Player creates bar foo."])
+            ["A bar foo created."],
+            ["Test Player creates a bar foo."])
         barfoo = self.player.find("bar foo")
         self.assertEquals(barfoo.name, "bar foo")
         self.assertEquals(barfoo.description, "an undescribed monster")
@@ -362,8 +362,8 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
         self._test(
             'spawn "described monster" It looks like a monster with a description.',
-            ["described monster created."],
-            ["Test Player creates described monster."])
+            ["A described monster created."],
+            ["Test Player creates a described monster."])
         monster = self.player.find("described monster")
         self.assertEquals(monster.name, "described monster")
         self.assertEquals(monster.description, "It looks like a monster with a description.")
@@ -403,7 +403,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["There isn't an exit in that direction."])
         self.assertEquals(list(self.location.getExits()), [])
 
-        room = objects.Thing(store=self.store, name=u"destination")
+        room = objects.Thing(store=self.store, name=u"destination", proper=True)
         objects.Container(store=self.store, capacity=1000).installOn(room)
         objects.Exit.link(room, self.location, u'north')
 
@@ -420,9 +420,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self._test(
             "bury south",
             ["It's gone."],
-            # XXX - This is wrong, but I cannot fix it now.  "The" should be
-            # capitalized.
-            ["the exit to Test Location crumbles and disappears."])
+            ["The exit to Test Location crumbles and disappears."])
         self.assertEquals(list(self.location.getExits()), [])
         self.assertEquals(list(room.getExits()), [])
 
@@ -464,23 +462,28 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             [E("('Thing',"),
              E(" {'contents': [],"),
              E("  'description': u'',"),
+             E("  'gender': 3,"),
              E("  'location': Thing(description=u'Location for testing.', "
-               "location=None, name=u'Test Location', portable=True, weight=1, "
-               "storeID=1)@0x") + "[A-F0-9]{1,8}" + E(","),
+               "gender=3, location=None, name=u'Test Location', portable=True, "
+               "proper=True, weight=1, storeID=1)@0x") + "[A-F0-9]{1,8}"
+               + E(","),
              E("  'name': u'Test Player',"),
              E("  'portable': True,"),
+             E("  'proper': True,"),
              E("  'weight': 100})"),
              ])
 
         self._test(
             "scrutinize here",
             [E("('Thing',"),
-             E(" {'contents': [Thing(description=u'', location=reference(") + STOREID + E("), name=u'Test Player', portable=True, weight=100, storeID=6)@0x") + PTR + E(","),
-             E("               Thing(description=u'', location=reference(") + STOREID + E("), name=u'Observer Player', portable=True, weight=100, storeID=18)@0x") + PTR + E("],"),
+             E(" {'contents': [Thing(description=u'', gender=3, location=reference(") + STOREID + E("), name=u'Test Player', portable=True, proper=True, weight=100, storeID=6)@0x") + PTR + E(","),
+             E("               Thing(description=u'', gender=3, location=reference(") + STOREID + E("), name=u'Observer Player', portable=True, proper=True, weight=100, storeID=18)@0x") + PTR + E("],"),
              E("  'description': u'Location for testing.',"),
+             E("  'gender': 3,"),
              E("  'location': None,"),
              E("  'name': u'Test Location',"),
              E("  'portable': True,"),
+             E("  'proper': True,"),
              E("  'weight': 1})")])
 
 
@@ -491,17 +494,17 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         iimaginary.IContainer(self.location).add(container)
         self._test(
             "close container",
-            ["You close container."],
-            ["Test Player closes container."])
+            ["You close the container."],
+            ["Test Player closes a container."])
         self._test(
             "close container",
-            ["container is already closed."],
+            ["The container is already closed."],
             [])
         self._test(
             "open container",
-            ["You open container."],
-            ["Test Player opens container."])
+            ["You open the container."],
+            ["Test Player opens a container."])
         self._test(
             "open container",
-            ["container is already open."],
+            ["The container is already open."],
             [])

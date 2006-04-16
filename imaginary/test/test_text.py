@@ -38,10 +38,9 @@ class StructLike(unittest.TestCase):
         self.assertEquals(b.z, 3)
 
 def F(*a, **kw):
-    if 'currentAttrs' not in kw:
-        # Everything is turned off/normaled by default
-        kw['currentAttrs'] = T.AttributeSet()
-    return ''.join(list(T.flatten(*a, **kw)))
+    if "currentAttrs" not in kw:
+        kw["currentAttrs"] = T.AttributeSet()
+    return ''.join(list(T.flatten(a, **kw)))
 
 
 def NN(**kw):
@@ -109,6 +108,7 @@ class AttributeSetting(unittest.TestCase):
                             ('received', 'expected', "what's up"))
             raise unittest.FailTest(pprint.pformat(failures))
 
+
 class Colorization(unittest.TestCase):
     def testTrivialStringOnly(self):
         self.assertEquals(
@@ -122,6 +122,12 @@ class Colorization(unittest.TestCase):
         self.assertEquals(
             F(''),
             '')
+
+    def testNoColors(self):
+        self.assertEquals(
+            F([[T.fg.green, "hi", T.bg.yellow, "there", T.bold, "no"], "normal", [T.fg.blue, "blue"], "notblue"],
+              useColors=False),
+            "hitherenonormalbluenotblue")
 
     def testTrivialStringAndList(self):
         self.assertEquals(
@@ -219,7 +225,7 @@ class Colorization(unittest.TestCase):
         self._assertECMA48Equality(
             F([T.fg.red, [T.bg.green, [T.blink, 'hello'], ' '], 'world']),
             '\x1b[5;31;42mhello\x1b[0;31;42m \x1b[0;31mworld\x1b[0m')
-        
+
         self._assertECMA48Equality(
             F([T.fg.cyan,
                T.bg.magenta,

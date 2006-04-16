@@ -2,29 +2,12 @@
 from zope.interface import Interface, Attribute
 
 
+
 class ITelnetService(Interface):
     """
     Really lame tag interface used by the Mantissa offering system to uniquely
     identify a powerup that runs a telnet server.
     """
-
-
-class IDescribeable(Interface):
-    """
-    A thing which can be described to those with the power of observation.
-    """
-    def formatTo(whom):
-        """
-        Return a brief description of this object, as observed by the
-        given observer.
-        """
-
-
-    def longFormatTo(whom):
-        """
-        Return a longer description of this object, as observed by the
-        given observer.
-        """
 
 
 
@@ -62,20 +45,19 @@ class IDescriptionContributor(Interface):
     A powerup interface which can add text to the description of an object.
 
     All IDescriptionContributors which are powered up on a particular Object
-    will be given a chance to add to the output of its C{longFormatTo} method.
+    will be given a chance to add to the output of its C{conceptualize} method.
     """
 
-    def longFormatTo(other):
+    def conceptualize():
         """
-        @see IDescribeable
+        Return an IConcept provider.
         """
 
 
 
-class IThing(IDescribeable):
+class IThing(Interface):
     """
-    A thing in the world.  In addition to the behavior described by
-    L{IDescribeable}, this has a location and and might be relocateable.
+    A thing in the world.  It has a location and and might be relocateable.
     """
     location = Attribute("An IThing which contains this IThing")
 
@@ -101,7 +83,7 @@ class IActor(Interface):
     def send(event):
         """Describe something to the actor.
 
-        @type event: L{IDescribeable} provider
+        @type event: L{IConcept} provider
         @param event: Something that will be described to the actor.
         """
 
@@ -110,7 +92,7 @@ class IEventObserver(Interface):
     def send(event):
         """Describe something to the actor.
 
-        @type event: L{IDescribeable} provider
+        @type event: L{IConcept} provider
         @param event: Something that will be described to the actor.
         """
 
@@ -173,7 +155,32 @@ class IContainer(Interface):
         """
 
 
+class IConcept(Interface):
+    """
+    This represents a concept which can be expressed in English.
+    """
+
+    def plaintext(observer):
+        """
+        @param observer: the IThing provider who is asking to learn about this
+        concept, or None.  This comes from the argument to 'express'.
+        """
+
+
+    def capitalizeConcept():
+        """
+        Make this concept CAPITALISERD!
+
+        Oh man this is retarded.
+
+        XXX fix it or something pleeeeeeeaaaaaaaaaasssssssssseeeeeeeeee
+        deletedeletedletedletledeltetledleltellxceltedlelt
+        """
+
+
+
 ####### Below here is new, experimental stuff, which doesn't really work yet.
+
 
 class IThingPowerUp(Interface):
     """
@@ -184,14 +191,18 @@ class IThingPowerUp(Interface):
     only Items can be Powerups.
     """
 
+
 class IClothingWearer(IThingPowerUp):
     """
     A person who can wear clothing.
     """
 
+
 class IClothing(IThingPowerUp):
     """
+    This interface sucks.
     """
+
 
 class IDescriptor(IThingPowerUp):
     """
@@ -207,46 +218,6 @@ class IDescriptor(IThingPowerUp):
         observer.
         """
 
-
-class IConcept(Interface):
-    """
-    This represents a concept which can be expressed in english.
-
-    Many adapters to IConcept exist for simple types: for example, a string or
-    unicode object, when expressed, is assumed to be in the target language
-    (english, in the case of this interface) and the string itself is returned.
-
-    Sequences (lists and tuples) are adapted to IConcept by adapting each
-    element to IConcept in turn, and concatenating the result of expressing
-    each one.
-
-    Functions and methods are adapted to IConcept by assuming that they are
-    one-argument callables which take the observer they are being expressed to
-    as an argument.
-
-    Note: functions adapted in this manner will _not_ have their return values
-    inspected as adaptable to IConcept; they must simply return unicode objects
-    as expressTo is documented to.  This will not be changed: the potential for
-    infinitely recursive invocations is too great.
-
-    Some code which provides simple examples of how this interface may be
-    applied can be found in imaginary.test.test_english.TestConcept.
-
-    XXX TODO: expressTo should eventually return structured information for
-    more detailed rendering (item links in chat text, for example).
-    """
-
-    def expressTo(observer):
-        """
-        Return a short (<4k) unicode object representing the description of this
-        concept in english.
-
-        Never implement or call this method yourself.  See the interface
-        documentation for more information.
-
-        @param observer: the IThing provider who is asking to learn about this
-        concept, or None.  This comes from the argument to 'express'.
-        """
 
 class IVisible(Interface):
     """

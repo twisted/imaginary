@@ -96,6 +96,7 @@ class AttributeSet(_structlike):
                        in zip(self.__names__, self)
                        if v is not unset]))
 
+
     def clone(self):
         return self.__class__(*self)
 
@@ -242,14 +243,24 @@ for attr in 'bold', 'blink', 'reverseVideo', 'underline':
     setattr(value, attr, True)
     locals()[attr] = value
 
-def flatten(*dag, **kw):
-    currentAttrs = kw.pop('currentAttrs')
+def flatten(dag, currentAttrs=None, useColors=True):
+    # XXX TODO: Add unicode handling!
+    """
+    Serialize a tree of strings and terminal codes to an iterable of strings,
+    ready to be written to your favorite terminal device.
+
+    @type currentAttrs: L{AttributeSet}
+    @param currentAttrs: The current set of attributes.
+
+    @param useColors: If False, terminal codes will be left out.
+    """
+    if currentAttrs is None:
+        if not useColors:
+            currentAttrs = AttributeSet()
+        else:
+            raise TypeError("currentAttrs is required when useColors is False")
     attrs = AttributeStack(currentAttrs)
     attrs.duptop()
-
-    if kw:
-        raise TypeError(
-            "flatten takes only `currentAttrs' as a keyword argument")
 
     stack = [iter(dag)]
     dirty = False
@@ -260,15 +271,18 @@ def flatten(*dag, **kw):
             stack.pop()
             attrs.pop()
             if len(attrs):
-                dirty = bool(attrs.get().toVT102(currentAttrs))
+                if useColors:
+                    dirty = bool(attrs.get().toVT102(currentAttrs))
         else:
             if isinstance(obj, AttributeSet):
                 attrs.update(obj)
-                dirty = bool(attrs.get().toVT102(currentAttrs))
+                if useColors:
+                    dirty = bool(attrs.get().toVT102(currentAttrs))
             elif isinstance(obj, (str, unicode)):
                 if obj:
                     if dirty:
-                        yield attrs.get().toVT102(currentAttrs)
+                        if useColors:
+                            yield attrs.get().toVT102(currentAttrs)
                         currentAttrs = attrs.get().clone()
                         dirty = False
                     yield obj
@@ -277,7 +291,8 @@ def flatten(*dag, **kw):
                     newIter = iter(obj)
                 except TypeError:
                     if dirty:
-                        yield attrs.get().toVT102(currentAttrs)
+                        if useColors:
+                            yield attrs.get().toVT102(currentAttrs)
                         currentAttrs = attrs.get().clone()
                         dirty = False
                     yield obj
@@ -285,14 +300,11 @@ def flatten(*dag, **kw):
                     stack.append(newIter)
                     attrs.duptop()
     if dirty and len(attrs):
-        yield attrs.get().toVT102(currentAttrs)
+        if useColors:
+            yield attrs.get().toVT102(currentAttrs)
+
+
 
 __all__ = [
     'fg', 'bg',
     'flatten']
-
-if __name__ == '__main__':
-    print repr(''.join(list(flatten(
-        [fg.red, bg.blue, bold, ['hello world']], '\n',
-        [fg.blue, bg.red, blink, ['how are you?']], '\n',
-        [fg.blue, [bg.red, [blink, 'how'], ' are'], ' you?'], '\n'))))

@@ -1,9 +1,9 @@
 
 from twisted.trial import unittest
 
-from axiom import store, item, attributes
+from axiom import store
 
-from imaginary import eimaginary, objects, iterutils, text as T, iimaginary
+from imaginary import eimaginary, objects, iimaginary
 
 class PointsTestCase(unittest.TestCase):
     def setUp(self):
@@ -52,18 +52,6 @@ class PointsTestCase(unittest.TestCase):
         self.assertEquals(str(p), '0/100')
         self.assertEquals(repr(p), 'imaginary.objects.Points(100, 0)')
 
-
-
-class Describeable(item.Item):
-    long = attributes.text(default=u"Yo LONG")
-    short = attributes.text(default=u"yo")
-
-    def longFormatTo(self, other):
-        return self.long
-
-
-    def formatTo(self, other):
-        return self.short
 
 
 
@@ -135,15 +123,4 @@ class ObjectTestCase(unittest.TestCase):
         self.assertEquals(list(iimaginary.IContainer(room).getContents()), [obj])
         self.assertEquals(list(container.getContents()), [])
 
-
-    def testObjectProvidesIDescribeable(self):
-        obj = objects.Thing(store=self.store, name=u"mountain")
-        self.assertTrue(iimaginary.IDescribeable.providedBy(iimaginary.IDescribeable(obj)))
-
-    def testDescriptionOverridableByPowerup(self):
-        obj = objects.Thing(store=self.store, name=u"mountain")
-        obj.powerUp(Describeable(store=self.store), iimaginary.IDescribeable)
-
-        out = iimaginary.IDescribeable(obj).longFormatTo("hello")
-        self.assertEquals(out, "Yo LONG")
 

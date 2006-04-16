@@ -6,7 +6,7 @@ from twisted.python import components
 
 from axiom import item, attributes
 
-from imaginary import iimaginary, objects, action, events
+from imaginary import iimaginary, objects, action, events, language
 
 
 class ICoin(Interface):
@@ -14,6 +14,17 @@ class ICoin(Interface):
     Something small and probably flat and round and which probably serves as
     some form of currency.
     """
+
+
+
+def createCreator(*powerups):
+    def create(**kw):
+        store = kw['store']
+        o = objects.Thing(**kw)
+        for pup in powerups:
+            pup(store=store).installOn(o)
+        return o
+    return create
 
 
 
@@ -31,13 +42,6 @@ class Quarter(item.Item, Coinage, item.InstallableMixin):
     thing = attributes.reference(doc="""
     The object this coin powers up.
     """)
-
-
-
-def createCoin(store, name, description=u""):
-    o = objects.Thing(store=store, name=name, description=description)
-    Quarter(store=store).installOn(o)
-    return o
 
 
 
@@ -77,12 +81,12 @@ class VendingMachine(item.Item, objects.Containment, item.InstallableMixin):
                 evt = events.Success(
                     actor=self.thing,
                     target=obj,
-                    otherMessage=(self.thing, " thumps loudly."))
+                    otherMessage=language.Sentence([self.thing, " thumps loudly."]))
             else:
                 evt = events.Success(
                     actor=self.thing,
                     target=obj,
-                    otherMessage=(self.thing, " thumps loudly and spits out ", obj, " onto the ground."))
+                    otherMessage=language.Sentence([self.thing, " thumps loudly and spits out ", obj, " onto the ground."]))
                 state = self.closed
                 self.closed = False
                 try:
@@ -110,4 +114,9 @@ def createVendingMachine(store, name, description=u""):
 
 def createQuiche(store, name, description=u""):
     return objects.Thing(store=store, name=name, description=description)
-Quiche = createQuiche
+
+
+
+createCoin = createCreator(Quarter)
+createVendingMachine = createCreator(VendingMachine)
+createQuiche = createCreator()

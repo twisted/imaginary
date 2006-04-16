@@ -1,36 +1,30 @@
-# -*- test-case-name: imaginary.test.test_language -*-
+# -*- test-case-name: imaginary.test.test_concept -*-
 
 """
 
 Textual formatting for game objects.
 
 """
+import types
+
 from zope.interface import implements
 
 from twisted.python.components import registerAdapter
 
-from imaginary.iimaginary import IConcept
-
-from imaginary.places import Gender
+from imaginary import iimaginary, iterutils, text as T
 
 
-
-def express(concept, observer):
+class Gender(object):
     """
-    This is the top-level entrypoint for expressing a concept to an observer.
-
-    For example, you can use it like this:
-
-        bob = Person()
-        food = SomeEdibleThing()
-        express([bob, ' eats the ', food], # the concept
-                bob)
-
+    enum!
     """
-    return IConcept(concept).expressTo(observer)
+    MALE = 1
+    FEMALE = 2
+    NEUTER = 3
 
 
-class Noun:
+
+class Noun(object):
     """
     This is a language wrapper around a Thing.
 
@@ -48,136 +42,219 @@ class Noun:
        be SUPER-COOL if people could be playing the same game in french and
        english on the same server, simply by changing a setting on their
        client.
-
     """
 
-    implements(IConcept)
 
-    def __init__(self, original, unique=False):
-        self.original = original
+    def __init__(self, thing):
+        self.thing = thing
         self.unique = False
 
-    def expressTo(self, observer):
-        return self.nounPhrase(observer)
 
-    def nounPhrase(self, observer):
-        return (self.article(observer) + self.shortName(observer))
+    def shortName(self):
+        return ExpressString(self.thing.name)
 
-    def article(self, observer):
-        if self.unique:
-            return self.definiteArticle(observer)
-        else:
-            return self.indefiniteArticle(observer)
 
-    def indefiniteArticle(self, observer):
-        if self.original.name[0].lower() in u'aeiou':
+    def nounPhrase(self):
+        if self.thing.proper:
+            return self.shortName()
+        return ExpressList([self.indefiniteArticle(), self.shortName()])
+
+
+    def definiteNounPhrase(self):
+        if self.thing.proper:
+            return self.shortName()
+        return ExpressList([self.definiteArticle(), self.shortName()])
+
+
+    def indefiniteArticle(self):
+        # XXX TODO FIXME: YTTRIUM
+        if self.thing.name[0].lower() in u'aeiou':
             return u'an '
         return u'a '
 
-    def definiteArticle(self, observer):
+
+    def definiteArticle(self):
         return u'the '
 
-    def shortName(self, observer):
-        return self.original.name
 
-    def containerPreposition(self, content, observer):
-        """When this object acts as a container, this is the preposition that
-        objects will be in relation to it."""
-        return u"on"
+    def heShe(self):
+        """
+        Return the personal pronoun for the wrapped thing.
+        """
+        x = {Gender.MALE: u'he',
+             Gender.FEMALE: u'she'
+             }.get(self.thing.gender, u'it')
+        return ExpressString(x)
 
-    def containedPhrase(self, observer, containerNoun):
-        # A self is container.preposition the container
-        return u"%s is %s %s." % (
-            self.nounPhrase(observer),
-            containerNoun.containerPreposition(self, observer),
-            containerNoun.nounPhrase(observer))
 
-    def presentPhrase(self, observer):
-        # ugh: this is terrible.
-        if self.original.location == observer.location:
-            return "%s is here." % self.nounPhrase(observer)
-        else:
-            return self.containedPhrase(self)
+    def himHer(self):
+        """
+        Return the objective pronoun for the wrapped thing.
+        """
+        x = {Gender.MALE: u'him',
+             Gender.FEMALE: u'her'
+             }.get(self.thing.gender, u'it')
+        return ExpressString(x)
 
-    def heShe(self, observer):
-        if self.original.gender == Gender.MALE:
-            return 'he'
-        elif self.original.gender == Gender.FEMALE:
-            return 'she'
-        else:
-            return 'it'
 
-    def himHer(self, observer):
-        if self.original.gender == Gender.MALE:
-            return 'him'
-        elif self.original.gender == Gender.FEMALE:
-            return 'her'
-        else:
-            return 'its'
+    def hisHer(self):
+        """
+        Return a possessive pronoun that cannot be used after 'is'.
+        """
+        x = {Gender.MALE: u'his',
+             Gender.FEMALE: u'her' # <-- OMG! hers!
+             }.get(self.thing.gender, u'its')
+        return ExpressString(x)
 
-    def hisHer(self, observer):
-        if self.original.gender == Gender.MALE:
-            return 'his'
-        elif self.original.gender == Gender.FEMALE:
-            return 'her'
-        else:
-            return 'its'
 
-class Facet:
+    #FIXME: add his/hers LATER
+
+    def description(self):
+        return DescriptionConcept(self.thing)
+
+
+
+class BaseExpress(object):
+    implements(iimaginary.IConcept)
+
     def __init__(self, original):
         self.original = original
 
-class _ExpressSeq(Facet):
-    def expressTo(self, observer):
-        return ''.join([IConcept(x).expressTo(observer) for x in self.original])
+    def plaintext(self, observer):
+        return T.flatten(self.vt102(observer), useColors=False)
 
-class _ExpressNothing(Facet):
-    def expressTo(self, observer):
-        return ''
 
-class _ExpressYourself(Facet):
-    def expressTo(self, observer):
+
+class DescriptionConcept(BaseExpress):
+    implements(iimaginary.IConcept)
+
+    def __init__(self, thing):
+        self.thing = thing
+        self.noun = Noun(thing)
+
+
+    def vt102(self, observer):
+        exitNames = list(self.thing.getExitNames())
+        if exitNames:
+            exits = [T.bold, T.fg.green, u'( ', [T.fg.normal, T.fg.yellow, iterutils.interlace(u' ', exitNames)], u' )', u'\n']
+        else:
+            exits = u''
+
+        description = u''
+        if self.thing.description:
+            description = (T.fg.green, self.thing.description, u'\n')
+
+        descriptionComponents = []
+        for pup in self.thing.powerupsFor(iimaginary.IDescriptionContributor):
+            descriptionComponents.append(pup.conceptualize().vt102(observer))
+
+        return [
+            [T.bold, T.fg.green, u'[ ', [T.fg.normal, self.thing.name], u' ]\n'],
+            exits,
+            description,
+            descriptionComponents]
+
+
+
+class ExpressNumber(BaseExpress):
+    implements(iimaginary.IConcept)
+
+    def vt102(self, observer):
+        return str(self.original)
+
+
+
+class ExpressString(BaseExpress):
+    implements(iimaginary.IConcept)
+
+    def __init__(self, original, capitalized=False):
+        self.original = original
+        self._cap = capitalized
+
+
+    def vt102(self, observer):
+        if self._cap:
+            return self.original[:1].upper() + self.original[1:]
         return self.original
 
-class _FunctionAsConcept(Facet):
-    def expressTo(self, observer):
-        return self.original(observer)
 
-registerAdapter(_ExpressSeq, tuple, IConcept)
-registerAdapter(_ExpressSeq, list, IConcept)
-registerAdapter(_ExpressNothing, type(None), IConcept)
+    def capitalizeConcept(self):
+        return ExpressString(self.original, True)
 
-registerAdapter(_ExpressYourself, str, IConcept)
-registerAdapter(_ExpressYourself, unicode, IConcept)
 
-registerAdapter(_FunctionAsConcept, type(lambda observer: None), IConcept)
 
-def _g():
-    yield None
+class ExpressList(BaseExpress):
+    implements(iimaginary.IConcept)
 
-registerAdapter(_ExpressSeq, type(_g()), IConcept)
+    def concepts(self, observer):
+        return map(iimaginary.IConcept, self.original)
 
-class ItemizedList:
-    implements(IConcept)
+    def vt102(self, observer):
+        return [x.vt102(observer) for x in self.concepts(observer)]
+
+    def capitalizeConcept(self):
+        return Sentence(self.original)
+
+
+
+
+class Sentence(ExpressList):
+    def vt102(self, observer):
+        o = self.concepts(observer)
+        if o:
+            o[0] = o[0].capitalizeConcept()
+        return [x.vt102(observer) for x in o]
+
+
+    def capitalizeConcept(self):
+        return self
+
+
+
+registerAdapter(ExpressNumber, int, iimaginary.IConcept)
+registerAdapter(ExpressNumber, long, iimaginary.IConcept)
+registerAdapter(ExpressString, str, iimaginary.IConcept)
+registerAdapter(ExpressString, unicode, iimaginary.IConcept)
+registerAdapter(ExpressList, list, iimaginary.IConcept)
+registerAdapter(ExpressList, tuple, iimaginary.IConcept)
+registerAdapter(ExpressList, types.GeneratorType, iimaginary.IConcept)
+
+
+class ItemizedList(BaseExpress):
+    implements(iimaginary.IConcept)
 
     def __init__(self, listOfConcepts):
         self.listOfConcepts = listOfConcepts
 
-    def expressTo(self, observer):
-        return IConcept(
-            itemizedStringList(self.listOfConcepts[:])).expressTo(observer)
+
+    def concepts(self, observer):
+        return self.listOfConcepts
+
+
+    def vt102(self, observer):
+        return ExpressList(
+            itemizedStringList(self.concepts(observer))).vt102(observer)
+
+
+    def capitalizeConcept(self):
+        listOfConcepts = self.listOfConcepts[:]
+        if listOfConcepts:
+            listOfConcepts[0] = iimaginary.IConcept(listOfConcepts[0]).capitalizeConcept()
+        return ItemizedList(listOfConcepts)
+
+
 
 def itemizedStringList(desc):
     if len(desc) == 1:
-        return desc[0]
-    origLen = len(desc)
-    didOneAnd = False
-    for x in xrange(len(desc) - 1):
-        if didOneAnd:
-            thingToInsert = u', '
-        else:
-            thingToInsert = u' and '
-            didOneAnd = True
-        desc.insert(origLen - (x+1), thingToInsert)
-    return desc
+        yield desc[0]
+    elif len(desc) == 2:
+        yield desc[0]
+        yield u' and '
+        yield desc[1]
+    elif len(desc) > 2:
+        for ele in desc[:-1]:
+            yield ele
+            yield u', '
+        yield u'and '
+        yield desc[-1]
 

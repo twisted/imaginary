@@ -1,44 +1,42 @@
+from twisted.trial import unittest
 
-from axiom.store import Store
+from axiom import store
 
-from imaginary.places import Thing
-from imaginary.garments import Garment, GarmentSlot, Wearer
+from imaginary import objects, garments, language
+from imaginary.test import commandutils
 
-from imaginary.language import express
 
-from twisted.trial.unittest import TestCase
 
-class WearItThenTakeItOff(TestCase):
-    """
-    """
+class WearIt(unittest.TestCase, commandutils.LanguageMixin):
 
     def setUp(self):
-        s = self.store = Store()
+        self.store = store.Store()
 
-        self.dummy = Thing(store=s, baseName=u'dummy')
-        self.shirt = Thing(store=s)
+        self.dummy = objects.Thing(store=self.store, name=u'dummy')
+        self.dummyContainer = objects.Container(store=self.store, capacity=100)
+        self.dummyContainer.installOn(self.dummy)
 
-        self.shirtGarment = Garment(store=s,
-                                    garmentDescription=u'a shirt',
-                                    garmentSlots=[
-                GarmentSlot.LEFT_ARM,
-                GarmentSlot.RIGHT_ARM,
-                GarmentSlot.CHEST,
-                GarmentSlot.BACK,
-                ])
+        self.shirt = objects.Thing(store=self.store, name=u'shirt')
+        self.shirtGarment = garments.Garment(
+            store=self.store,
+            garmentDescription=u'a shirt',
+            garmentSlots=[garments.GarmentSlot.LEFT_ARM,
+                          garments.GarmentSlot.RIGHT_ARM,
+                          garments.GarmentSlot.CHEST,
+                          garments.GarmentSlot.BACK,
+                          ])
+        self.shirtGarment.installOn(self.shirt)
 
-        self.shirtGarment.installBehavior(
-            self.shirt)
+        self.wearer = garments.Wearer(store=self.store)
+        self.wearer.installOn(self.dummy)
 
-        self.wearer = Wearer(store=s)
-        self.wearer.installBehavior(self.dummy)
 
     def testWearing(self):
         self.wearer.putOn(self.shirtGarment)
 
-        self.assertEquals(self.shirt.location,
-                          self.dummy)
+        self.assertEquals(self.shirt.location, None)
 
         self.assertEquals(
-            express(self.dummy.fullyConceptualize(), None),
+            self.flatten(language.Noun(self.dummy).description().plaintext(self.dummy)),
+            u'[ dummy ]\n'
             u'It is wearing a shirt.')

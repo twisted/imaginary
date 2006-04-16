@@ -2,16 +2,17 @@
 
 import os, random
 
-from zope.interface import Interface
+from zope.interface import implements
 
 import pyparsing
 
-from twisted.python import util, rebuild, components
+from twisted.python import util
 from twisted import plugin
 
 import imaginary.plugins
+from imaginary.wiring import realm
 from imaginary import (iimaginary, eimaginary, iterutils, commands, events,
-                     objects, text as T)
+                       objects, text as T, language)
 
 class Action(commands.Command):
     infrastructure = True
@@ -98,9 +99,11 @@ class LookAround(NoTargetAction):
 
     def do(self, player, line):
         if player.thing.location is None:
-            player.send("You are floating in an empty, formless void.", "\n")
+            concept = u"You are floating in an empty, formless void."
         else:
-            player.send(player.thing.location.longFormatTo(player.thing), "\n")
+            concept = language.Noun(player.thing.location).description()
+        events.Success(actor=player.thing,
+                       actorMessage=concept).broadcast()
 
 class LookAt(TargetAction):
     commandName = "look"
@@ -121,14 +124,13 @@ class LookAt(TargetAction):
             evt = events.Success(
                 actor=player.thing,
                 target=target,
-                actorMessage=target.longFormatTo(player.thing),
+                actorMessage=language.Noun(target).description(),
                 targetMessage=(player.thing, " looks at you."))
-            evt.broadcast()
         else:
             evt = events.Success(
                 actor=player.thing,
-                actorMessage=target.longFormatTo(player.thing))
-            evt.broadcast()
+                actorMessage=language.Noun(target).description())
+        evt.broadcast()
 
 class Describe(TargetAction):
     expr = (pyparsing.Literal("describe") +
@@ -163,7 +165,7 @@ class Name(TargetAction):
         evt = events.Success(
             actor=player.thing,
             actorMessage=("You change ", target, "'s name."),
-            otherMessage=(player.thing, " changes ", target, "'s name to ", name, "."))
+            otherMessage=language.Sentence([player.thing, " changes ", target, "'s name to ", name, "."]))
         evt.broadcast()
         target.name = name
 
@@ -177,19 +179,20 @@ class Open(TargetAction):
     targetInterface = iimaginary.IContainer
 
     def do(self, player, line, target):
+        dnf = language.Noun(target.thing).definiteNounPhrase()
         if not target.closed:
             evt = events.ThatDoesntWork(
                 actor=player.thing,
                 target=target.thing,
-                actorMessage=(target.thing, " is already open."))
+                actorMessage=language.Sentence([dnf, " is already open."]))
         else:
             target.closed = False
             evt = events.Success(
                 actor=player.thing,
                 target=target.thing,
-                actorMessage=("You open ", target.thing, "."),
-                targetMessage=(player.thing, " opens you."),
-                otherMessage=(player.thing, " opens ", target.thing, "."))
+                actorMessage=("You open ", dnf, "."),
+                targetMessage=language.Sentence([player.thing, " opens you."]),
+                otherMessage=language.Sentence([player.thing, " opens ", target.thing, "."]))
         evt.broadcast()
 
 
@@ -202,19 +205,20 @@ class Close(TargetAction):
     targetInterface = iimaginary.IContainer
 
     def do(self, player, line, target):
+        dnf = language.Noun(target.thing).definiteNounPhrase()
         if target.closed:
             evt = events.ThatDoesntWork(
                 actor=player.thing,
                 target=target.thing,
-                actorMessage=(target.thing, " is already closed."))
+                actorMessage=language.Sentence([dnf, " is already closed."]))
         else:
             target.closed = True
             evt = events.Success(
                 actor=player.thing,
                 target=target.thing,
-                actorMessage=("You close ", target.thing, "."),
-                targetMessage=(player.thing, " closes you."),
-                otherMessage=(player.thing, " closes ", target.thing, "."))
+                actorMessage=("You close ", dnf, "."),
+                targetMessage=language.Sentence([player.thing, " closes you."]),
+                otherMessage=language.Sentence([player.thing, " closes ", target.thing, "."]))
         evt.broadcast()
 
 
@@ -233,14 +237,15 @@ def targetTaken(player, target, container=None):
             actorMessage=("You take ", target, "."),
             targetMessage=(player, " takes you."),
             otherMessage=(player, " takes ", target, "."))
+    idop = language.Noun(container).definiteNounPhrase()
     return events.Success(
         actor=player,
         target=target,
         tool=container,
-        actorMessage=("You take ", target, " from ", container, "."),
-        targetMessage=(player, " takes you from ", container, "."),
+        actorMessage=("You take ", target, " from ", idop, "."),
+        targetMessage=(player, " takes you from ", idop, "."),
         toolMessage=(player, " takes ", target, " from you."),
-        otherMessage=(player, " takes ", target, " from ", container, "."))
+        otherMessage=(player, " takes ", target, " from ", idop, "."))
 
 
 class TakeFrom(ToolAction):
@@ -292,19 +297,25 @@ class PutIn(ToolAction):
             evt = events.ThatDoesntWork(actor=player.thing, target=targetObject, tool=tool,
                                         actorMessage="A thing cannot contain itself in euclidean space.")
         else:
+            dnf = language.Noun(targetObject).definiteNounPhrase()
             try:
                 tool.moveTo(target)
             except eimaginary.DoesntFit:
                 evt = events.ThatDoesntWork(actor=player.thing, target=targetObject, tool=tool)
             except eimaginary.Closed:
-                evt = events.ThatDoesntWork(actor=player.thing, target=targetObject, tool=tool, actorMessage=(targetObject, " is closed."))
+                evt = events.ThatDoesntWork(actor=player.thing,
+                                            target=targetObject,
+                                            tool=tool,
+                                            actorMessage=language.Sentence([dnf, " is closed."]))
             else:
                 evt = events.Success(
-                    actor=player.thing, target=targetObject, tool=tool,
-                    actorMessage=("You put ", tool, " in ", targetObject, "."),
-                    targetMessage=(player.thing, " puts ", " tool in you."),
-                    toolMessage=(player.thing, " puts you in ", targetObject, "."),
-                    otherMessage=(player.thing, " puts ", tool, " in ", targetObject, "."))
+                    actor=player.thing,
+                    target=targetObject,
+                    tool=tool,
+                    actorMessage=("You put ", tool, " in ", dnf, "."),
+                    targetMessage=language.Sentence([player.thing, " puts ", " tool in you."]),
+                    toolMessage=language.Sentence([player.thing, " puts you in ", targetObject, "."]),
+                    otherMessage=language.Sentence([player.thing, " puts ", tool, " in ", targetObject, "."]))
         evt.broadcast()
 
 
@@ -353,9 +364,9 @@ def creationSuccess(player, creation):
     return events.Success(
         actor=player,
         target=creation,
-        actorMessage=(creation, " created."),
-        targetMessage=(player, " creates you."),
-        otherMessage=(player, " creates ", creation, "."))
+        actorMessage=language.Sentence([creation, " created."]),
+        targetMessage=language.Sentence([player, " creates you."]),
+        otherMessage=language.Sentence([player, " creates ", creation, "."]))
 
 class Spawn(NoTargetAction):
     expr = (pyparsing.Literal("spawn") +
@@ -389,7 +400,7 @@ class Create(NoTargetAction):
             description = u'an undescribed object'
         for plug in getPlugins(iimaginary.IThingType, imaginary.plugins):
             if plug.type == typeName:
-                o = plug.getType()(store=player.store, name=name, description=description)
+                o = plug.getType()(store=player.store, name=name, description=description, proper=True)
                 break
         else:
             raise ValueError("Can't find " + typeName)
@@ -457,7 +468,7 @@ class Dig(NoTargetAction):
             evt = events.Success(
                 actor=player.thing,
                 actorMessage="You create an exit.",
-                otherMessage=(player.thing, " created an exit to the ", direction, "."))
+                otherMessage=language.Sentence([player.thing, " created an exit to the ", direction, "."]))
             evt.broadcast()
 
             # XXX Right now there can't possibly be anyone in the
@@ -479,14 +490,16 @@ class Bury(NoTargetAction):
                 if exit.sibling is not None:
                     evt = events.Success(
                         location=exit.toLocation,
-                        otherMessage=(exit.sibling,
-                                      " crumbles and disappears."))
+                        otherMessage=language.Sentence([
+                            exit.sibling, " crumbles and disappears."]))
                     evt.broadcast()
 
                 evt = events.Success(
                     actor=player.thing,
                     actorMessage="It's gone.",
-                    otherMessage=(player.thing, " destroyed ", exit, "."))
+                    otherMessage=language.Sentence([
+                        language.Noun(player.thing).nounPhrase(),
+                        " destroyed ", exit, "."]))
                 evt.broadcast()
                 exit.destroy()
                 return
@@ -553,7 +566,7 @@ class Restore(TargetAction):
 
     def targetNotAvailable(self, player, exc):
         for thing in player.search(self.targetRadius(player), iimaginary.IThing, exc.partValue):
-            return (thing, " cannot be restored.")
+            return (language.Noun(thing).nounPhrase().plaintext(player), " cannot be restored.")
         return "Who's that?"
 
     def targetRadius(self, player):
@@ -603,10 +616,12 @@ class Hit(TargetAction):
                 damage = random.randrange(1, 5)
                 player.stamina.decrease(cost)
                 thp = target.hitpoints.decrease(damage)
-                toBroadcast.append(events.Success(targetMessage=[player.thing, " hits you for ", damage, " hitpoints."],
-                                                  actorMessage=["You hit ", target.thing, " for ", damage, " hitpoints."],
-                                                  otherMessage=[player.thing, " hits ", target.thing, "."],
-                                                  actor=player.thing, target=target.thing))
+                toBroadcast.append(events.Success(
+                    actor=player.thing,
+                    target=target.thing,
+                    targetMessage=language.Sentence([player.thing, " hits you for ", damage, " hitpoints."]),
+                    actorMessage=language.Sentence(["You hit ", language.Noun(target.thing).definiteNounPhrase(), " for ", damage, " hitpoints."]),
+                    otherMessage=language.Sentence([player.thing, " hits ", target.thing, "."])))
                 if thp <= 0:
                     xp = target.experience / 2 + 1
                     player.gainExperience(xp) # I LOVE IT
@@ -665,39 +680,59 @@ class Commands(NoTargetAction):
         cmds.sort()
         player.send((iterutils.interlace(" ", cmds), "\n"))
 
+
+
 class Search(NoTargetAction):
     expr = (pyparsing.Literal("search") +
             commands.targetString("name"))
 
     def do(self, player, line, name):
-        for thing in player.thing.search(2, iimaginary.IThing, name):
-            player.send((thing.longFormatTo(player.thing), '\n'))
+        srch = player.thing.search(2, iimaginary.IThing, name)
+        evt = events.Success(
+            actor=player.thing,
+            actorMessage=language.ExpressList(
+                list(iterutils.interlace('\n',
+                                         (language.Noun(o).description()
+                                          for o
+                                          in srch)))))
+        evt.broadcast()
+
+
 
 class Score(NoTargetAction):
     expr = pyparsing.Literal("score")
 
+    scoreFormat = (
+        '/----------------------------------------------------------------------------\\\n'
+        '| Level: %20d Experience: %10d\n'
+        '| Hitpoints: %16s\n'
+        '| Stamina: %18s\n'
+        '\\----------------------------------------------------------------------------/\n')
+
     def do(self, player, line):
-        player.send(
-            '/', '-' * 76, '\\', '\n',
-            '|', 'Level: ', player.level, ' Experience: ', player.experience, '\n',
-            '|', 'Hitpoints: ', player.hitpoints, '\n',
-            '|', 'Stamina: ', player.stamina, '\n',
-            '\\', '-' * 76, '/', '\n')
+        events.Success(
+            actor=player.thing,
+            actorMessage=self.scoreFormat % (player.level, player.experience, player.hitpoints, player.stamina)).broadcast()
+
+
+class ExpressWho(language.BaseExpress):
+    header = (u"/============ Currently Playing ===========\\")
+    footer = (u"\\================ Total %(playerCount)03d ===============/")
+
+    def vt102(self, observer):
+        players = self.original.connected
+
+        return [[T.bold, self.header], u'\n',
+                [[language.Noun(p).shortName().vt102(observer), u'\n']
+                 for p in players],
+                [T.bold, self.footer % {'playerCount': len(players)}], u'\n']
+
 
 class Who(NoTargetAction):
     expr = pyparsing.Literal("who")
 
-    header = ("/============ Currently Playing ===========\\")
-    entry = ("| %(playerName)-40s |")
-    footer = ("\\================ Total %(playerCount)03d ===============/")
-
     def do(self, player, line):
-        connectedPlayers = player.realm.connected
-
-        player.send(self.header + '\n')
-        for p in connectedPlayers:
-            player.send(self.entry % {'playerName': p.formatTo(player.thing)} + '\n')
-        player.send(self.footer % {'playerCount': len(connectedPlayers)} + '\n')
+        player.send(ExpressWho(player.store.findUnique(realm.ImaginaryRealm)))
 
 import pprint
 class Scrutinize(TargetAction):
@@ -722,15 +757,32 @@ class Scrutinize(TargetAction):
         if exits:
             v['exits'] = exits
         s = pprint.pformat((target.__class__.__name__, v))
+        # XXX FIXME Send a real Concept
         player.send(s, '\n')
+
+
+
+class ExpressInventory(language.BaseExpress):
+    implements(iimaginary.IConcept)
+
+    def __init__(self, original):
+        self.original = original
+
+    def vt102(self, observer):
+        return [[T.fg.yellow, "Inventory:\n"],
+                [T.fg.green,
+                 [(language.Noun(o).shortName().vt102(observer), '\n')
+                  for o
+                  in iimaginary.IContainer(self.original).getContents()]]]
+
+
 
 class Inventory(NoTargetAction):
     expr = pyparsing.Literal("inventory")
 
     def do(self, player, line):
-        player.send(
-            [T.fg.yellow, "Inventory:\n"],
-            [T.fg.green, [(o, '\n') for o in iimaginary.IContainer(player.thing).getContents()]])
+        events.Success(actor=player.thing,
+                       actorMessage=ExpressInventory(player.thing)).broadcast()
 
 
 class Help(NoTargetAction):

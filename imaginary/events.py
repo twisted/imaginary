@@ -1,8 +1,14 @@
 # -*- test-case-name: imaginary.test -*-
 
-from imaginary import iimaginary
+from zope.interface import implements
 
-class Event(object):
+from imaginary import iimaginary, language
+
+class Event(language.BaseExpress):
+    implements(iimaginary.IConcept)
+
+    actorMessage = targetMessage = toolMessage = otherMessage = None
+
     def __init__(self,
                  location=None, actor=None, target=None, tool=None,
                  actorMessage=None, targetMessage=None, toolMessage=None,
@@ -15,18 +21,19 @@ class Event(object):
         self.actor = actor
         self.target = target
         self.tool = tool
-        self.actorMessage = actorMessage
-        self.targetMessage = targetMessage
-        self.toolMessage = toolMessage
-        self.otherMessage = otherMessage
+        if actorMessage is not None:
+            self.actorMessage = iimaginary.IConcept(actorMessage)
+        if targetMessage is not None:
+            self.targetMessage = iimaginary.IConcept(targetMessage)
+        if toolMessage is not None:
+            self.toolMessage = iimaginary.IConcept(toolMessage)
+        if otherMessage is not None:
+            self.otherMessage = iimaginary.IConcept(otherMessage)
 
-    def formatTo(self, observer):
-        msg = self.formattedFor(observer)
-        if msg is not None:
-            return msg, "\n"
-        return ''
 
-    def formattedFor(self, observer):
+    def conceptFor(self, observer):
+        # This can't be a dict because then the ordering when actor is target
+        # or target is tool or etc is non-deterministic.
         if observer is self.actor:
             msg = self.actorMessage
         elif observer is self.target:
@@ -37,11 +44,20 @@ class Event(object):
             msg = self.otherMessage
         return msg
 
+
     def broadcast(self):
         for ob in iimaginary.IContainer(self.location).getContents():
             observer = iimaginary.IEventObserver(ob, None)
             if observer:
                 observer.send(self)
+
+
+    def vt102(self, observer):
+        c = self.conceptFor(observer)
+        if c is not None:
+            return [c.vt102(observer), '\n']
+        return u''
+
 
 
 class ThatDoesntMakeSense(Event):

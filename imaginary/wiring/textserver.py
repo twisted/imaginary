@@ -181,8 +181,11 @@ class TextServer(insults.TerminalProtocol):
         username = self.username
         del self.username
         self.echoOn()
-        self.player = player.Player(self.factory.create(username, password))
+        actor = self.factory.create(username, password)
+        self.player = player.Player(actor)
+        self.factory.loggedIn(actor)
         self.player.setProtocol(self)
+        self._prepareDisplay()
         return 'COMMAND'
 
     def line_COMMAND(self, line):

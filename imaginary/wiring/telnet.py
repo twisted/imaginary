@@ -36,6 +36,11 @@ class ImaginaryTelnetFactory(protocol.ServerFactory):
         return self.realm.create(username, password)
 
 
+    def loggedIn(self, avatar):
+        return self.realm.loggedIn(avatar)
+
+
+
 def makeService(realm, port, applicationProtocolFactory=textserver.TextServer, debug=True):
     p = portal.Portal(realm)
     p.registerChecker(realm)

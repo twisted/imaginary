@@ -18,8 +18,8 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def testPut(self):
         self._test(
             "put foo in bar",
-            ["You put foo in bar."],
-            ["Test Player puts foo in bar."])
+            ["You put a foo in the bar."],
+            ["Test Player puts a foo in a bar."])
         self.assertIdentical(self.player.location, self.location)
         self.assertIdentical(self.object.location, self.container)
         self.assertIdentical(self.container.location, self.location)
@@ -100,6 +100,6 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.containerContainer.closed = True
         self._test(
             "put foo in bar",
-            ["bar is closed."])
+            ["The bar is closed."])
         self.assertEquals(list(self.containerContainer.getContents()), [])
         self.assertIdentical(self.object.location, self.player)

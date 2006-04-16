@@ -44,8 +44,8 @@ class HitTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
         monster.moveTo(self.location)
         x, y = self._test(
             "hit monster",
-            ["You hit monster for (\\d+) hitpoints."],
-            ["Test Player hits monster."])
+            ["You hit the monster for (\\d+) hitpoints."],
+            ["Test Player hits a monster."])
         monster.destroy()
 
 

@@ -13,10 +13,7 @@ from axiom import item, attributes
 from imaginary.iimaginary import IThingPowerUp, IDescriptor, IVisible
 
 
-class Gender:
-    MALE = 1
-    FEMALE = 2
-    NEUTRAL = 3
+from imaginary.language import Gender
 
 
 DIRECTIONS = {

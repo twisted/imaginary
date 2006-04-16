@@ -27,7 +27,7 @@ class PlayerCredentials(item.Item):
     actor = attributes.reference(doc="""
     A reference to the L{objects.Thing} with which these credentials are
     associated.
-    """)
+    """, whenDeleted=attributes.reference.CASCADE)
 
 
 
@@ -43,7 +43,7 @@ class ImaginaryRealm(item.Item, item.InstallableMixin):
     network connection.
     """)
 
-    thing = attributes.reference(doc="""
+    installedOn = attributes.reference(doc="""
     The item on which this realm is installed.
     """)
 
@@ -66,7 +66,7 @@ class ImaginaryRealm(item.Item, item.InstallableMixin):
 
 
     def create(self, username, password):
-        playerObj = objects.Thing(store=self.store, name=username.lower())
+        playerObj = objects.Thing(store=self.store, name=username.lower(), proper=True)
         objects.Container(store=self.store, capacity=10).installOn(playerObj)
         objects.Actor(store=self.store).installOn(playerObj)
         PlayerCredentials(
@@ -74,9 +74,12 @@ class ImaginaryRealm(item.Item, item.InstallableMixin):
             username=username,
             password=password,
             actor=playerObj)
-        self.connected.append(playerObj)
         iimaginary.IContainer(self.origin).add(playerObj)
         return playerObj
+
+
+    def loggedIn(self, actor):
+        self.connected.append(actor)
 
 
     # IRealm
@@ -86,7 +89,7 @@ class ImaginaryRealm(item.Item, item.InstallableMixin):
             asp = iface(actor, None)
             if asp is not None:
                 actor.moveTo(self.origin)
-                self.connected.append(actor)
+                self.loggedIn(actor)
                 return (iface, asp, lambda: self.connected.remove(actor))
         raise NotImplementedError()
 

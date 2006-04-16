@@ -7,14 +7,14 @@ from twisted.test.proto_helpers import StringTransport
 
 from axiom import store
 
-from imaginary import objects, wiring
+from imaginary import objects, text
 from imaginary.wiring import player
 
 
 E = re.escape
 
 def _makePlayer(store, name):
-    obj = objects.Thing(store=store, name=name)
+    obj = objects.Thing(store=store, name=name, proper=True)
     obj.weight = 100
     actor = objects.Actor(store=store)
     actor.installOn(obj)
@@ -38,7 +38,8 @@ class CommandTestCaseMixin:
         self.location = objects.Thing(
             store=self.store,
             name=u"Test Location",
-            description=u"Location for testing.")
+            description=u"Location for testing.",
+            proper=True)
 
         locContainer = objects.Container(store=self.store, capacity=1000)
         locContainer.installOn(self.location)
@@ -87,3 +88,8 @@ class CommandTestCaseMixin:
                 results[-1].append(m)
             xport.clear()
         return results
+
+
+class LanguageMixin(object):
+    def flatten(self, expr):
+        return u''.join(list(text.flatten(expr, currentAttrs=text.AttributeSet())))

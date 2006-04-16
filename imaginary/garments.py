@@ -6,15 +6,11 @@ Layered clothing.
 
 """
 
-from axiom import item, attributes
-
 from zope.interface import implements
 
-from imaginary.iimaginary import IClothingWearer, IClothing, IDescriptor, IConcept
+from axiom import item, attributes
 
-from imaginary.places import BehaviorMixin
-
-from imaginary.language import ItemizedList, Noun
+from imaginary import iimaginary, language, objects
 
 
 class Unwearable(Exception):
@@ -62,12 +58,12 @@ class GarmentSlot:
         exec '%s = %r ' % (gslotname, gslot)
 
 
-class Garment(item.Item, BehaviorMixin):
-    implements(IClothing,
-               IConcept,
-               IDescriptor)
+class Garment(item.Item, item.InstallableMixin):
+    implements(iimaginary.IClothing,
+               iimaginary.IDescriptionContributor)
 
     # it's a behavior hooray
+    installedOn = objects.installedOn
     thing = attributes.reference()
 
     # templated / constant stuff
@@ -82,8 +78,15 @@ class Garment(item.Item, BehaviorMixin):
     wearLevel = attributes.integer(default=0,
                                    allowNone=False)
 
+    def installOn(self, other):
+        super(Garment, self).installOn(other)
+        other.powerUp(self, iimaginary.IClothing)
+        other.powerUp(self, iimaginary.IDescriptionContributor)
+
+
     def conceptualize(self):
-        return u'This can be worn.'
+        return language.ExpressString(u'This can be worn.')
+
 
     def expressTo(self, observer):
         """
@@ -93,6 +96,7 @@ class Garment(item.Item, BehaviorMixin):
         somesuch.
         """
         return self.garmentDescription
+
 
 def _orderTopClothingByGlobalSlotList(tempClothes):
     """
@@ -127,17 +131,24 @@ def _orderTopClothingByGlobalSlotList(tempClothes):
 
     return yetDescribed
 
-class Wearer(item.Item, BehaviorMixin):
+class Wearer(item.Item, item.InstallableMixin):
     """
     The clothing-wearing component of an object that can wear clothing; e.g. a
     person or mannequin.
     """
 
-    implements(IClothingWearer, IDescriptor)
+    implements(iimaginary.IClothingWearer, iimaginary.IDescriptionContributor)
 
+    installedOn = objects.installedOn
     thing = attributes.reference()
 
     currentLevel = attributes.integer(default=0)
+
+    def installOn(self, other):
+        super(Wearer, self).installOn(other)
+        other.powerUp(self, iimaginary.IClothingWearer)
+        other.powerUp(self, iimaginary.IDescriptionContributor)
+
 
     def getGarmentDict(self):
         c = {}
@@ -150,7 +161,7 @@ class Wearer(item.Item, BehaviorMixin):
         return c
 
     def putOn(self, newGarment):
-        newGarment.thing.moveTo(self.thing)
+        newGarment.thing.moveTo(None)
         c = self.getGarmentDict()
         for garmentSlot in newGarment.garmentSlots:
             if garmentSlot in c:
@@ -172,7 +183,9 @@ class Wearer(item.Item, BehaviorMixin):
         Describe the list of clothing.
         """
         L = _orderTopClothingByGlobalSlotList(self.getGarmentDict())
-        return [lambda obs : Noun(self.thing).heShe(obs).capitalize(),
-                u' is wearing ',
-                ItemizedList(L), '.']
+        return language.Sentence([
+            language.Noun(self.thing).heShe(),
+            u' is wearing ',
+            language.ItemizedList([language.Noun(g.thing).nounPhrase() for g in L]),
+            u'.'])
 
