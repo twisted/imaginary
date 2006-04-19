@@ -24,7 +24,7 @@ class Foo(item.Item):
         other.powerUp(self, IFoo)
 
 
-createFoo = quiche.createCreator(Foo)
+createFoo = quiche.createCreator((Foo, {'foo': u'bar'}))
 
 
 class FooPlugin(object):
@@ -65,7 +65,9 @@ class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertEquals(foobar.name, "bar")
         self.assertEquals(foobar.description, "an undescribed object")
         self.assertEquals(foobar.location, self.player)
-        self.failUnless(isinstance(IFoo(foobar), Foo))
+        foo = IFoo(foobar)
+        self.failUnless(isinstance(foo, Foo))
+        self.assertEquals(foo.foo, u"bar")
 
         self._test(
             "create foo 'bar foo'",

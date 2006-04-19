@@ -47,7 +47,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         cmds = dict.fromkeys([
                 getattr(cls, 'commandName', cls.__name__.lower())
                 for cls
-                in commands.Command.commands.values()]).keys()
+                in commands.Command.commands]).keys()
         cmds.sort()
         self._test(
             "commands",
@@ -152,17 +152,20 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self._test(
             "look me",
             [E("[ Test Player ]"),
-             "Test Player is great"])
+             "Test Player is great.",
+             "She is naked."])
 
         self._test(
             "look at me",
             [E("[ Test Player ]"),
-             "Test Player is great"])
+             "Test Player is great.",
+             "She is naked."])
 
         self._test(
             "look at Observer Player",
             [E("[ Observer Player ]"),
-             "Observer Player is great"],
+             "Observer Player is great.",
+             "She is naked."],
             ["Test Player looks at you."])
 
 
@@ -208,12 +211,14 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "search self",
             [E("[ Test Player ]"),
              "Test Player is great.",
+             "She is naked.",
              ""])
 
         self._test(
             "search me",
             [E("[ Test Player ]"),
              "Test Player is great.",
+             "She is naked.",
              ""])
 
         self._test(
@@ -227,12 +232,14 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "search 'Test Player'",
             [E("[ Test Player ]"),
              "Test Player is great.",
+             "She is naked.",
              ""])
 
         self._test(
             'search "Observer Player"',
             [E("[ Observer Player ]"),
              "Observer Player is great.",
+             "She is naked.",
              ""])
 
         self._test(
@@ -274,7 +281,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def testRestore(self):
         self._test(
             "restore foobar",
-            ["Who's that?"])
+            [E("Who's that?")])
 
         self._test(
             "restore here",
@@ -451,7 +458,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "go east",
             [E("[ Test Location ]"),
              E("( west )"),
-             "Location for testing",
+             "Location for testing.",
              "Observer Player"],
             ["Test Player arrives from the west."])
 
@@ -462,7 +469,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             [E("('Thing',"),
              E(" {'contents': [],"),
              E("  'description': u'',"),
-             E("  'gender': 3,"),
+             E("  'gender': 2,"),
              E("  'location': Thing(description=u'Location for testing.', "
                "gender=3, location=None, name=u'Test Location', portable=True, "
                "proper=True, weight=1, storeID=1)@0x") + "[A-F0-9]{1,8}"
@@ -476,8 +483,8 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self._test(
             "scrutinize here",
             [E("('Thing',"),
-             E(" {'contents': [Thing(description=u'', gender=3, location=reference(") + STOREID + E("), name=u'Test Player', portable=True, proper=True, weight=100, storeID=6)@0x") + PTR + E(","),
-             E("               Thing(description=u'', gender=3, location=reference(") + STOREID + E("), name=u'Observer Player', portable=True, proper=True, weight=100, storeID=18)@0x") + PTR + E("],"),
+             E(" {'contents': [Thing(description=u'', gender=2, location=reference(") + STOREID + E("), name=u'Test Player', portable=True, proper=True, weight=100, storeID=") + r"\d+" + E(")@0x") + PTR + E(","),
+             E("               Thing(description=u'', gender=2, location=reference(") + STOREID + E("), name=u'Observer Player', portable=True, proper=True, weight=100, storeID=") + r"\d+" + E(")@0x") + PTR + E("],"),
              E("  'description': u'Location for testing.',"),
              E("  'gender': 3,"),
              E("  'location': None,"),

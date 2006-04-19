@@ -146,7 +146,11 @@ class DescriptionConcept(BaseExpress):
 
         descriptionComponents = []
         for pup in self.thing.powerupsFor(iimaginary.IDescriptionContributor):
-            descriptionComponents.append(pup.conceptualize().vt102(observer))
+            s = pup.conceptualize().vt102(observer)
+            if s:
+                descriptionComponents.extend([s, u'\n'])
+        if descriptionComponents:
+            descriptionComponents.pop()
 
         return [
             [T.bold, T.fg.green, u'[ ', [T.fg.normal, self.thing.name], u' ]\n'],

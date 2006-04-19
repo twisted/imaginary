@@ -14,7 +14,7 @@ class HitTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
         self._test(
             "hit foobar",
-            ["Who's that?"])
+            [E("Who's that?")])
 
         actor = iimaginary.IActor(self.player)
         actor.stamina.current = 0
@@ -52,12 +52,12 @@ class HitTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def testInvalidAttacks(self):
         self._test(
             "hit here",
-            ["Who's that?"],
+            [E("Who's that?")],
             [])
 
         obj = objects.Thing(store=self.store, name=u"quiche")
         obj.moveTo(self.location)
         self._test(
             "hit quiche",
-            ["Who's that?"],
+            [E("Who's that?")],
             [])

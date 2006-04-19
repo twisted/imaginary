@@ -14,23 +14,28 @@ def stripper(s, loc, toks):
     toks[0] = toks[0][1:-1]
     return toks
 
+
+
 def targetString(name):
     qstr = pyparsing.quotedString.setParseAction(stripper)
     return (
         pyparsing.Word(pyparsing.alphanums) ^
         qstr).setResultsName(name)
 
+
+
 class CommandType(type):
-    commands = {}
+    commands = []
     def __new__(cls, name, bases, attrs):
         infrastructure = attrs.pop('infrastructure', False)
         t = super(CommandType, cls).__new__(cls, name, bases, attrs)
         if not infrastructure:
-            cls.commands[reflect.qual(t)] = t
+            cls.commands.append(t)
         return t
 
+
     def parse(self, player, line):
-        for cls in self.commands.values():
+        for cls in self.commands:
             try:
                 match = cls.match(player, line)
             except pyparsing.ParseException:
@@ -43,6 +48,8 @@ class CommandType(type):
                             match[k] = v[0]
                     return cls().run(player, line, **match)
         return defer.fail(eimaginary.NoSuchCommand(line))
+
+
 
 class Command(object):
     __metaclass__ = CommandType

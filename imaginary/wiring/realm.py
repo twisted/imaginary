@@ -65,8 +65,12 @@ class ImaginaryRealm(item.Item, item.InstallableMixin):
         self.connected = []
 
 
-    def create(self, username, password):
-        playerObj = objects.Thing(store=self.store, name=username.lower(), proper=True)
+    def create(self, username, password, **kw):
+        from imaginary import garments
+        playerObj = objects.Thing(store=self.store,
+                                  weight=100,
+                                  name=username,
+                                  proper=True, **kw)
         objects.Container(store=self.store, capacity=10).installOn(playerObj)
         objects.Actor(store=self.store).installOn(playerObj)
         PlayerCredentials(
@@ -75,6 +79,8 @@ class ImaginaryRealm(item.Item, item.InstallableMixin):
             password=password,
             actor=playerObj)
         iimaginary.IContainer(self.origin).add(playerObj)
+        wearer = garments.Wearer(store=self.store)
+        wearer.installOn(playerObj)
         return playerObj
 
 

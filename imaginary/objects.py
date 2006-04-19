@@ -253,11 +253,12 @@ class Thing(item.Item):
     def moveTo(self, where):
         if where is self.location:
             return
-        where = iimaginary.IContainer(where)
         oldLocation = self.location
-        if oldLocation is not None and not self.portable:
-            raise eimaginary.CannotMove(self, where)
-        where.add(self)
+        if where is not None:
+            where = iimaginary.IContainer(where)
+            if oldLocation is not None and not self.portable:
+                raise eimaginary.CannotMove(self, where)
+            where.add(self)
         if oldLocation is not None:
             iimaginary.IContainer(oldLocation).remove(self)
 
@@ -384,7 +385,7 @@ class ExpressCondition(language.BaseExpress):
         return [
             [T.bold, T.fg.yellow, language.Noun(self.original.thing).shortName().plaintext(observer)],
             u" is ",
-            [T.bold, T.fg.red, self.original._condition(), u".\n"]]
+            [T.bold, T.fg.red, self.original._condition(), u"."]]
 
 
 class Actable(object):

@@ -1,6 +1,7 @@
 # -*- test-case-name: imaginary.test -*-
 
 import os, random
+import pprint
 
 from zope.interface import implements
 
@@ -8,6 +9,8 @@ import pyparsing
 
 from twisted.python import util
 from twisted import plugin
+
+from axiom import attributes
 
 import imaginary.plugins
 from imaginary.wiring import realm
@@ -93,9 +96,11 @@ class ToolAction(TargetAction):
             return list(player.thing.search(self.toolRadius(player), self.toolInterface, v))
         return super(ToolAction, self).resolve(player, k, v)
 
+
+
 class LookAround(NoTargetAction):
     commandName = "look"
-    expr = pyparsing.Literal("look")
+    expr = pyparsing.Literal("look") + pyparsing.StringEnd()
 
     def do(self, player, line):
         if player.thing.location is None:
@@ -104,6 +109,8 @@ class LookAround(NoTargetAction):
             concept = language.Noun(player.thing.location).description()
         events.Success(actor=player.thing,
                        actorMessage=concept).broadcast()
+
+
 
 class LookAt(TargetAction):
     commandName = "look"
@@ -248,6 +255,109 @@ def targetTaken(player, target, container=None):
         otherMessage=(player, " takes ", target, " from ", idop, "."))
 
 
+
+class Remove(TargetAction):
+    expr = ((pyparsing.Literal("remove") |
+             pyparsing.Literal("take off")) +
+            pyparsing.White() +
+            commands.targetString("target"))
+
+    targetInterface = iimaginary.IClothing
+    actorInterface = iimaginary.IClothingWearer
+
+    def do(self, player, line, target):
+        from imaginary import garments
+        try:
+            player.takeOff(target)
+        except garments.InaccessibleGarment, e:
+            evt = events.ThatDoesntWork(
+                actor=player.thing,
+                target=target.thing,
+                actorMessage=(u"You cannot take off ",
+                              target.thing,
+                              u" because you are wearing ",
+                              e.obscuringGarment.thing, u"."),
+                otherMessage=language.Sentence([
+                    player.thing,
+                    u" gets a dumb look on ",
+                    language.Noun(player.thing).hisHer(),
+                    u" face."]))
+        else:
+            evt = events.Success(
+                actor=player.thing,
+                target=target.thing,
+                actorMessage=(u"You take off ", target.thing, u"."),
+                otherMessage=language.Sentence([
+                    player.thing, u" takes off ", target.thing, u"."]))
+        evt.broadcast()
+
+
+
+class Wear(TargetAction):
+    expr = (pyparsing.Literal("wear") +
+            pyparsing.White() +
+            commands.targetString("target"))
+
+    targetInterface = iimaginary.IClothing
+    actorInterface = iimaginary.IClothingWearer
+
+    def do(self, player, line, target):
+        from imaginary import garments
+        try:
+            player.putOn(target)
+        except garments.TooBulky, e:
+            evt = events.ThatDoesntWork(
+                actor=player.thing,
+                target=target.thing,
+                actorMessage=language.Sentence([
+                    language.Noun(e.wornGarment.thing).definiteNounPhrase(),
+                    u" you are already wearing is too bulky for you to do"
+                    u" that."]),
+                otherMessage=language.Sentence([
+                    player.thing,
+                    u" wrestles with basic personal problems."]))
+        else:
+            evt = events.Success(
+                actor=player.thing,
+                target=target.thing,
+                actorMessage=(u"You put on ",
+                              language.Noun(target.thing).definiteNounPhrase(),
+                              "."),
+                otherMessage=language.Sentence([
+                    player.thing, " puts on ", target.thing, "."]))
+        evt.broadcast()
+
+
+
+class Equipment(NoTargetAction):
+    expr = pyparsing.Literal("equipment")
+
+    actorInterface = iimaginary.IClothingWearer
+
+    def do(self, player, line):
+        from imaginary import garments
+        equipment = list(player.store.query(
+            objects.Thing,
+            attributes.AND(
+                garments.Garment.thing == objects.Thing.storeID,
+                garments.Garment.wearer == player),
+            sort=objects.Thing.name.ascending).getColumn("name"))
+        if equipment:
+            evt = events.Success(
+                actor=player.thing,
+                actorMessage=[
+                    u"You are wearing ",
+                    language.ItemizedList(equipment),
+                    u"."])
+        else:
+            evt = events.Success(
+                actor=player.thing,
+                actorMessage=language.ExpressString(
+                    u"You aren't wearing any equipment."))
+        evt.broadcast()
+
+
+
 class TakeFrom(ToolAction):
     commandName = "take"
 
@@ -274,8 +384,8 @@ class TakeFrom(ToolAction):
 
 
 
-## <allexpro> dash: put me in a tent and give it to moshez!
 class PutIn(ToolAction):
+
     toolInterface = iimaginary.IThing
     targetInterface = iimaginary.IContainer
 
@@ -301,6 +411,7 @@ class PutIn(ToolAction):
             try:
                 tool.moveTo(target)
             except eimaginary.DoesntFit:
+                # <allexpro> dash: put me in a tent and give it to moshez!
                 evt = events.ThatDoesntWork(actor=player.thing, target=targetObject, tool=tool)
             except eimaginary.Closed:
                 evt = events.ThatDoesntWork(actor=player.thing,
@@ -319,13 +430,14 @@ class PutIn(ToolAction):
         evt.broadcast()
 
 
+
 class Take(TargetAction):
     expr = ((pyparsing.Literal("get") ^ pyparsing.Literal("take")) +
             pyparsing.White() +
             commands.targetString("target"))
 
     def targetNotAvailable(self, player, exc):
-        return "Nothing like that around here."
+        return u"Nothing like that around here."
 
     def targetRadius(self, player):
         return 1
@@ -345,20 +457,14 @@ class Take(TargetAction):
         else:
             targetTaken(player.thing, target).broadcast()
 
-    def match(cls, player, line):
-        # TOTALLY wrong, just trying to avoid getting recognized as TakeFrom,
-        # since there are tests that depend on non-deterministic ordering of
-        # match() passes.  XXX TODO FIXME PLZ
-        if ' from ' in line:
-            return None
-        return super(cls, cls).match(player, line)
-    match = classmethod(match)
 
 
 def insufficientSpace(player):
     return events.ThatDoesntWork(
         actor=player,
         actorMessage="There's not enough space for that.")
+
+
 
 def creationSuccess(player, creation):
     return events.Success(
@@ -367,6 +473,8 @@ def creationSuccess(player, creation):
         actorMessage=language.Sentence([creation, " created."]),
         targetMessage=language.Sentence([player, " creates you."]),
         otherMessage=language.Sentence([player, " creates ", creation, "."]))
+
+
 
 class Spawn(NoTargetAction):
     expr = (pyparsing.Literal("spawn") +
@@ -386,6 +494,8 @@ class Spawn(NoTargetAction):
         else:
             creationSuccess(player.thing, mob).broadcast()
 
+
+
 class Create(NoTargetAction):
     expr = (pyparsing.Literal("create") +
             pyparsing.White() +
@@ -400,7 +510,8 @@ class Create(NoTargetAction):
             description = u'an undescribed object'
         for plug in getPlugins(iimaginary.IThingType, imaginary.plugins):
             if plug.type == typeName:
-                o = plug.getType()(store=player.store, name=name, description=description, proper=True)
+                o = plug.getType()(store=player.store, name=name,
+                                   description=description, proper=True)
                 break
         else:
             raise ValueError("Can't find " + typeName)
@@ -411,6 +522,8 @@ class Create(NoTargetAction):
             insufficientSpace(player.thing).broadcast()
         else:
             creationSuccess(player.thing, o).broadcast()
+
+
 
 class Drop(TargetAction):
     expr = (pyparsing.Literal("drop") +
@@ -442,6 +555,7 @@ class Drop(TargetAction):
                     targetMessage=(player.thing, " drops you."),
                     otherMessage=(player.thing, " drops ", target, "."))
                 evt.broadcast()
+
 
 
 class Dig(NoTargetAction):
@@ -476,6 +590,7 @@ class Dig(NoTargetAction):
             # could be, broadcast this to them too.
 
 
+
 class Bury(NoTargetAction):
     expr = (pyparsing.Literal("bury") +
             pyparsing.White() +
@@ -508,6 +623,7 @@ class Bury(NoTargetAction):
             actor=player.thing,
             actorMessage="There isn't an exit in that direction.")
         evt.broadcast()
+
 
 
 class Go(NoTargetAction):
@@ -592,6 +708,7 @@ class Restore(TargetAction):
             evt.broadcast()
 
 
+
 class Hit(TargetAction):
     expr = ((pyparsing.Literal("hit") ^
              pyparsing.Literal("attack") ^
@@ -636,6 +753,7 @@ class Hit(TargetAction):
             event.broadcast()
 
 
+
 class Say(NoTargetAction):
     expr = (((pyparsing.Literal("say") + pyparsing.White()) ^
              pyparsing.Literal("'")) +
@@ -646,6 +764,8 @@ class Say(NoTargetAction):
                              actorMessage=["You say, '", text, "'"],
                              otherMessage=[player.thing, " says, '", text, "'"])
         evt.broadcast()
+
+
 
 class Emote(NoTargetAction):
     expr = (((pyparsing.Literal("emote") + pyparsing.White()) ^
@@ -676,7 +796,7 @@ class Commands(NoTargetAction):
         cmds = dict.fromkeys(
             getattr(cmd, 'commandName', cmd.__name__.lower())
             for cmd
-            in self.__class__.commands.itervalues()).keys()
+            in self.__class__.commands).keys()
         cmds.sort()
         player.send((iterutils.interlace(" ", cmds), "\n"))
 
@@ -715,6 +835,7 @@ class Score(NoTargetAction):
             actorMessage=self.scoreFormat % (player.level, player.experience, player.hitpoints, player.stamina)).broadcast()
 
 
+
 class ExpressWho(language.BaseExpress):
     header = (u"/============ Currently Playing ===========\\")
     footer = (u"\\================ Total %(playerCount)03d ===============/")
@@ -728,13 +849,15 @@ class ExpressWho(language.BaseExpress):
                 [T.bold, self.footer % {'playerCount': len(players)}], u'\n']
 
 
+
 class Who(NoTargetAction):
     expr = pyparsing.Literal("who")
 
     def do(self, player, line):
         player.send(ExpressWho(player.store.findUnique(realm.ImaginaryRealm)))
 
-import pprint
+
+
 class Scrutinize(TargetAction):
     expr = (pyparsing.Literal("scrutinize") +
             pyparsing.White() +
@@ -783,6 +906,7 @@ class Inventory(NoTargetAction):
     def do(self, player, line):
         events.Success(actor=player.thing,
                        actorMessage=ExpressInventory(player.thing)).broadcast()
+
 
 
 class Help(NoTargetAction):

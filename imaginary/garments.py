@@ -10,7 +10,7 @@ from zope.interface import implements
 
 from axiom import item, attributes
 
-from imaginary import iimaginary, language, objects
+from imaginary import iimaginary, language, objects, quiche
 
 
 class Unwearable(Exception):
@@ -20,7 +20,23 @@ class TooBulky(Unwearable):
     def __init__(self, wornGarment, newGarment):
         self.wornGarment = wornGarment
         self.newGarment = newGarment
-        Unwearable.__init__(wornGarment, newGarment)
+        Unwearable.__init__(self, wornGarment, newGarment)
+
+
+
+class InaccessibleGarment(Exception):
+    """The garment is covered by another, therefore it cannot be removed.
+    """
+    def __init__(self, wearer, garment, obscuringGarment):
+        self.wearer = wearer
+        self.garment = garment
+        self.obscuringGarment = obscuringGarment
+
+
+    def __str__(self):
+        return "%s tried taking off %s which was covered by %s" % (
+            self.wearer, self.garment, self.obscuringGarment)
+
 
 
 GARMENT_SLOTS = [
@@ -53,9 +69,12 @@ GARMENT_SLOTS = [
     ]
 
 class GarmentSlot:
-    for gslot in GARMENT_SLOTS:
-        gslotname = gslot.upper().replace(" ", "_").encode('ascii')
-        exec '%s = %r ' % (gslotname, gslot)
+    pass
+
+for gslot in GARMENT_SLOTS:
+    gslotname = gslot.upper().replace(" ", "_").encode('ascii')
+    setattr(GarmentSlot, gslotname, gslot)
+
 
 
 class Garment(item.Item, item.InstallableMixin):
@@ -70,13 +89,13 @@ class Garment(item.Item, item.InstallableMixin):
     garmentSlots = attributes.textlist(allowNone=False)
     bulk = attributes.integer(allowNone=False,
                               default=1)
-    garmentDescription = attributes.text(allowNone=False, doc="""
-    description of this as an individual garment.  """)
+    garmentDescription = attributes.text(doc="""
+    Description of this as an individual garment.
+    """, allowNone=False)
 
     # transient / mutable stuff
     wearer = attributes.reference()
-    wearLevel = attributes.integer(default=0,
-                                   allowNone=False)
+    wearLevel = attributes.integer(default=0)
 
     def installOn(self, other):
         super(Garment, self).installOn(other)
@@ -131,6 +150,8 @@ def _orderTopClothingByGlobalSlotList(tempClothes):
 
     return yetDescribed
 
+
+
 class Wearer(item.Item, item.InstallableMixin):
     """
     The clothing-wearing component of an object that can wear clothing; e.g. a
@@ -142,50 +163,90 @@ class Wearer(item.Item, item.InstallableMixin):
     installedOn = objects.installedOn
     thing = attributes.reference()
 
-    currentLevel = attributes.integer(default=0)
-
     def installOn(self, other):
         super(Wearer, self).installOn(other)
         other.powerUp(self, iimaginary.IClothingWearer)
         other.powerUp(self, iimaginary.IDescriptionContributor)
+        other.powerUp(self, iimaginary.ILinkContributor)
 
 
     def getGarmentDict(self):
         c = {}
-        for garment in self.store.query(
-            Garment, attributes.AND(Garment.wearer == self),
-            sort=Garment.wearLevel.ascending):
-
+        for garment in self.store.query(Garment, Garment.wearer == self,
+                                        sort=Garment.wearLevel.ascending):
             for usedSlot in garment.garmentSlots:
                 c.setdefault(usedSlot, []).append(garment)
         return c
 
+
     def putOn(self, newGarment):
-        newGarment.thing.moveTo(None)
         c = self.getGarmentDict()
         for garmentSlot in newGarment.garmentSlots:
             if garmentSlot in c:
                 # We don't want to be able to wear T-shirts over heavy coats;
                 # therefore, heavy coats have a high "bulk"
                 currentTopOfSlot = c[garmentSlot][-1]
-                currentTopOfSlot.bulk >= newGarment.bulk
-                raise TooBulky(currentTopOfSlot, newGarment)
+                if currentTopOfSlot.bulk >= newGarment.bulk:
+                    raise TooBulky(currentTopOfSlot, newGarment)
 
-        self.currentLevel += 1
+        newGarment.thing.moveTo(None)
         newGarment.wearer = self
-        newGarment.wearLevel = self.currentLevel
+        newGarment.wearLevel = self.store.query(Garment, Garment.wearer == self).getColumn("wearLevel").max(default=0) + 1
 
-        for garmentSlot in newGarment.garmentSlots:
-            c.setdefault(garmentSlot, []).append(newGarment)
 
+    def takeOff(self, garment):
+        gdict = self.getGarmentDict()
+        for slot in garment.garmentSlots:
+            if gdict[slot][-1] is not garment:
+                raise InaccessibleGarment(self, garment, gdict[slot][-1])
+        garment.thing.moveTo(garment.wearer.thing)
+        garment.wearer = garment.wearLevel = None
+
+
+    # IDescriptionContributor
     def conceptualize(self):
         """
         Describe the list of clothing.
         """
+        heshe = language.Noun(self.thing).heShe()
         L = _orderTopClothingByGlobalSlotList(self.getGarmentDict())
+        if L is None:
+            return language.Sentence([heshe, u' is naked.'])
         return language.Sentence([
-            language.Noun(self.thing).heShe(),
+            heshe,
             u' is wearing ',
             language.ItemizedList([language.Noun(g.thing).nounPhrase() for g in L]),
             u'.'])
 
+
+    # ILinkContributor
+    def links(self):
+        d = {}
+        for t in self.store.query(objects.Thing, attributes.AND(Garment.thing == objects.Thing.storeID,
+                                                                Garment.wearer == self)):
+            d.setdefault(t.name, []).append(t)
+        return d
+
+
+createShirt = quiche.createCreator(
+    (Garment, dict(garmentDescription=u'an undescribed shirt',
+                   bulk=2,
+                   garmentSlots=[GarmentSlot.CHEST,
+                                 GarmentSlot.BACK,
+                                 GarmentSlot.RIGHT_ARM,
+                                 GarmentSlot.LEFT_ARM])))
+
+
+createUnderwear = quiche.createCreator(
+    (Garment, dict(garmentDescription=u'an undescribed pair of underwear',
+                   bulk=1,
+                   garmentSlots=[GarmentSlot.WAIST])))
+
+createPants = quiche.createCreator(
+    (Garment, dict(garmentDescription=u'an undescribed pair of pants',
+                   bulk=2,
+                   garmentSlots=[GarmentSlot.RIGHT_LEG,
+                                 GarmentSlot.LEFT_LEG,
+                                 GarmentSlot.WAIST,
+                                 GarmentSlot.LEFT_ANKLE,
+                                 GarmentSlot.RIGHT_ANKLE])))

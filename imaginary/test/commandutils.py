@@ -7,21 +7,10 @@ from twisted.test.proto_helpers import StringTransport
 
 from axiom import store
 
-from imaginary import objects, text
-from imaginary.wiring import player
-
+from imaginary import objects, text, language
+from imaginary.wiring import player, realm
 
 E = re.escape
-
-def _makePlayer(store, name):
-    obj = objects.Thing(store=store, name=name, proper=True)
-    obj.weight = 100
-    actor = objects.Actor(store=store)
-    actor.installOn(obj)
-    playerContainer = objects.Container(store=store, capacity=90)
-    playerContainer.installOn(obj)
-    return obj, player.Player(obj)
-
 
 class PlayerProtocol(object):
     def __init__(self, transport):
@@ -44,14 +33,17 @@ class CommandTestCaseMixin:
         locContainer = objects.Container(store=self.store, capacity=1000)
         locContainer.installOn(self.location)
 
-        self.player, self.playerWrapper = _makePlayer(self.store, u"Test Player")
+        self.realm = realm.ImaginaryRealm(store=self.store)
+        self.player = self.realm.create(u"Test Player", u"password", gender=language.Gender.FEMALE)
+        self.playerWrapper = player.Player(self.player)
 
         self.playerWrapper.useColors = False
         locContainer.add(self.player)
         self.transport = StringTransport()
         self.playerWrapper.setProtocol(PlayerProtocol(self.transport))
 
-        self.observer, self.observerWrapper = _makePlayer(self.store, u"Observer Player")
+        self.observer = self.realm.create(u"Observer Player", u"password", gender=language.Gender.FEMALE)
+        self.observerWrapper = player.Player(self.observer)
         locContainer.add(self.observer)
         self.otransport = StringTransport()
         self.observerWrapper.setProtocol(PlayerProtocol(self.otransport))
@@ -79,7 +71,7 @@ class CommandTestCaseMixin:
             for i, (got, expected) in enumerate(map(None, gotLines, oput)):
                 got = got or ''
                 expected = expected or '$^'
-                m = re.compile(expected.rstrip()).match(got.rstrip())
+                m = re.compile(expected.rstrip() + '$').match(got.rstrip())
                 if m is None:
                     s1 = pprint.pformat(gotLines)
                     s2 = pprint.pformat(oput)

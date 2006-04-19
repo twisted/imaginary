@@ -180,13 +180,13 @@ class BasicConceptTestCasePlaintext(NounTestCase, SharedTextyTests):
 
 
     def testDescriptionContributors(self):
-        a = FakeDescriptionContributor(u"first part\n")
-        b = FakeDescriptionContributor(u"last part\n")
+        a = FakeDescriptionContributor(u"first part")
+        b = FakeDescriptionContributor(u"last part")
         self.thing.powerupsFor = lambda iface: {iimaginary.IDescriptionContributor: [a, b]}[iface]
         self.assertEquals(self.format(self.noun.description()),
                           u'[ fake thing ]\n'
                           u'Fake Thing Description\n' +
-                          a.descr +
+                          a.descr + u"\n" +
                           b.descr)
 
 
@@ -239,10 +239,10 @@ class VT102Tests(NounTestCase, SharedTextyTests):
 
 
     def testDescriptionContributors(self):
-        a = FakeDescriptionContributor(u"first part\n")
-        b = FakeDescriptionContributor(u"last part\n")
+        a = FakeDescriptionContributor(u"first part")
+        b = FakeDescriptionContributor(u"last part")
         self.thing.powerupsFor = lambda iface: {iimaginary.IDescriptionContributor: [a, b]}[iface]
         self._assertECMA48Equality(
             self.format(self.noun.description()),
             self.flatten([[[T.bold, T.fg.green, u'[ ', [T.fg.normal, "fake thing"], u' ]\n'],
-                          T.fg.green, u'Fake Thing Description\n'], a.descr + b.descr]))
+                          T.fg.green, u'Fake Thing Description\n'], a.descr + u"\n" + b.descr]))

@@ -21,8 +21,8 @@ def createCreator(*powerups):
     def create(**kw):
         store = kw['store']
         o = objects.Thing(**kw)
-        for pup in powerups:
-            pup(store=store).installOn(o)
+        for pup, pupkw in powerups:
+            pup(store=store, **pupkw or {}).installOn(o)
         return o
     return create
 
@@ -117,6 +117,6 @@ def createQuiche(store, name, description=u""):
 
 
 
-createCoin = createCreator(Quarter)
-createVendingMachine = createCreator(VendingMachine)
+createCoin = createCreator((Quarter, {}))
+createVendingMachine = createCreator((VendingMachine, {}))
 createQuiche = createCreator()
