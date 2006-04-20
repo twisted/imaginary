@@ -6,37 +6,6 @@ from twisted.trial import unittest
 from imaginary import text as T
 from imaginary import unc
 
-class TestStruct(T._structlike):
-    __names__ = ['x', 'y', 'z']
-    __defaults__ = [1, 2, 3]
-
-class StructLike(unittest.TestCase):
-    def testSimpleInstantiation(self):
-        x = TestStruct()
-        self.assertEquals(x.x, 1)
-        self.assertEquals(x.y, 2)
-        self.assertEquals(x.z, 3)
-
-        y = TestStruct('3', '2', '1')
-        self.assertEquals(y.x, '3')
-        self.assertEquals(y.y, '2')
-        self.assertEquals(y.z, '1')
-
-        z = TestStruct(z='z', x='x', y='y')
-        self.assertEquals(z.x, 'x')
-        self.assertEquals(z.y, 'y')
-        self.assertEquals(z.z, 'z')
-
-        a = TestStruct('abc')
-        self.assertEquals(a.x, 'abc')
-        self.assertEquals(a.y, 2)
-        self.assertEquals(a.z, 3)
-
-        b = TestStruct(y='123')
-        self.assertEquals(b.x, 1)
-        self.assertEquals(b.y, '123')
-        self.assertEquals(b.z, 3)
-
 def F(*a, **kw):
     if "currentAttrs" not in kw:
         kw["currentAttrs"] = T.AttributeSet()

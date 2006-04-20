@@ -4,52 +4,16 @@ import pprint
 
 from twisted.conch.insults import insults
 
-class _structlike(list):
-    __names__ = []
-    __slots__ = []
-    __defaults__ = []
-
-    def _name2slot(self, name):
-        return self.__names__.index(name)
-
-    def __init__(self, *args, **kw):
-        super(_structlike, self).__init__()
-
-        # Turn all the args into kwargs
-        for n, v in zip(self.__names__, args):
-            if n in kw:
-                raise TypeError("Got multiple values for argument " + n)
-            kw[n] = v
-
-        # Fill in defaults
-        for n, v in zip(self.__names__[::-1], self.__defaults__[::-1]):
-            if n not in kw:
-                kw[n] = v
-
-        self.extend([None] * len(self.__names__))
-        for n in self.__names__:
-            self[self._name2slot(n)] = kw[n]
-
-    def __getattr__(self, attr):
-        try:
-            return self[self._name2slot(attr)]
-        except (IndexError, ValueError):
-            raise AttributeError(attr)
-
-    def __setattr__(self, attr, value):
-        try:
-            self[self._name2slot(attr)] = value
-        except ValueError:
-            if attr.startswith('__') and attr.endswith('__'):
-                super(_structlike, self).__setattr__(attr, value)
-            raise AttributeError(attr)
+from epsilon import structlike
 
 class _unset(object):
     def __nonzero__(self):
         return False
 unset = _unset()
 
-class AttributeSet(_structlike):
+class AttributeSet(structlike.record('bold underline reverseVideo blink fg bg',
+                                     bold=False, underline=False, reverseVideo=False,
+                                     blink=False, fg='9', bg='9')):
     """
     @ivar bold: True, False, or unset, indicating whether characters
     with these attributes will be bold, or if boldness should be
@@ -72,15 +36,8 @@ class AttributeSet(_structlike):
     @ivar bg: Like C{fg} but for background color.
     """
 
-    __names__ = [
-        'bold', 'underline', 'reverseVideo', 'blink',
-        'fg', 'bg']
-
-    __defaults__ = [
-        False, False, False, False, '9', '9']
-
     def __init__(self, *a, **kw):
-        _structlike.__init__(self, *a, **kw)
+        super(AttributeSet, self).__init__(*a, **kw)
         assert self.fg is unset or self.fg in '012345679'
         assert self.bg is unset or self.bg in '012345679'
         assert self.bold is unset or self.bold in (True, False)
@@ -95,6 +52,18 @@ class AttributeSet(_structlike):
                        for (k, v)
                        in zip(self.__names__, self)
                        if v is not unset]))
+
+
+    def __len__(self):
+        return 6
+
+
+    def __getitem__(self, index):
+        return [self.bold, self.underline, self.reverseVideo, self.blink, self.fg, self.bg][index]
+
+
+    def __setitem__(self, index, value):
+        setattr(self, ['bold', 'underline', 'reverseVideo', 'blink', 'fg', 'bg'][index], value)
 
 
     def clone(self):
