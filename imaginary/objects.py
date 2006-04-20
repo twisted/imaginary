@@ -81,9 +81,11 @@ class Points(item.Item):
 
 OPPOSITE_DIRECTIONS = {
     u"north": u"south",
-    u"south": u"north",
     u"west": u"east",
-    u"east": u"west"}
+    u"northwest": u"southeast",
+    u"northeast": u"southwest"}
+for (k, v) in OPPOSITE_DIRECTIONS.items():
+    OPPOSITE_DIRECTIONS[v] = k
 
 
 class Exit(item.Item):

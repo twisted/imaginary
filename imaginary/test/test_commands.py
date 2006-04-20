@@ -462,6 +462,29 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
              "Observer Player"],
             ["Test Player arrives from the west."])
 
+
+    def testDirectionalMovement(self):
+        # A couple tweaks to state to make the test simpler
+        self.observer.location = None
+        self.location.description = None
+
+        oldRoom = self.location
+        allDirections = ["northwest", "north", "northeast", "east",
+                         "west", "southwest", "south", "southeast"]
+        for d in allDirections[:len(allDirections) / 2]:
+            room = objects.Thing(store=self.store, name=u"destination")
+            objects.Container(store=self.store, capacity=1000).installOn(room)
+            objects.Exit.link(oldRoom, room, unicode(d, 'ascii'))
+            oldRoom = room
+
+        for d, rd in zip(allDirections, reversed(allDirections)):
+            self._test(
+                d,
+                [E("[ ") + ".*" + E(" ]"), # Not testing room description
+                 E("( ") + ".*" + E(" )"), # Just do enough to make sure it was not an error.
+                 ""])
+
+
     def testScrutinize(self):
         STOREID = "\\d+"
         self._test(

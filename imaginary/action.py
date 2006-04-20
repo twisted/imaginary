@@ -1,6 +1,6 @@
 # -*- test-case-name: imaginary.test -*-
 
-import os, random
+import os, random, operator
 import pprint
 
 from zope.interface import implements
@@ -558,13 +558,18 @@ class Drop(TargetAction):
 
 
 
+DIRECTION_LITERAL = reduce(
+    operator.xor, [
+        pyparsing.Literal(d)
+        for d
+        in objects.OPPOSITE_DIRECTIONS]).setResultsName("direction")
+
+
+
 class Dig(NoTargetAction):
     expr = (pyparsing.Literal("dig") +
             pyparsing.White() +
-            (pyparsing.Literal(u"north") ^
-             pyparsing.Literal(u"south") ^
-             pyparsing.Literal(u"west") ^
-             pyparsing.Literal(u"east")).setResultsName("direction") +
+            DIRECTION_LITERAL +
             pyparsing.White() +
             pyparsing.restOfLine.setResultsName("name"))
 
@@ -594,10 +599,7 @@ class Dig(NoTargetAction):
 class Bury(NoTargetAction):
     expr = (pyparsing.Literal("bury") +
             pyparsing.White() +
-            (pyparsing.Literal("north") ^
-             pyparsing.Literal("south") ^
-             pyparsing.Literal("west") ^
-             pyparsing.Literal("east")).setResultsName("direction"))
+            DIRECTION_LITERAL)
 
     def do(self, player, line, direction):
         for exit in player.thing.location.getExits():
@@ -627,12 +629,8 @@ class Bury(NoTargetAction):
 
 
 class Go(NoTargetAction):
-    expr = (pyparsing.Optional(pyparsing.Literal("go") +
-                               pyparsing.White()) +
-            (pyparsing.Literal(u"north") ^
-             pyparsing.Literal(u"south") ^
-             pyparsing.Literal(u"west") ^
-             pyparsing.Literal(u"east")).setResultsName("direction"))
+    expr = (pyparsing.Optional(pyparsing.Literal("go") + pyparsing.White()) +
+            DIRECTION_LITERAL)
 
     def do(self, player, line, direction):
         try:
