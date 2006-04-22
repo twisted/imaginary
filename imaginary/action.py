@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test -*-
+# -*- test-case-name: imaginary.test.test_commands -*-
 
 import os, random, operator
 import pprint
@@ -33,8 +33,11 @@ class Action(commands.Command):
                     kw[k] = objs[0]
         return self.do(player, line, **kw)
 
+
     def resolve(self, player, name, value):
         raise NotImplementedError("Don't know how to resolve %r (%r)" % (name, value))
+
+
 
 def getPlugins(iface, package):
     """Get plugins. See L{twisted.plugin.getPlugins}.
@@ -188,18 +191,18 @@ class Open(TargetAction):
     def do(self, player, line, target):
         dnf = language.Noun(target.thing).definiteNounPhrase()
         if not target.closed:
-            evt = events.ThatDoesntWork(
+            raise eimaginary.ActionFailure(events.ThatDoesntWork(
                 actor=player.thing,
                 target=target.thing,
-                actorMessage=language.Sentence([dnf, " is already open."]))
-        else:
-            target.closed = False
-            evt = events.Success(
-                actor=player.thing,
-                target=target.thing,
-                actorMessage=("You open ", dnf, "."),
-                targetMessage=language.Sentence([player.thing, " opens you."]),
-                otherMessage=language.Sentence([player.thing, " opens ", target.thing, "."]))
+                actorMessage=language.Sentence([dnf, " is already open."])))
+
+        target.closed = False
+        evt = events.Success(
+            actor=player.thing,
+            target=target.thing,
+            actorMessage=("You open ", dnf, "."),
+            targetMessage=language.Sentence([player.thing, " opens you."]),
+            otherMessage=language.Sentence([player.thing, " opens ", target.thing, "."]))
         evt.broadcast()
 
 
@@ -214,28 +217,30 @@ class Close(TargetAction):
     def do(self, player, line, target):
         dnf = language.Noun(target.thing).definiteNounPhrase()
         if target.closed:
-            evt = events.ThatDoesntWork(
+            raise eimaginary.ActionFailure(events.ThatDoesntWork(
                 actor=player.thing,
                 target=target.thing,
-                actorMessage=language.Sentence([dnf, " is already closed."]))
-        else:
-            target.closed = True
-            evt = events.Success(
-                actor=player.thing,
-                target=target.thing,
-                actorMessage=("You close ", dnf, "."),
-                targetMessage=language.Sentence([player.thing, " closes you."]),
-                otherMessage=language.Sentence([player.thing, " closes ", target.thing, "."]))
+                actorMessage=language.Sentence([dnf, " is already closed."])))
+
+        target.closed = True
+        evt = events.Success(
+            actor=player.thing,
+            target=target.thing,
+            actorMessage=("You close ", dnf, "."),
+            targetMessage=language.Sentence([player.thing, " closes you."]),
+            otherMessage=language.Sentence([player.thing, " closes ", target.thing, "."]))
         evt.broadcast()
 
 
 
 def tooHeavy(player, target):
-    return events.ThatDoesntWork(
+    return eimaginary.ActionFailure(events.ThatDoesntWork(
         actor=player, target=target,
         actorMessage=(target, " is too heavy to pick up."),
         otherMessage=(player, " struggles to lift ", target, ", but fails."),
-        targetMessage=(player, " tries to pick you up, but fails."))
+        targetMessage=(player, " tries to pick you up, but fails.")))
+
+
 
 def targetTaken(player, target, container=None):
     if container is None:
@@ -270,7 +275,7 @@ class Remove(TargetAction):
         try:
             player.takeOff(target)
         except garments.InaccessibleGarment, e:
-            evt = events.ThatDoesntWork(
+            raise eimaginary.ActionFailure(events.ThatDoesntWork(
                 actor=player.thing,
                 target=target.thing,
                 actorMessage=(u"You cannot take off ",
@@ -281,14 +286,14 @@ class Remove(TargetAction):
                     player.thing,
                     u" gets a dumb look on ",
                     language.Noun(player.thing).hisHer(),
-                    u" face."]))
-        else:
-            evt = events.Success(
-                actor=player.thing,
-                target=target.thing,
-                actorMessage=(u"You take off ", target.thing, u"."),
-                otherMessage=language.Sentence([
-                    player.thing, u" takes off ", target.thing, u"."]))
+                    u" face."])))
+
+        evt = events.Success(
+            actor=player.thing,
+            target=target.thing,
+            actorMessage=(u"You take off ", target.thing, u"."),
+            otherMessage=language.Sentence([
+                player.thing, u" takes off ", target.thing, u"."]))
         evt.broadcast()
 
 
@@ -306,7 +311,7 @@ class Wear(TargetAction):
         try:
             player.putOn(target)
         except garments.TooBulky, e:
-            evt = events.ThatDoesntWork(
+            raise eimaginary.ActionFailure(events.ThatDoesntWork(
                 actor=player.thing,
                 target=target.thing,
                 actorMessage=language.Sentence([
@@ -315,16 +320,16 @@ class Wear(TargetAction):
                     u" that."]),
                 otherMessage=language.Sentence([
                     player.thing,
-                    u" wrestles with basic personal problems."]))
-        else:
-            evt = events.Success(
-                actor=player.thing,
-                target=target.thing,
-                actorMessage=(u"You put on ",
-                              language.Noun(target.thing).definiteNounPhrase(),
-                              "."),
-                otherMessage=language.Sentence([
-                    player.thing, " puts on ", target.thing, "."]))
+                    u" wrestles with basic personal problems."])))
+
+        evt = events.Success(
+            actor=player.thing,
+            target=target.thing,
+            actorMessage=(u"You put on ",
+                          language.Noun(target.thing).definiteNounPhrase(),
+                          "."),
+            otherMessage=language.Sentence([
+                player.thing, " puts on ", target.thing, "."]))
         evt.broadcast()
 
 
@@ -375,12 +380,11 @@ class TakeFrom(ToolAction):
 
     def do(self, player, line, target, tool):
         # XXX Make sure target is in tool
+        targetTaken(player.thing, target, tool).broadcast()
         try:
             target.moveTo(player.thing)
         except eimaginary.DoesntFit:
-            tooHeavy(player.thing, target).broadcast()
-        else:
-            targetTaken(player.thing, target, tool).broadcast()
+            raise tooHeavy(player.thing, target)
 
 
 
@@ -404,30 +408,40 @@ class PutIn(ToolAction):
         ctool = iimaginary.IContainer(tool, None)
         targetObject = target.thing
         if ctool is not None and (ctool.contains(targetObject) or ctool is target):
-            evt = events.ThatDoesntWork(actor=player.thing, target=targetObject, tool=tool,
-                                        actorMessage="A thing cannot contain itself in euclidean space.")
-        else:
-            dnf = language.Noun(targetObject).definiteNounPhrase()
-            try:
-                tool.moveTo(target)
-            except eimaginary.DoesntFit:
-                # <allexpro> dash: put me in a tent and give it to moshez!
-                evt = events.ThatDoesntWork(actor=player.thing, target=targetObject, tool=tool)
-            except eimaginary.Closed:
-                evt = events.ThatDoesntWork(actor=player.thing,
-                                            target=targetObject,
-                                            tool=tool,
-                                            actorMessage=language.Sentence([dnf, " is closed."]))
-            else:
-                evt = events.Success(
+            raise eimaginary.ActionFailure(
+                events.ThatDoesntWork(
                     actor=player.thing,
                     target=targetObject,
                     tool=tool,
-                    actorMessage=("You put ", tool, " in ", dnf, "."),
-                    targetMessage=language.Sentence([player.thing, " puts ", " tool in you."]),
-                    toolMessage=language.Sentence([player.thing, " puts you in ", targetObject, "."]),
-                    otherMessage=language.Sentence([player.thing, " puts ", tool, " in ", targetObject, "."]))
+                    actorMessage="A thing cannot contain itself in euclidean space."))
+
+        dnf = language.Noun(targetObject).definiteNounPhrase()
+        evt = events.Success(
+            actor=player.thing,
+            target=targetObject,
+            tool=tool,
+            actorMessage=("You put ", tool, " in ", dnf, "."),
+            targetMessage=language.Sentence([player.thing, " puts ", " tool in you."]),
+            toolMessage=language.Sentence([player.thing, " puts you in ", targetObject, "."]),
+            otherMessage=language.Sentence([player.thing, " puts ", tool, " in ", targetObject, "."]))
         evt.broadcast()
+
+        try:
+            tool.moveTo(target)
+        except eimaginary.DoesntFit:
+            # <allexpro> dash: put me in a tent and give it to moshez!
+            raise eimaginary.ActionFailure(
+                events.ThatDoesntWork(
+                    actor=player.thing,
+                    target=targetObject,
+                    tool=tool))
+        except eimaginary.Closed:
+            raise eimaginary.ActionFailure(
+                events.ThatDoesntWork(
+                    actor=player.thing,
+                    target=targetObject,
+                    tool=tool,
+                    actorMessage=language.Sentence([dnf, " is closed."])))
 
 
 
@@ -444,25 +458,22 @@ class Take(TargetAction):
 
     def do(self, player, line, target):
         if target in (player.thing, player.thing.location) or target.location is player.thing:
-            evt = events.ThatDoesntMakeSense(
+            raise eimaginary.ActionFailure(events.ThatDoesntMakeSense(
                 actor=player.thing,
-                actorMessage=("You cannot take ", target, "."))
-            evt.broadcast()
-            return
+                actorMessage=("You cannot take ", target, ".")))
 
+        targetTaken(player.thing, target).broadcast()
         try:
             target.moveTo(player.thing)
         except eimaginary.DoesntFit:
-            tooHeavy(player.thing, target).broadcast()
-        else:
-            targetTaken(player.thing, target).broadcast()
+            raise tooHeavy(player.thing, target)
 
 
 
 def insufficientSpace(player):
-    return events.ThatDoesntWork(
+    return eimaginary.ActionFailure(events.ThatDoesntWork(
         actor=player,
-        actorMessage="There's not enough space for that.")
+        actorMessage="There's not enough space for that."))
 
 
 
@@ -486,13 +497,11 @@ class Spawn(NoTargetAction):
     def do(self, player, line, name, description=u'an undescribed monster'):
         mob = objects.Thing(store=player.store, name=name, description=description)
         objects.Actor(store=player.store).installOn(mob)
+        creationSuccess(player.thing, mob).broadcast()
         try:
             mob.moveTo(player.thing.location)
         except eimaginary.DoesntFit:
-            mob.destroy()
-            insufficientSpace(player.thing).broadcast()
-        else:
-            creationSuccess(player.thing, mob).broadcast()
+            raise insufficientSpace(player.thing)
 
 
 
@@ -514,14 +523,17 @@ class Create(NoTargetAction):
                                    description=description, proper=True)
                 break
         else:
-            raise ValueError("Can't find " + typeName)
+            raise eimaginary.ActionFailure(
+                events.ThatDoesntMakeSense(
+                    actor=player.thing,
+                    actorMessage=language.ExpressString(
+                        u"Can't find " + typeName + u".")))
+
+        creationSuccess(player.thing, o).broadcast()
         try:
             o.moveTo(player.thing)
         except eimaginary.DoesntFit:
-            o.destroy()
-            insufficientSpace(player.thing).broadcast()
-        else:
-            creationSuccess(player.thing, o).broadcast()
+            raise insufficientSpace(player.thing)
 
 
 
@@ -538,23 +550,22 @@ class Drop(TargetAction):
 
     def do(self, player, line, target):
         if target.location is not player.thing:
-            evt = events.ThatDoesntMakeSense(
-                actor=player.thing,
-                actorMessage="You can't drop that.")
-            evt.broadcast()
-        else:
-            try:
-                target.moveTo(player.thing.location)
-            except eimaginary.DoesntFit:
-                insufficientSpace(player.thing).broadcast()
-            else:
-                evt = events.Success(
+            raise eimaginary.ActionFailure(
+                events.ThatDoesntMakeSense(
                     actor=player.thing,
-                    actorMessage=("You drop ", target, "."),
-                    target=target,
-                    targetMessage=(player.thing, " drops you."),
-                    otherMessage=(player.thing, " drops ", target, "."))
-                evt.broadcast()
+                    actorMessage="You can't drop that."))
+
+        evt = events.Success(
+            actor=player.thing,
+            actorMessage=("You drop ", target, "."),
+            target=target,
+            targetMessage=(player.thing, " drops you."),
+            otherMessage=(player.thing, " drops ", target, "."))
+        evt.broadcast()
+        try:
+            target.moveTo(player.thing.location)
+        except eimaginary.DoesntFit:
+            raise insufficientSpace(player.thing)
 
 
 
@@ -575,24 +586,23 @@ class Dig(NoTargetAction):
 
     def do(self, player, line, direction, name):
         if player.thing.location.getExitNamed(direction, None) is not None:
-            evt = events.ThatDoesntMakeSense(
+            raise eimaginary.ActionFailure(events.ThatDoesntMakeSense(
                 actor=player.thing,
-                actorMessage="There is already an exit in that direction.")
-            evt.broadcast()
-        else:
-            room = objects.Thing(store=player.store, name=name)
-            objects.Container(store=player.store, capacity=1000).installOn(room)
-            objects.Exit.link(player.thing.location, room, direction)
+                actorMessage="There is already an exit in that direction."))
 
-            evt = events.Success(
-                actor=player.thing,
-                actorMessage="You create an exit.",
-                otherMessage=language.Sentence([player.thing, " created an exit to the ", direction, "."]))
-            evt.broadcast()
+        room = objects.Thing(store=player.store, name=name)
+        objects.Container(store=player.store, capacity=1000).installOn(room)
+        objects.Exit.link(player.thing.location, room, direction)
 
-            # XXX Right now there can't possibly be anyone in the
-            # destination room, but someday there could be.  When there
-            # could be, broadcast this to them too.
+        evt = events.Success(
+            actor=player.thing,
+            actorMessage="You create an exit.",
+            otherMessage=language.Sentence([player.thing, " created an exit to the ", direction, "."]))
+        evt.broadcast()
+
+        # XXX Right now there can't possibly be anyone in the
+        # destination room, but someday there could be.  When there
+        # could be, broadcast this to them too.
 
 
 
@@ -621,10 +631,9 @@ class Bury(NoTargetAction):
                 exit.destroy()
                 return
 
-        evt = events.ThatDoesntMakeSense(
+        raise eimaginary.ActionFailure(events.ThatDoesntMakeSense(
             actor=player.thing,
-            actorMessage="There isn't an exit in that direction.")
-        evt.broadcast()
+            actorMessage="There isn't an exit in that direction."))
 
 
 
@@ -636,40 +645,41 @@ class Go(NoTargetAction):
         try:
             exit = player.thing.location.getExitNamed(direction)
         except KeyError:
-            evt = events.ThatDoesntWork(
+            raise eimaginary.ActionFailure(events.ThatDoesntWork(
                 actor=player.thing,
-                actorMessage="You can't go that way.")
-            evt.broadcast()
+                actorMessage=u"You can't go that way."))
+
+        dest = exit.toLocation
+        location = player.thing.location
+
+        evt = events.Success(
+            location=location,
+            actor=player.thing,
+            otherMessage=(player.thing, " leaves ", direction, "."))
+        evt.broadcast()
+
+        try:
+            player.thing.moveTo(dest)
+        except eimaginary.DoesntFit:
+            raise eimaginary.ActionFailure(events.ThatDoesntWork(
+                actor=player.thing,
+                actorMessage=language.ExpressString(u"There's no room for you there.")))
+
+        if exit.sibling is not None:
+            arriveDirection = exit.sibling.name
         else:
-            dest = exit.toLocation
-            location = player.thing.location
-            try:
-                player.thing.moveTo(dest)
-            except eimaginary.DoesntFit:
-                player.send("There's no room for you there.")
-                return
+            arriveDirection = object.OPPOSITE_DIRECTIONS[exit.name]
 
-            evt = events.Success(
-                location=location,
-                actor=player.thing,
-                otherMessage=(player.thing, " leaves ", direction, "."))
-            evt.broadcast()
+        evt = events.Success(
+            location=dest,
+            actor=player.thing,
+            otherMessage=(player.thing, " arrives from the ", arriveDirection, "."))
+        evt.broadcast()
 
-            if exit.sibling is not None:
-                arriveDirection = exit.sibling.name
-            else:
-                arriveDirection = object.OPPOSITE_DIRECTIONS[exit.name]
-
-            evt = events.Success(
-                location=dest,
-                actor=player.thing,
-                otherMessage=(player.thing, " arrives from the ", arriveDirection, "."))
-            evt.broadcast()
-
-            LookAround().do(player, "look") # XXX A convention for
-                                            # programmatically invoked
-                                            # commands?  None as the
-                                            # line?
+        LookAround().do(player, "look") # XXX A convention for
+                                        # programmatically invoked
+                                        # commands?  None as the
+                                        # line?
 
 class Restore(TargetAction):
     expr = (pyparsing.Literal("restore") +
@@ -722,33 +732,36 @@ class Hit(TargetAction):
     def do(self, player, line, target):
         toBroadcast = []
         if target is player:
-            toBroadcast.append(events.ThatDoesntMakeSense("Hit yourself?  Stupid.", actor=player.thing))
-        else:
-            cost = random.randrange(1, 5)
-            if player.stamina < cost:
-                toBroadcast.append(events.ThatDoesntWork("You're too tired!", actor=player.thing))
-            else:
-                damage = random.randrange(1, 5)
-                player.stamina.decrease(cost)
-                thp = target.hitpoints.decrease(damage)
-                toBroadcast.append(events.Success(
-                    actor=player.thing,
-                    target=target.thing,
-                    targetMessage=language.Sentence([player.thing, " hits you for ", damage, " hitpoints."]),
-                    actorMessage=language.Sentence(["You hit ", language.Noun(target.thing).definiteNounPhrase(), " for ", damage, " hitpoints."]),
-                    otherMessage=language.Sentence([player.thing, " hits ", target.thing, "."])))
-                if thp <= 0:
-                    xp = target.experience / 2 + 1
-                    player.gainExperience(xp) # I LOVE IT
-                    targetIsDead = [target.thing, " is dead!", "\n"]
-                    toBroadcast.append(events.Success(
-                        actor=player.thing, target=target.thing,
-                        actorMessage=["\n", targetIsDead, "You gain ", xp, " experience"],
-                        targetMessage=["You are dead!"],
-                        otherMessage=targetIsDead))
-                    target.thing.destroy()
-        for event in toBroadcast:
-            event.broadcast()
+            raise eimaginary.ActionFailure(
+                events.ThatDoesntMakeSense(u"Hit yourself?  Stupid.",
+                                           actor=player.thing))
+
+        cost = random.randrange(1, 5)
+        if player.stamina < cost:
+            raise eimaginary.ActionFailure(
+                events.ThatDoesntWork(u"You're too tired!",
+                                      actor=player.thing))
+
+        damage = random.randrange(1, 5)
+        player.stamina.decrease(cost)
+        thp = target.hitpoints.decrease(damage)
+        events.Success(
+            actor=player.thing,
+            target=target.thing,
+            targetMessage=language.Sentence([player.thing, " hits you for ", damage, " hitpoints."]),
+            actorMessage=language.Sentence(["You hit ", language.Noun(target.thing).definiteNounPhrase(), " for ", damage, " hitpoints."]),
+            otherMessage=language.Sentence([player.thing, " hits ", target.thing, "."])).broadcast()
+
+        if thp <= 0:
+            xp = target.experience / 2 + 1
+            player.gainExperience(xp) # I LOVE IT
+            targetIsDead = [target.thing, " is dead!", "\n"]
+            events.Success(
+                actor=player.thing, target=target.thing,
+                actorMessage=["\n", targetIsDead, "You gain ", xp, " experience"],
+                targetMessage=["You are dead!"],
+                otherMessage=targetIsDead).broadcast()
+            target.thing.destroy()
 
 
 

@@ -2,8 +2,6 @@
 
 import pprint
 
-from twisted.conch.insults import insults
-
 from epsilon import structlike
 
 class _unset(object):

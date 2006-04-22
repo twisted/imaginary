@@ -10,7 +10,7 @@ from twisted.python import reflect, components
 
 from axiom import item, attributes
 
-from imaginary import iimaginary, eimaginary, text as T, iterutils, events, language
+from imaginary import iimaginary, eimaginary, text as T, events, language
 
 
 def installedOn():
@@ -441,7 +441,13 @@ class Actable(object):
         else:
             event = event[0]
         if self.intelligence is not None:
-            self.intelligence.send(event)
+            self.prepare(event)()
+
+
+    def prepare(self, concept):
+        if self.intelligence is not None:
+            return self.intelligence.prepare(concept)
+        return lambda: None
 
 
     def gainExperience(self, amount):

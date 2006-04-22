@@ -3,7 +3,6 @@ from twisted.trial import unittest
 
 from axiom import store
 
-from imaginary.test import commandutils
 from imaginary.wiring import realm
 from imaginary import iimaginary, action
 
@@ -11,8 +10,8 @@ class TestIntelligence(object):
     def __init__(self):
         self.events = []
 
-    def send(self, event):
-        self.events.append(event)
+    def prepare(self, event):
+        return lambda: self.events.append(event)
 
 
 class WhoTestCase(unittest.TestCase):

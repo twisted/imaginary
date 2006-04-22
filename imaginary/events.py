@@ -2,6 +2,8 @@
 
 from zope.interface import implements
 
+from twisted.python import context
+
 from imaginary import iimaginary, language
 
 class Event(language.BaseExpress):
@@ -45,11 +47,16 @@ class Event(language.BaseExpress):
         return msg
 
 
-    def broadcast(self):
+    def reify(self):
+        L = []
         for ob in iimaginary.IContainer(self.location).getContents():
             observer = iimaginary.IEventObserver(ob, None)
             if observer:
-                observer.send(self)
+                sender = observer.prepare(self)
+                if not callable(sender):
+                    raise TypeError("Senders must be callable", sender)
+                L.append(sender)
+        return lambda: map(apply, L)
 
 
     def vt102(self, observer):
@@ -80,3 +87,13 @@ class Success(Event):
     """
     You do it.  Swell.
     """
+
+    def broadcast(self):
+        """
+        Don't really broadcast.  Add this event to the events which will be
+        sent when the action (or whatever) execution transaction is committed
+        successfully.
+        """
+        broadcaster = context.get(iimaginary.ITransactionalEventBroadcaster)
+        if broadcaster is not None:
+            broadcaster.addEvent(self.reify())

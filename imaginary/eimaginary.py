@@ -48,6 +48,23 @@ class AmbiguousArgument(ImaginaryError):
         self.partValue = partValue
         self.objects = objects
 
+
+
+class ActionFailure(ImaginaryError):
+    """
+    Wrapper exception for an Event that caused an action to fail (such that the
+    transaction in which it was running should be reverted).
+    """
+    def __init__(self, event):
+        ImaginaryError.__init__(self)
+        self.event = event
+
+
+    def __repr__(self):
+        return '<Action Failure: %r>' % (self.event,)
+
+
+
 # Game logic errors
 class DoesntFit(ImaginaryError):
     """

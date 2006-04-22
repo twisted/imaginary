@@ -2,13 +2,11 @@
 
 from zope.interface import implements
 
-from twisted.application import service
 from twisted.cred import checkers, credentials, portal
 
 from axiom import item, attributes
 
 from imaginary import iimaginary
-from imaginary.wiring import telnet, ssh, tuiserver
 from imaginary import objects, eimaginary
 
 

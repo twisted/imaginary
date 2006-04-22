@@ -7,7 +7,7 @@ from twisted.test.proto_helpers import StringTransport
 
 from axiom import store
 
-from imaginary import objects, wiring
+from imaginary import objects
 from imaginary.wiring import player
 
 

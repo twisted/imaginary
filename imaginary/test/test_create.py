@@ -7,7 +7,7 @@ from twisted.trial import unittest
 from axiom import item, attributes
 
 from imaginary.test import commandutils
-from imaginary import iimaginary, plugins, action, objects, quiche
+from imaginary import iimaginary, plugins, action, quiche
 
 
 class IFoo(Interface):

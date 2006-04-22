@@ -59,12 +59,12 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
                        ["You put quarter%s in vendy." % i],
                        ["Test Player puts quarter%s in vendy." % i])
 
-        # XXX - This order is wrong, fix it.
         self._test("put quarter4 in vendy",
-                   ["Vendy thumps loudly and spits out quiche onto the ground.",
-                    "You put quarter4 in vendy."],
-                   ["Vendy thumps loudly and spits out quiche onto the ground.",
-                    "Test Player puts quarter4 in vendy."])
+                   ["You put quarter4 in vendy.",
+                   "Vendy thumps loudly and spits out quiche onto the ground."],
+                   ["Test Player puts quarter4 in vendy.",
+                    "Vendy thumps loudly and spits out quiche onto the ground."])
+
 
     def testProgrammaticQuichePurchase(self):
         location = objects.Thing(store=self.store, name=u"room")

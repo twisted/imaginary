@@ -4,7 +4,7 @@ from twisted.trial import unittest
 
 from axiom import store
 
-from imaginary import eimaginary, iimaginary, objects
+from imaginary import eimaginary, objects
 
 class ContainerTestCase(unittest.TestCase):
     def setUp(self):

@@ -1,10 +1,7 @@
 
-from zope.interface import implements
-
 from twisted.trial import unittest
-from twisted.python.util import unsignedID
 
-from imaginary import iimaginary, iterutils, objects
+from imaginary import iterutils
 
 
 class UtilTestCase(unittest.TestCase):

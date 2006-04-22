@@ -1,12 +1,7 @@
+# -*- test-case-name: imaginary.test -*-
 
-import sys
-
-from twisted import copyright as tcopyright
-from twisted.python import util
 from twisted.conch.insults import insults, window
 
-from imaginary import copyright as pcopyright
-from imaginary import resources
 from imaginary.wiring import faucet
 
 connections = []

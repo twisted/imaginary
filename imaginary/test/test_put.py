@@ -2,7 +2,7 @@
 from twisted.trial import unittest
 
 from imaginary.test import commandutils
-from imaginary import iimaginary, action, objects
+from imaginary import iimaginary, objects
 
 class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def setUp(self):

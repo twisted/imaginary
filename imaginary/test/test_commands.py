@@ -10,6 +10,33 @@ from imaginary.test.commandutils import E
 
 PTR = "[A-F0-9]{1,8}"
 
+
+class TransactionalEventBroadcasterTestCase(unittest.TestCase):
+    def testAddEvent(self):
+        L = []
+        teb = commands.TransactionalEventBroadcaster()
+        teb.addEvent(lambda: L.append('win'))
+        teb.addRevertEvent(lambda: L.append('lose'))
+        teb.broadcastEvents()
+        self.assertEquals(L, ['win'])
+
+
+    def testAddRevertEvent(self):
+        L = []
+        teb = commands.TransactionalEventBroadcaster()
+        teb.addEvent(lambda: L.append('lose'))
+        teb.addRevertEvent(lambda: L.append('win'))
+        teb.broadcastRevertEvents()
+        self.assertEquals(L, ['win'])
+
+
+    def testBadEvents(self):
+        teb = commands.TransactionalEventBroadcaster()
+        self.assertRaises(ValueError, teb.addEvent, None)
+        self.assertRaises(ValueError, teb.addRevertEvent, None)
+
+
+
 class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
     def testBadCommand(self):

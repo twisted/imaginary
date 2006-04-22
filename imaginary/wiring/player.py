@@ -1,4 +1,3 @@
-import itertools
 
 from twisted.internet import defer
 from twisted.python import log
@@ -47,13 +46,13 @@ class Player(object):
                     msg = "Who's that?"
             else:
                 msg = "Could you be more specific?"
-            self.lowLevelSend((msg, "\r\n"))
+            self.send((msg, "\r\n"))
 
         def ebUnexpected(err):
             log.err(err)
             self.proto.write('\r\nerror\r\n')
 
-        self.lowLevelSend(('> ', line, '\n'))
+        self.send(('> ', line, '\n'))
         d = defer.maybeDeferred(commands.Command.parse, self.actor, line)
         d.addCallbacks(cbParse, ebParse)
         d.addErrback(ebAmbiguity)
@@ -69,12 +68,24 @@ class Player(object):
             self.player.intelligence = None
 
 
-    def send(self, event):
-        if self.proto is not None:
-            self.lowLevelSend(event.vt102(self.actor))
+    def prepare(self, concept):
+        """
+        Actually format a concept into a byte string, capturing whatever
+        encapsulated world state as it exists right now.  Return a no-argument
+        callable that will actually send that string to my protocol, if I still
+        have one when it is called.
+        """
+        stuff = concept.vt102(self.actor)
+        def send():
+            if self.proto is not None:
+                self.send(stuff)
+        return send
 
 
-    def lowLevelSend(self, stuff):
+    def send(self, stuff):
+        """
+        Write a flattenable structure to my transport/protocol thingy.
+        """
         #FIXME: Encoding should be done *inside* flatten, not here.
         flatterStuff = T.flatten(stuff, useColors=self.useColors, currentAttrs=self.termAttrs)
         txt = u''.join(list(flatterStuff))

@@ -106,6 +106,26 @@ class IEventObserver(Interface):
 
 
 
+class ITransactionalEventBroadcaster(Interface):
+    """
+    A thing which mediates the deadly side-effects of event broadcast by
+    holding things back until a transaction has been successfully committed or
+    is being reverted.
+    """
+    def addEvent(event):
+        """
+        Add an event which will be broadcast when the transaction is committed
+        successfully.
+        """
+
+
+    def addRevertEvent(event):
+        """
+        Add an event which will be broadcast when the transaction is reverted.
+        """
+
+
+
 class IContainer(Interface):
     """
     An object which can contain other objects.

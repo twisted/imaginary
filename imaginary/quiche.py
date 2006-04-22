@@ -2,11 +2,9 @@
 
 from zope.interface import implements, Interface
 
-from twisted.python import components
-
 from axiom import item, attributes
 
-from imaginary import iimaginary, objects, action, events, language
+from imaginary import iimaginary, objects, events, language
 
 
 class ICoin(Interface):
