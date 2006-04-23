@@ -126,7 +126,25 @@ class BaseExpress(object):
 
 
 class DescriptionConcept(BaseExpress):
+    """
+    A concept which is expressed as the description of a Thing as well as
+    any concepts which power up that thing for IDescriptionContributor.
+
+    Concepts will be ordered by the C{preferredOrder} class attribute. 
+    Concepts not named in this list will appear last in an unpredictable
+    order.
+    """
     implements(iimaginary.IConcept)
+
+    # This may not be the most awesome solution to the ordering problem, but
+    # it is the best I can think of right now.  This is strictly a
+    # user-interface level problem.  Only the ordering in the string output
+    # send to the user should depend on this; nothing in the world should be
+    # affected.
+    preferredOrder = ['ExpressCondition',
+                      'ExpressClothing',
+                      'ExpressSurroundings',
+                      ]
 
     def __init__(self, thing):
         self.thing = thing
@@ -144,11 +162,24 @@ class DescriptionConcept(BaseExpress):
         if self.thing.description:
             description = (T.fg.green, self.thing.description, u'\n')
 
-        descriptionComponents = []
+        descriptionConcepts = []
         for pup in self.thing.powerupsFor(iimaginary.IDescriptionContributor):
-            s = pup.conceptualize().vt102(observer)
+            descriptionConcepts.append(pup.conceptualize())
+
+        def index(c):
+            try:
+                return self.preferredOrder.index(c.__class__.__name__)
+            except ValueError:
+                return float('inf')
+
+        descriptionConcepts.sort(key=index)
+
+        descriptionComponents = []
+        for c in descriptionConcepts:
+            s = c.vt102(observer)
             if s:
                 descriptionComponents.extend([s, u'\n'])
+
         if descriptionComponents:
             descriptionComponents.pop()
 

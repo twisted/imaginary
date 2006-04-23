@@ -208,15 +208,7 @@ class Wearer(item.Item, item.InstallableMixin):
         """
         Describe the list of clothing.
         """
-        heshe = language.Noun(self.thing).heShe()
-        L = _orderTopClothingByGlobalSlotList(self.getGarmentDict())
-        if L is None:
-            return language.Sentence([heshe, u' is naked.'])
-        return language.Sentence([
-            heshe,
-            u' is wearing ',
-            language.ItemizedList([language.Noun(g.thing).nounPhrase() for g in L]),
-            u'.'])
+        return ExpressClothing(self.thing, self.getGarmentDict())
 
 
     # ILinkContributor
@@ -226,6 +218,27 @@ class Wearer(item.Item, item.InstallableMixin):
                                                                 Garment.wearer == self)):
             d.setdefault(t.name, []).append(t)
         return d
+
+
+
+class ExpressClothing(language.BaseExpress):
+    def __init__(self, thing, garments):
+        self.thing = thing
+        self.garments = garments
+
+
+    def vt102(self, observer):
+        heshe = language.Noun(self.thing).heShe()
+        L = _orderTopClothingByGlobalSlotList(self.garments)
+        if L is None:
+            return language.Sentence([heshe, u' is naked.']).vt102(observer)
+        return language.Sentence([
+            heshe,
+            u' is wearing ',
+            language.ItemizedList([language.Noun(g.thing).nounPhrase()
+                                   for g in L]),
+            u'.']).vt102(observer)
+
 
 
 createShirt = quiche.createCreator(

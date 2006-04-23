@@ -96,9 +96,10 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u'[ daisy ]\n'
-            u'a pair of Daisy Dukes\n'
             u'daisy is great.\n'
-            u'She is naked.')
+            u'She is naked.\n'
+            u'a pair of Daisy Dukes'
+            )
         self.assertIdentical(self.dukes.location, self.daisy)
 
 
@@ -112,9 +113,10 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u'[ daisy ]\n'
-            u'a pair of Daisy Dukes and a pair of lacy underwear\n'
             u'daisy is great.\n'
-            u'She is naked.')
+            u'She is naked.\n'
+            u'a pair of Daisy Dukes and a pair of lacy underwear'
+            )
         self.assertIdentical(self.dukes.location, self.daisy)
 
 
@@ -242,9 +244,10 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
                    ["Test Player wrestles with basic personal problems."])
         self._test("look me",
                    [E("[ Test Player ]"),
-                    E("pair of daisy dukes"),
                     E("Test Player is great."),
-                    E("She is wearing overalls.")])
+                    E("She is wearing overalls."),
+                    E("pair of daisy dukes"),
+                    ])
 
 
     def testInaccessibleGarment(self):
