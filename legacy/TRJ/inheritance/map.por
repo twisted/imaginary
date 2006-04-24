@@ -1,1 +1,0 @@
-There is no map for inheritance yet.
