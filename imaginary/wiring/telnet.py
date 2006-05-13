@@ -11,6 +11,8 @@ from twisted.conch.insults import insults
 
 from axiom import item, attributes, userbase
 
+from xmantissa import stats
+
 from imaginary import iimaginary
 from imaginary.wiring import textserver
 
@@ -84,6 +86,8 @@ class TelnetService(item.Item, item.InstallableMixin, service.Service):
 
         if self.debug:
             self.factory = policies.TrafficLoggingFactory(self.factory, 'telnet')
+
+        self.factory = stats.BandwidthMeasuringFactory(self.factory, 'telnet')
 
         if self.portNumber is not None:
             self.port = reactor.listenTCP(self.portNumber, self.factory)

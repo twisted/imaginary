@@ -1,16 +1,16 @@
 # -*- test-case-name: imaginary.test.test_commands -*-
 
-import os, random, operator
+import time, os, random, operator
 import pprint
 
 from zope.interface import implements
 
 import pyparsing
 
-from twisted.python import util
+from twisted.python import util, log
 from twisted import plugin
 
-from axiom import attributes
+from axiom import iaxiom, attributes
 
 import imaginary.plugins
 from imaginary.wiring import realm
@@ -21,6 +21,19 @@ class Action(commands.Command):
     infrastructure = True
 
     def run(self, player, line, **kw):
+        begin = time.time()
+        try:
+            return self._reallyRun(player, line, kw)
+        finally:
+            end = time.time()
+            log.msg(
+                interface=iaxiom.IStatEvent,
+                stat_actionDuration=end - begin,
+                stat_actionExecuted=1,
+                )
+
+
+    def _reallyRun(self, player, line, kw):
         for (k, v) in kw.items():
             try:
                 objs = self.resolve(player, k, v)

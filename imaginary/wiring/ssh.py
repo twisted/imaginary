@@ -15,6 +15,8 @@ from twisted.conch.scripts import ckeygen
 
 from axiom import item, attributes, userbase
 
+from xmantissa import stats
+
 from imaginary import iimaginary
 from imaginary.wiring import textserver
 
@@ -190,6 +192,8 @@ class SSHService(item.Item, item.InstallableMixin, service.Service):
 
         if self.debug:
             self.factory = policies.TrafficLoggingFactory(self.factory, 'ssh')
+
+        self.factory = stats.BandwidthMeasuringFactory(self.factory, 'ssh')
 
         if self.portNumber is not None:
             self.port = reactor.listenTCP(self.portNumber, self.factory)
