@@ -9,18 +9,14 @@ from twisted.python import context
 
 from imaginary import iimaginary, eimaginary
 
-def stripper(s, loc, toks):
-    toks = toks.asList()
-    toks[0] = toks[0][1:-1]
-    return toks
 
-
+_quoteRemovingQuotedString = pyparsing.quotedString.copy()
+_quoteRemovingQuotedString.setParseAction(pyparsing.removeQuotes)
 
 def targetString(name):
-    qstr = pyparsing.quotedString.setParseAction(stripper)
     return (
         pyparsing.Word(pyparsing.alphanums) ^
-        qstr).setResultsName(name)
+        _quoteRemovingQuotedString).setResultsName(name)
 
 
 
