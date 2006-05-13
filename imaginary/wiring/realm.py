@@ -2,9 +2,10 @@
 
 from zope.interface import implements
 
+from twisted.python import log
 from twisted.cred import checkers, credentials, portal
 
-from axiom import item, attributes
+from axiom import iaxiom, item, attributes
 
 from imaginary import iimaginary
 from imaginary import objects, eimaginary
@@ -92,6 +93,10 @@ class ImaginaryRealm(item.Item, item.InstallableMixin):
         for iface in interfaces:
             asp = iface(actor, None)
             if asp is not None:
+                log.msg(
+                    name='cred',
+                    interface=iaxiom.IStatEvent,
+                    cred_interface=iface)
                 actor.moveTo(self.origin)
                 self.loggedIn(actor)
                 return (iface, asp, lambda: self.connected.remove(actor))

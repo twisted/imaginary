@@ -18,5 +18,5 @@ imaginaryOffering = offering.Offering(
                         (iimaginary.ISSHService, ssh.SSHService)],
     appPowerups = [realm.ImaginaryRealm],
     benefactorFactories = [],
-    loginInterfaces = [],
+    loginInterfaces = [(iimaginary.IActor, "Imaginary logins")],
     themes = [])
