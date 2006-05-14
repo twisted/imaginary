@@ -79,7 +79,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))
 
-        description = language.Noun(self.daisy).description()
+        description = self.daisy.visualize()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u'[ daisy ]\n'
@@ -92,7 +92,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
             iimaginary.IClothing(self.dukes))
         iimaginary.IClothingWearer(self.daisy).takeOff(
             iimaginary.IClothing(self.dukes))
-        description = language.Noun(self.daisy).description()
+        description = self.daisy.visualize()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u'[ daisy ]\n'
@@ -109,7 +109,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         wearer.putOn(iimaginary.IClothing(self.dukes))
         wearer.takeOff(iimaginary.IClothing(self.dukes))
         wearer.takeOff(iimaginary.IClothing(self.undies))
-        description = language.Noun(self.daisy).description()
+        description = self.daisy.visualize()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u'[ daisy ]\n'
@@ -131,7 +131,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
     def testPersonWearsPantsAndShirt(self):
-        description = language.Noun(self.daisy).description()
+        description = self.daisy.visualize()
 
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))
@@ -146,7 +146,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
     def testPersonWearsUnderpantsAndPants(self):
-        description = language.Noun(self.daisy).description()
+        description = self.daisy.visualize()
 
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.undies))
@@ -161,7 +161,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
     def testPersonWearsPantsAndFailsAtPuttingOnUnderpants(self):
-        description = language.Noun(self.daisy).description()
+        description = self.daisy.visualize()
 
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))
@@ -172,10 +172,8 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
     def testWornClothingIsFindable(self):
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))
-        #!
-        dukes = list(self.daisy.search(distance=0,
-                                       interface=iimaginary.IClothing,
-                                       name="pair of daisy dukes"))
+        dukes = list(self.daisy.findProviders(
+            iimaginary.IClothing, 0))
         self.assertEquals(len(dukes), 1)
         self.assertIdentical(dukes[0].thing, self.dukes)
 

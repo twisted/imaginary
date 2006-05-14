@@ -65,6 +65,12 @@ class ActionFailure(ImaginaryError):
 
 
 
+class ThingNotFound(ImaginaryError):
+    """
+    Resolving a Thing by identity failed.
+    """
+
+
 # Game logic errors
 class DoesntFit(ImaginaryError):
     """

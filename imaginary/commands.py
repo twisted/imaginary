@@ -102,29 +102,7 @@ class CommandType(type):
                         if isinstance(v, pyparsing.ParseResults):
                             match[k] = v[0]
 
-                    act = cls()
-                    broadcaster = TransactionalEventBroadcaster()
-                    def runHelper():
-                        # Set up event context for the duration of the action
-                        # run.  Additionally, handle raised ActionFailures by
-                        # adding their events to the revert event list and
-                        # re-raising them so they will revert the transaction.
-                        try:
-                            return context.call(
-                                {iimaginary.ITransactionalEventBroadcaster: broadcaster},
-                                act.run, player, line, **match)
-                        except eimaginary.ActionFailure, e:
-                            broadcaster.addRevertEvent(e.event.reify())
-                            raise
-                    try:
-                        result = player.store.transact(runHelper)
-                    except eimaginary.ActionFailure, e:
-                        broadcaster.broadcastRevertEvents()
-                        return None
-                    else:
-                        broadcaster.broadcastEvents()
-                        return result
-
+                    return cls().runEventTransaction(player, line, match)
         return defer.fail(eimaginary.NoSuchCommand(line))
 
 
@@ -136,3 +114,40 @@ class Command(object):
     def match(cls, player, line):
         return cls.expr.parseString(line)
     match = classmethod(match)
+
+
+    def runEventTransaction(self, player, line, match):
+        """
+        Take a player, line, and dictionary of parse results and execute the
+        actual Action implementation.
+
+        This takes responsibility for setting up the transactional event
+        broadcasting junk, handling action errors, and broadcasting commit or
+        revert events.
+
+        @param player: A provider of C{self.actorInterface}
+        @param line: A unicode string containing the original input
+        @param match: A dictionary containing some parse results to pass
+        through to the C{run} method.
+        """
+        broadcaster = TransactionalEventBroadcaster()
+        def runHelper():
+            # Set up event context for the duration of the action
+            # run.  Additionally, handle raised ActionFailures by
+            # adding their events to the revert event list and
+            # re-raising them so they will revert the transaction.
+            try:
+                return context.call(
+                    {iimaginary.ITransactionalEventBroadcaster: broadcaster},
+                    self.run, player, line, **match)
+            except eimaginary.ActionFailure, e:
+                broadcaster.addRevertEvent(e.event.reify())
+                raise
+        try:
+            result = player.store.transact(runHelper)
+        except eimaginary.ActionFailure, e:
+            broadcaster.broadcastRevertEvents()
+            return None
+        else:
+            broadcaster.broadcastEvents()
+            return result

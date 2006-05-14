@@ -155,6 +155,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["Test Player drops a bar."])
         self.assertEquals(o.location, self.location)
 
+
     def testLook(self):
         self._test(
             "look",
@@ -205,6 +206,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self._test(
             "look at bar",
             ["You don't see that."])
+
 
     def testSay(self):
         self._test(
@@ -380,7 +382,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "spawn foobar",
             ["A foobar created."],
             ["Test Player creates a foobar."])
-        foobar = self.player.find("foobar")
+        foobar = self.find(u"foobar")
         self.assertEquals(foobar.name, "foobar")
         self.assertEquals(foobar.description, "an undescribed monster")
         self.assertEquals(foobar.location, self.location)
@@ -389,7 +391,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             'spawn "bar foo"',
             ["A bar foo created."],
             ["Test Player creates a bar foo."])
-        barfoo = self.player.find("bar foo")
+        barfoo = self.find(u"bar foo")
         self.assertEquals(barfoo.name, "bar foo")
         self.assertEquals(barfoo.description, "an undescribed monster")
         self.assertEquals(barfoo.location, self.location)
@@ -398,7 +400,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             'spawn "described monster" It looks like a monster with a description.',
             ["A described monster created."],
             ["Test Player creates a described monster."])
-        monster = self.player.find("described monster")
+        monster = self.find(u"described monster")
         self.assertEquals(monster.name, "described monster")
         self.assertEquals(monster.description, "It looks like a monster with a description.")
         self.assertEquals(monster.location, self.location)
@@ -412,20 +414,20 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "dig west dark tunnel",
             ["You create an exit."],
             ["Test Player created an exit to the west."])
-        room = self.location.getExitNamed(u'west').toLocation
+        room = iimaginary.IContainer(self.location).getExitNamed(u'west').toLocation
         self.assertEquals(room.name, u"dark tunnel")
         self.assertEquals(room.description, u'')
-        self.assertIdentical(room.getExitNamed(u'east').toLocation,
+        self.assertIdentical(iimaginary.IContainer(room).getExitNamed(u'east').toLocation,
                              self.location)
 
         self._test(
             "dig east bright tunnel",
             ["You create an exit."],
             ["Test Player created an exit to the east."])
-        room = self.location.getExitNamed(u'east').toLocation
+        room = iimaginary.IContainer(self.location).getExitNamed(u'east').toLocation
         self.assertEquals(room.name, u"bright tunnel")
         self.assertEquals(room.description, u'')
-        self.assertIdentical(room.getExitNamed(u'west').toLocation, self.location)
+        self.assertIdentical(iimaginary.IContainer(room).getExitNamed(u'west').toLocation, self.location)
 
         self._test(
             "dig west boring tunnel",
@@ -435,7 +437,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self._test(
             "bury south",
             ["There isn't an exit in that direction."])
-        self.assertEquals(list(self.location.getExits()), [])
+        self.assertEquals(list(iimaginary.IContainer(self.location).getExits()), [])
 
         room = objects.Thing(store=self.store, name=u"destination", proper=True)
         objects.Container(store=self.store, capacity=1000).installOn(room)
@@ -445,8 +447,14 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "bury south",
             ["It's gone."],
             ["Test Player destroyed the exit to destination."])
-        self.assertEquals(list(self.location.getExits()), [])
-        self.assertEquals(list(room.getExits()), [])
+
+        self.assertEquals(
+            list(iimaginary.IContainer(self.location).getExits()),
+            [])
+
+        self.assertEquals(
+            list(iimaginary.IContainer(room).getExits()),
+            [])
 
         objects.Exit.link(self.location, room, u'south')
         self.observer.moveTo(room)
@@ -455,8 +463,12 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "bury south",
             ["It's gone."],
             ["The exit to Test Location crumbles and disappears."])
-        self.assertEquals(list(self.location.getExits()), [])
-        self.assertEquals(list(room.getExits()), [])
+        self.assertEquals(
+            list(iimaginary.IContainer(self.location).getExits()),
+            [])
+        self.assertEquals(
+            list(iimaginary.IContainer(room).getExits()),
+            [])
 
 
     def testGo(self):

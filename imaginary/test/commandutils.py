@@ -7,7 +7,7 @@ from twisted.test.proto_helpers import StringTransport
 
 from axiom import store
 
-from imaginary import objects, text, language
+from imaginary import iimaginary, objects, text, language
 from imaginary.wiring import player, realm
 
 E = re.escape
@@ -82,6 +82,24 @@ class CommandTestCaseMixin:
         return results
 
 
+    def find(self, name):
+        return [
+            th
+            for th in self.player.findProviders(iimaginary.IThing, 1)
+            if th.name == name][0]
+
+
+
+def flatten(expr):
+    """
+    Test utility method to turn a list of strings character attribute
+    declarations and similar lists into a single string with all character
+    attribute information removed.
+    """
+    return u''.join(list(text.flatten(expr, currentAttrs=text.AttributeSet())))
+
+
+
 class LanguageMixin(object):
     def flatten(self, expr):
-        return u''.join(list(text.flatten(expr, currentAttrs=text.AttributeSet())))
+        return flatten(expr)

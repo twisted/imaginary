@@ -61,7 +61,7 @@ class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "create foo bar",
             ["Bar created."],
             ["Test Player creates bar."])
-        foobar = self.player.find("bar")
+        foobar = self.find(u"bar")
         self.assertEquals(foobar.name, "bar")
         self.assertEquals(foobar.description, "an undescribed object")
         self.assertEquals(foobar.location, self.player)
@@ -73,7 +73,7 @@ class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "create foo 'bar foo'",
             ["Bar foo created."],
             ["Test Player creates bar foo."])
-        barfoo = self.player.find("bar foo")
+        barfoo = self.find(u"bar foo")
         self.assertEquals(barfoo.name, "bar foo")
         self.assertEquals(barfoo.description, 'an undescribed object')
         self.assertEquals(barfoo.location, self.player)
@@ -82,7 +82,7 @@ class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "create foo 'described thing' This is the things description.",
             ["Described thing created."],
             ["Test Player creates described thing."])
-        thing = self.player.find("described thing")
+        thing = self.find(u"described thing")
         self.assertEquals(thing.name, "described thing")
         self.assertEquals(thing.description, "This is the things description.")
         self.assertEquals(thing.location, self.player)

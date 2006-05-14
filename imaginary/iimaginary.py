@@ -1,3 +1,5 @@
+# -*- test-case-name: imaginary -*-
+
 
 from zope.interface import Interface, Attribute
 
@@ -69,16 +71,34 @@ class IThing(Interface):
     """
     location = Attribute("An IThing which contains this IThing")
 
-    def canSee(observer):
-        """
-        Return a boolean indicating whether the given observer can see
-        this object.
-        """
-
 
     def moveTo(where):
         """
         Change this things location to the new location, if possible.
+        """
+
+
+    def findProviders(interface, distance):
+        """
+        Retrieve all game objects which provide C{interface} within C{distance}.
+
+        @return: A generator of providers of C{interface}.
+        """
+
+
+    def proxiedThing(thing, interface, distance):
+        """
+        Given an L{IThing} provider, return a provider of L{interface} as it is
+        accessible from C{self}.  Any necessary proxies will be applied.
+        """
+
+
+    def knownAs(name):
+        """
+        Return a boolean indicating whether this thing might reasonably be
+        called C{name}.
+
+        @type name: C{unicode}
         """
 
 
@@ -177,10 +197,36 @@ class IContainer(Interface):
         by 'IN' he means to any arbitrarily deeply nested distance)
         """
 
+
     def getContents():
         """
         @returns: An iterable of the direct contents of this container.
         """
+
+
+    def getExits():
+        """
+        @return: an L{axiom.store.ItemQuery} of the exits leading out of this
+        container.
+        """
+
+
+    def getExitNames():
+        """
+        @return: an L{axiom.store.AttributeQuery} of the names of the exits
+        leading out of this container.
+        """
+
+
+    def getExitNamed(name, default=None):
+        """
+        @return: The L{imaginary.objects.Exit} with the given name, or default
+        if none is found.
+
+        @raise KeyError: When an exit with the given name is not found and no
+        default was passed.
+        """
+
 
 
 class IConcept(Interface):
@@ -204,6 +250,90 @@ class IConcept(Interface):
         XXX fix it or something pleeeeeeeaaaaaaaaaasssssssssseeeeeeeeee
         deletedeletedletedletledeltetledleltellxceltedlelt
         """
+
+
+
+class IProxy(Interface):
+    """
+        | > look
+        | [ Nuclear Reactor Core ]
+        | High-energy particles are wizzing around here at a fantastic rate.  You can
+        | feel the molecules in your body splitting apart as neutrons bombard the
+        | nuclei of their constituent atoms.  In a few moments you will be dead.
+        | There is a radiation suit on the floor.
+        | > take radiation suit
+        | You take the radiation suit.
+        | Your internal organs hurt a lot.
+        | > wear radiation suit
+        | You wear the radiation suit.
+        | You start to feel better.
+
+    That is to say, a factory for objects which take the place of elements in
+    the result of L{IThing.findProviders} for the purpose of altering their
+    behavior in some manner due to a particular property of the path in the
+    game object graph through which the original element would have been found.
+
+    Another example to consider is that of a pair of sunglasses worn by a
+    player: these might power up that player for IProxy so as to be able to
+    proxy IVisible in such a way as to reduce glaring light.
+    """
+    # XXX: Perhaps add 'distance' here, so Fog can be implemented as an
+    # IVisibility proxy which reduces the distance a observer can see.
+    def proxy(iface, facet):
+        """
+        Proxy C{facet} which provides C{iface}.
+
+        @param facet: A candidate for inclusion in the set of objects returned
+        by findProviders.
+
+        @return: Either a provider of C{iface} or C{None}. If C{None} is
+        returned, then the object will not be returned from findProviders.
+        """
+
+
+
+class ILocationProxy(Interface):
+    """
+    Similar to L{IProxy}, except the pathway between the observer and the
+    target is not considered: instead, all targets are wrapped by all
+    ILocationProxy providers on their location.
+    """
+
+    def proxy(iface, facet):
+        """
+        Proxy C{facet} which provides C{iface}.
+
+        @param facet: A candidate B{contained by the location on which this is
+        a powerup} for inclusion in the set of objects returned by
+        findProviders.
+
+        @return: Either a provider of C{iface} or C{None}. If C{None} is
+        returned, then the object will not be returned from findProviders.
+        """
+
+
+
+class IVisible(Interface):
+    """
+    A thing which can be seen.
+    """
+    def visualize():
+        """
+        Return an IConcept which represents the visible aspects of this
+        visible thing.
+        """
+
+
+
+class ILightSource(Interface):
+    """
+    Powerup interface for things which emit photons in measurable quantities.
+    """
+    candelas = Attribute("""
+    The luminous intensity in candelas.
+
+    See U{http://en.wikipedia.org/wiki/Candela}.
+    """)
 
 
 
@@ -247,16 +377,4 @@ class IDescriptor(IThingPowerUp):
         """
 
 
-class IVisible(Interface):
-    """
-    A thing which can be seen.
 
-    XXX TODO: perhaps this should deal with name vs. description?  also, unique
-    IDs for referring to things?
-    """
-
-    def fullyConceptualize(self):
-        """
-        Return an iterable of all concepts describing what this visible object
-        looks like.
-        """

@@ -11,6 +11,8 @@ from zope.interface import implements
 
 from twisted.python.components import registerAdapter
 
+from epsilon import structlike
+
 from imaginary import iimaginary, iterutils, text as T
 
 
@@ -109,10 +111,10 @@ class Noun(object):
 
     #FIXME: add his/hers LATER
 
-    def description(self):
-        return DescriptionConcept(self.thing)
 
 
+def flattenWithoutColors(vt102):
+    return T.flatten(vt102, useColors=False)
 
 class BaseExpress(object):
     implements(iimaginary.IConcept)
@@ -120,17 +122,19 @@ class BaseExpress(object):
     def __init__(self, original):
         self.original = original
 
+
     def plaintext(self, observer):
-        return T.flatten(self.vt102(observer), useColors=False)
+        return flattenWithoutColors(self.vt102(observer))
 
 
 
-class DescriptionConcept(BaseExpress):
+class DescriptionConcept(structlike.record('name description exits others',
+                                           description=u"", exits=(), others=())):
     """
     A concept which is expressed as the description of a Thing as well as
     any concepts which power up that thing for IDescriptionContributor.
 
-    Concepts will be ordered by the C{preferredOrder} class attribute. 
+    Concepts will be ordered by the C{preferredOrder} class attribute.
     Concepts not named in this list will appear last in an unpredictable
     order.
     """
@@ -146,24 +150,25 @@ class DescriptionConcept(BaseExpress):
                       'ExpressSurroundings',
                       ]
 
-    def __init__(self, thing):
-        self.thing = thing
-        self.noun = Noun(thing)
+    def plaintext(self, observer):
+        return flattenWithoutColors(self.vt102(observer))
 
 
     def vt102(self, observer):
-        exitNames = list(self.thing.getExitNames())
-        if exitNames:
-            exits = [T.bold, T.fg.green, u'( ', [T.fg.normal, T.fg.yellow, iterutils.interlace(u' ', exitNames)], u' )', u'\n']
-        else:
-            exits = u''
+        exits = u''
+        if self.exits:
+            exits = [T.bold, T.fg.green, u'( ',
+                     [T.fg.normal, T.fg.yellow,
+                      iterutils.interlace(u' ',
+                                          (exit.name for exit in self.exits))],
+                     u' )', u'\n']
 
-        description = u''
-        if self.thing.description:
-            description = (T.fg.green, self.thing.description, u'\n')
+        description = self.description or u""
+        if description:
+            description = (T.fg.green, self.description, u'\n')
 
         descriptionConcepts = []
-        for pup in self.thing.powerupsFor(iimaginary.IDescriptionContributor):
+        for pup in self.others:
             descriptionConcepts.append(pup.conceptualize())
 
         def index(c):
@@ -184,7 +189,7 @@ class DescriptionConcept(BaseExpress):
             descriptionComponents.pop()
 
         return [
-            [T.bold, T.fg.green, u'[ ', [T.fg.normal, self.thing.name], u' ]\n'],
+            [T.bold, T.fg.green, u'[ ', [T.fg.normal, self.name], u' ]\n'],
             exits,
             description,
             descriptionComponents]

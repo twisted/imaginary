@@ -118,3 +118,5 @@ def createQuiche(store, name, description=u""):
 createCoin = createCreator((Quarter, {}))
 createVendingMachine = createCreator((VendingMachine, {}))
 createQuiche = createCreator()
+
+createTorch = createCreator((objects.LightSource, {"candelas": 80}))

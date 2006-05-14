@@ -4,17 +4,17 @@ Tests for the conversion between abstract objects representing the world or
 changes in the world into concrete per-user-interface content.
 """
 
-import sys
-reload(sys)
-
 from twisted.trial import unittest
 
-from imaginary import iimaginary, language, places, unc, text as T
+from epsilon import structlike
+
+from imaginary import language, places, unc, text as T
 from imaginary.test import commandutils
 
 class FakeThing(object):
     def __init__(self, **kw):
         self.__dict__.update(kw)
+
 
 
 class FakeDescriptionContributor:
@@ -29,7 +29,6 @@ class FakeDescriptionContributor:
 
 class NounTestCase(unittest.TestCase):
     def setUp(self):
-#         sys.setdefaultencoding('undefined')
 
         self.thing = FakeThing(
             name=u'fake thing',
@@ -37,7 +36,6 @@ class NounTestCase(unittest.TestCase):
             gender="!@>",
             proper=False,
             powerupsFor=lambda iface: [],
-            getExitNames=lambda: [],
             )
         self.male = FakeThing(
             name=u"billy",
@@ -52,10 +50,6 @@ class NounTestCase(unittest.TestCase):
         self.malenoun = language.Noun(self.male)
         self.femalenoun = language.Noun(self.female)
 
-
-#     def tearDown(self):
-#         import sys
-#         sys.setdefaultencoding('ascii')
 
 
 class SharedTextyTests(commandutils.LanguageMixin):
@@ -148,32 +142,34 @@ class SharedTextyTests(commandutils.LanguageMixin):
 
 
 
+
 class BasicConceptTestCasePlaintext(NounTestCase, SharedTextyTests):
 
     def format(self, concept):
         return self.flatten(concept.plaintext(self.observer))
 
+
     def testMissingDescription(self):
         self.thing.description = None
-        self.assertEquals(self.format(self.noun.description()),
+        self.assertEquals(self.format(language.DescriptionConcept(self.thing.name, self.thing.description)),
                           u'[ fake thing ]\n')
 
 
     def testEmptyDescription(self):
         self.thing.description = u''
-        self.assertEquals(self.format(self.noun.description()),
+        self.assertEquals(self.format(language.DescriptionConcept(self.thing.name, self.thing.description)),
                           u'[ fake thing ]\n')
 
 
     def testDescription(self):
-        self.assertEquals(self.format(self.noun.description()),
+        self.assertEquals(self.format(language.DescriptionConcept(self.thing.name, self.thing.description)),
                           u'[ fake thing ]\n'
                           u'Fake Thing Description\n')
 
 
     def testExitsDescription(self):
-        self.thing.getExitNames = lambda: [u'north', u'west']
-        self.assertEquals(self.format(self.noun.description()),
+        exits = [StubExit(name=u"north"), StubExit(name=u"west")]
+        self.assertEquals(self.format(language.DescriptionConcept(self.thing.name, self.thing.description, exits)),
                           u'[ fake thing ]\n'
                           u'( north west )\n'
                           u'Fake Thing Description\n')
@@ -182,13 +178,15 @@ class BasicConceptTestCasePlaintext(NounTestCase, SharedTextyTests):
     def testDescriptionContributors(self):
         a = FakeDescriptionContributor(u"first part")
         b = FakeDescriptionContributor(u"last part")
-        self.thing.powerupsFor = lambda iface: {iimaginary.IDescriptionContributor: [a, b]}[iface]
-        self.assertEquals(self.format(self.noun.description()),
+        self.assertEquals(self.format(language.DescriptionConcept(self.thing.name, self.thing.description, others=[a, b])),
                           u'[ fake thing ]\n'
                           u'Fake Thing Description\n' +
                           a.descr + u"\n" +
                           b.descr)
 
+
+class StubExit(structlike.record("name")):
+    pass
 
 class VT102Tests(NounTestCase, SharedTextyTests):
     def format(self, concept):
@@ -211,28 +209,28 @@ class VT102Tests(NounTestCase, SharedTextyTests):
     def testMissingDescription(self):
         self.thing.description = None
         self._assertECMA48Equality(
-            self.format(self.noun.description()),
+            self.format(language.DescriptionConcept(self.thing.name, self.thing.description)),
             self.flatten([T.bold, T.fg.green, u'[ ', [T.fg.normal, "fake thing"], u' ]\n']))
 
 
     def testEmptyDescription(self):
         self.thing.description = u''
         self._assertECMA48Equality(
-            self.format(self.noun.description()),
+            self.format(language.DescriptionConcept(self.thing.name, self.thing.description)),
             self.flatten([T.bold, T.fg.green, u'[ ', [T.fg.normal, "fake thing"], u' ]\n']))
 
 
     def testDescription(self):
         self._assertECMA48Equality(
-            self.format(self.noun.description()),
+            self.format(language.DescriptionConcept(self.thing.name, self.thing.description)),
             self.flatten([[T.bold, T.fg.green, u'[ ', [T.fg.normal, "fake thing"], u' ]\n'],
                           T.fg.green, u'Fake Thing Description\n']))
 
 
     def testExitsDescription(self):
-        self.thing.getExitNames = lambda: [u'north', u'west']
+        exits = [StubExit(name=u"north"), StubExit(name=u"west")]
         self._assertECMA48Equality(
-            self.format(self.noun.description()),
+            self.format(language.DescriptionConcept(self.thing.name, self.thing.description, exits)),
             self.flatten([[T.bold, T.fg.green, u'[ ', [T.fg.normal, "fake thing"], u' ]\n'],
                           [T.bold, T.fg.green, u'( ', [T.fg.normal, T.fg.yellow, u'north west'], u' )', u'\n'],
                           T.fg.green, u'Fake Thing Description\n']))
@@ -241,8 +239,7 @@ class VT102Tests(NounTestCase, SharedTextyTests):
     def testDescriptionContributors(self):
         a = FakeDescriptionContributor(u"first part")
         b = FakeDescriptionContributor(u"last part")
-        self.thing.powerupsFor = lambda iface: {iimaginary.IDescriptionContributor: [a, b]}[iface]
         self._assertECMA48Equality(
-            self.format(self.noun.description()),
+            self.format(language.DescriptionConcept(self.thing.name, self.thing.description, others=[a, b])),
             self.flatten([[[T.bold, T.fg.green, u'[ ', [T.fg.normal, "fake thing"], u' ]\n'],
                           T.fg.green, u'Fake Thing Description\n'], a.descr + u"\n" + b.descr]))

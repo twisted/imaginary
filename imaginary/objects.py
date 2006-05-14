@@ -8,7 +8,10 @@ from zope.interface import implements
 
 from twisted.python import reflect, components
 
+from epsilon import structlike
+
 from axiom import item, attributes
+
 
 from imaginary import iimaginary, eimaginary, text as T, events, language
 
@@ -128,8 +131,9 @@ class Exit(item.Item):
 components.registerAdapter(lambda exit: exit.conceptualize(), Exit, iimaginary.IConcept)
 
 
+
 class Thing(item.Item):
-    implements(iimaginary.IThing)
+    implements(iimaginary.IThing, iimaginary.IVisible)
 
     weight = attributes.integer(doc="""
     Units of weight of this object.
@@ -169,22 +173,11 @@ class Thing(item.Item):
 
     def links(self):
         d = {self.name.lower(): [self]}
+        if self.location is not None:
+            merge(d, {self.location.name: [self.location]})
         for pup in self.powerupsFor(iimaginary.ILinkContributor):
             merge(d, pup.links())
-        for exit in self.getExits():
-            merge(d, {exit.name: [exit.toLocation]})
         return d
-
-
-    def find(self, name):
-        """
-        deprecated, don't use this.  look at search.
-        """
-        i = self.search(1, lambda x, y: x, name)
-        try:
-            return i.next()
-        except StopIteration:
-            return None
 
 
     def locate(self, interface, name):
@@ -195,6 +188,111 @@ class Thing(item.Item):
                     facet = interface(ob, None)
                     if facet is not None:
                         yield (ob, facet)
+
+
+    thing = property(lambda self: self)
+
+    _ProviderStackElement = structlike.record('distance stability target proxies')
+
+    def findProviders(self, interface, distance):
+
+        # Dictionary keyed on Thing instances used to ensure any particular
+        # Thing is yielded at most once.
+        seen = {}
+
+        # Dictionary keyed on Thing instances used to ensure any particular
+        # Thing only has its links inspected at most once.
+        visited = {self: True}
+
+        # Load proxies that are installed directly on this Thing as well as
+        # location proxies on this Thing's location: if self is adaptable to
+        # interface, use them as arguments to _applyProxies and yield a proxied
+        # and adapted facet of self.
+        facet = interface(self, None)
+        initialProxies = list(self.powerupsFor(iimaginary.IProxy))
+        locationProxies = set()
+        if self.location is not None:
+            locationProxies.update(set(self.location.powerupsFor(iimaginary.ILocationProxy)))
+        if facet is not None:
+            seen[self] = True
+            proxiedFacet = self._applyProxies(locationProxies, initialProxies, facet, interface)
+            if proxiedFacet is not None:
+                yield proxiedFacet
+
+        # Toss in for the _ProviderStackElement list/stack.  Ensures ordering
+        # in the descendTo list remains consistent with a breadth-first
+        # traversal of links (there is probably a better way to do this).
+        stabilityHelper = 1
+
+        # Set up a stack of Things to ask for links to visit - start with just
+        # ourself and the proxies we have found already.
+        descendTo = [self._ProviderStackElement(distance, 0, self, initialProxies)]
+
+        while descendTo:
+            element = descendTo.pop()
+            distance, target, proxies = (element.distance, element.target,
+                                         element.proxies)
+            links = target.links().items()
+            links.sort()
+            for (linkName, linkedThings) in links:
+                for linkedThing in linkedThings:
+                    if distance:
+                        if linkedThing not in visited:
+                            # A Thing which was linked and has not yet been
+                            # visited.  Create a new list of proxies from the
+                            # current list and any which it has and push this
+                            # state onto the stack.  Also extend the total list
+                            # of location proxies with any location proxies it
+                            # has.
+                            visited[linkedThing] = True
+                            stabilityHelper += 1
+                            locationProxies.update(set(linkedThing.powerupsFor(iimaginary.ILocationProxy)))
+                            proxies = proxies + list(
+                                linkedThing.powerupsFor(iimaginary.IProxy))
+                            descendTo.append(self._ProviderStackElement(
+                                distance - 1, stabilityHelper,
+                                linkedThing, proxies))
+
+                    # If the linked Thing hasn't been yielded before and is
+                    # adaptable to the desired interface, wrap it in the
+                    # appropriate proxies and yield it.
+                    facet = interface(linkedThing, None)
+                    if facet is not None and linkedThing not in seen:
+                        seen[linkedThing] = True
+                        proxiedFacet = self._applyProxies(locationProxies, proxies, facet, interface)
+                        if proxiedFacet is not None:
+                            yield proxiedFacet
+
+            # Re-order anything we've appended so that we visit it in the right
+            # order.
+            descendTo.sort()
+
+
+    def _applyProxies(self, locationProxies, proxies, obj, interface):
+        # Extremely pathetic algorithm - loop over all location proxies we have
+        # seen and apply any which belong to the location of the target object.
+        # This could do with some serious optimization.
+        for proxy in locationProxies:
+            if iimaginary.IContainer(proxy.thing).contains(obj.thing) or proxy.thing is obj.thing:
+                obj = proxy.proxy(obj, interface)
+                if obj is None:
+                    return None
+
+        # Loop over the other proxies and simply apply them in turn, giving up
+        # as soon as one eliminates the object entirely.
+        for proxy in proxies:
+            obj = proxy.proxy(obj, interface)
+            if obj is None:
+                return None
+
+        return obj
+
+
+    def proxiedThing(self, thing, interface, distance):
+        for prospectiveFacet in self.findProviders(interface, distance):
+            if prospectiveFacet.thing is thing:
+                return prospectiveFacet
+        raise eimaginary.ThingNotFound(thing)
 
 
     def search(self, distance, interface, name):
@@ -214,42 +312,38 @@ class Thing(item.Item):
 
         @return: An iterable of L{iimaginary.IThing} providers which are found.
         """
-        seen = {}
-        visited = {self: True}
+        import warnings
+        warnings.warn("findProviders() biatch!", PendingDeprecationWarning, stacklevel=2)
+
+        extras = []
+
+        container = iimaginary.IContainer(self.location, None)
+        if container is not None:
+            potentialExit = container.getExitNamed(name, None)
+            if potentialExit is not None:
+                try:
+                    potentialThing = self.proxiedThing(
+                        potentialExit.toLocation, interface, distance)
+                except eimaginary.ThingNotFound:
+                    pass
+                else:
+                    yield potentialThing
 
         if name == "me" or name == "self":
             facet = interface(self, None)
             if facet is not None:
-                seen[self] = True
-                yield facet
+                extras.append(self)
+
         if name == "here" and self.location is not None:
             facet = interface(self.location, None)
             if facet is not None:
-                seen[self.location] = True
-                yield facet
+                extras.append(self.location)
 
-        n = 1
-        descendTo = [(distance, 0, self)]
-        if self.location is not None:
-            descendTo.append((distance - 1, 1, self.location))
-        while descendTo:
-            distance, _, target = descendTo.pop()
-            for ob, facet in target.locate(interface, name):
-                if ob not in seen:
-                    seen[ob] = True
-                    yield facet
-            if distance:
-                for (k, obs) in target.links().iteritems():
-                    for ob in obs:
-                        if ob not in visited:
-                            visited[ob] = True
-                            n += 1
-                            descendTo.append((distance - 1, n, ob))
-            descendTo.sort()
-
-
-    def canSee(self, thing):
-        return True
+        for res in self.findProviders(interface, distance):
+            if res.thing in extras:
+                yield res
+            elif res.thing.knownAs(name):
+                yield res
 
 
     def moveTo(self, where):
@@ -265,32 +359,32 @@ class Thing(item.Item):
             iimaginary.IContainer(oldLocation).remove(self)
 
 
-    def getExits(self):
-        return self.store.query(Exit, Exit.fromLocation == self)
+    def knownAs(self, name):
+        return name == self.name
 
 
-    def getExitNames(self):
-        return self.getExits().getColumn("name")
+    # IVisible
+    def visualize(self):
+        container = iimaginary.IContainer(self.thing, None)
+        if container is not None:
+            exits = list(container.getExits())
+        else:
+            exits = ()
 
-
-    _marker = object()
-    def getExitNamed(self, name, default=_marker):
-        result = self.store.findUnique(
-            Exit,
-            attributes.AND(Exit.fromLocation == self,
-                           Exit.name == name),
-            default=default)
-        if result is self._marker:
-            raise KeyError(name)
-        return result
+        return language.DescriptionConcept(
+            self.name,
+            self.description,
+            exits,
+            self.powerupsFor(iimaginary.IDescriptionContributor))
 components.registerAdapter(lambda thing: language.Noun(thing).nounPhrase(), Thing, iimaginary.IConcept)
+
 
 
 class Containment(object):
     """Functionality for containment to be used as a mixin in Powerups.
     """
 
-    implements(iimaginary.IContainer, iimaginary.IDescriptionContributor, 
+    implements(iimaginary.IContainer, iimaginary.IDescriptionContributor,
                iimaginary.ILinkContributor)
 
     # Units of weight which can be contained
@@ -303,6 +397,7 @@ class Containment(object):
     # Boolean indicating whether the container is currently closed or open.
     closed = False
 
+    # IContainer
     def contains(self, other):
         for child in self.getContents():
             if other is child:
@@ -312,10 +407,12 @@ class Containment(object):
                 return True
         return False
 
+
     def getContents(self):
         if self.thing is None:
             return []
         return self.store.query(Thing, Thing.location == self.thing)
+
 
     def add(self, obj):
         if self.closed:
@@ -326,11 +423,33 @@ class Containment(object):
         assert self.thing is not None
         obj.location = self.thing
 
+
     def remove(self, obj):
         if self.closed:
             raise eimaginary.Closed(self, obj)
         if obj.location is self.thing:
             obj.location = None
+
+
+    def getExits(self):
+        return self.store.query(Exit, Exit.fromLocation == self.thing)
+
+
+    def getExitNames(self):
+        return self.getExits().getColumn("name")
+
+
+    _marker = object()
+    def getExitNamed(self, name, default=_marker):
+        result = self.store.findUnique(
+            Exit,
+            attributes.AND(Exit.fromLocation == self.thing,
+                           Exit.name == name),
+            default=default)
+        if result is self._marker:
+            raise KeyError(name)
+        return result
+
 
     # ILinkContributor
     def links(self):
@@ -338,6 +457,8 @@ class Containment(object):
         if not self.closed:
             for ob in self.getContents():
                 merge(d, ob.links())
+        for exit in self.getExits():
+            merge(d, {exit.name: [exit.toLocation]})
         return d
 
 
@@ -503,3 +624,73 @@ class Actor(item.Item, Actable, item.InstallableMixin):
             self.stamina = Points(store=self.store, max=100)
         if self.strength is None:
             self.strength = Points(store=self.store, max=100)
+
+
+
+class LocationLighting(item.Item, item.InstallableMixin):
+    implements(iimaginary.ILocationProxy)
+
+    candelas = attributes.integer(doc="""
+    The luminous intensity in candelas.
+
+    See U{http://en.wikipedia.org/wiki/Candela}.
+    """, default=100, allowNone=False)
+
+    thing = attributes.reference()
+
+    installedOn = installedOn
+
+    def installOn(self, other):
+        super(LocationLighting, self).installOn(other)
+        other.powerUp(self, iimaginary.ILocationProxy)
+
+
+    def getCandelas(self):
+        """
+        Sum the candelas of all light sources within a limited distance from
+        the location this is installed on and return the result.
+        """
+        sum = 0
+        for candle in self.thing.findProviders(iimaginary.ILightSource, 1):
+            sum += candle.candelas
+        return sum
+
+
+    def proxy(self, facet, interface):
+        if interface is iimaginary.IVisible:
+            if self.getCandelas():
+                return facet
+            elif facet.thing is self.thing:
+                return _DarkLocationProxy(self.thing)
+            else:
+                return None
+        return facet
+
+
+
+class _DarkLocationProxy(structlike.record('thing')):
+    implements(iimaginary.IVisible)
+
+    def visualize(self):
+        return language.DescriptionConcept(
+            u"Blackness",
+            u"You cannot see anything because it is very dark.")
+
+
+
+class LightSource(item.Item, item.InstallableMixin):
+    implements(iimaginary.ILightSource)
+
+    candelas = attributes.integer(doc="""
+    The luminous intensity in candelas.
+
+    See U{http://en.wikipedia.org/wiki/Candela}.
+    """, default=1, allowNone=False)
+
+    thing = attributes.reference()
+    installedOn = installedOn
+
+    def installOn(self, other):
+        super(LightSource, self).installOn(other)
+        other.powerUp(self, iimaginary.ILightSource)
+

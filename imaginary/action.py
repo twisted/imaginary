@@ -119,10 +119,12 @@ class LookAround(NoTargetAction):
     expr = pyparsing.Literal("look") + pyparsing.StringEnd()
 
     def do(self, player, line):
-        if player.thing.location is None:
-            concept = u"You are floating in an empty, formless void."
+        for visible in player.thing.findProviders(iimaginary.IVisible, 1):
+            if player.thing.location is visible.thing:
+                concept = visible.visualize()
+                break
         else:
-            concept = language.Noun(player.thing.location).description()
+            concept = u"You are floating in an empty, formless void."
         events.Success(actor=player.thing,
                        actorMessage=concept).broadcast()
 
@@ -136,6 +138,8 @@ class LookAt(TargetAction):
             pyparsing.White() +
             pyparsing.restOfLine.setResultsName("target"))
 
+    targetInterface = iimaginary.IVisible
+
     def targetNotAvailable(self, player, exc):
         return "You don't see that."
 
@@ -147,13 +151,58 @@ class LookAt(TargetAction):
             evt = events.Success(
                 actor=player.thing,
                 target=target,
-                actorMessage=language.Noun(target).description(),
+                actorMessage=target.visualize(),
                 targetMessage=(player.thing, " looks at you."))
         else:
             evt = events.Success(
                 actor=player.thing,
-                actorMessage=language.Noun(target).description())
+                actorMessage=target.visualize())
         evt.broadcast()
+
+
+
+class Illuminate(NoTargetAction):
+    """
+    Change the ambient light level at the location of the actor.
+
+    The argument taken by this action is an integer which specifies the light
+    level in U{candelas<http://en.wikipedia.org/wiki/Candela>}.
+    """
+
+    expr = (pyparsing.Literal("illuminate") +
+            pyparsing.White() +
+            pyparsing.Word("0123456789").setResultsName("candelas"))
+
+    def do(self, player, line, candelas):
+        candelas = int(candelas)
+        ll = player.thing.store.findOrCreate(
+            objects.LocationLighting,
+            lambda ll: ll.installOn(player.thing.location),
+            thing=player.thing.location)
+        oldCandelas = ll.candelas
+
+        otherMessage = None
+        if oldCandelas == candelas:
+            actorMessage = u"You do it.  Swell."
+        elif candelas == 0:
+            actorMessage = u"Your environs fade to black due to Ineffable Spooky Magic."
+            otherMessage = actorMessage
+        elif oldCandelas == 0:
+            actorMessage = u"Your environs are suddenly alight."
+            otherMessage = actorMessage
+        elif candelas < oldCandelas:
+            actorMessage = u"Your environs seem slightly dimmer."
+            otherMessage = actorMessage
+        elif candelas > oldCandelas:
+            actorMessage = u"Your environs seem slightly brighter."
+            otherMessage = actorMessage
+        else:
+            raise AssertionError("Impossible branch in illuminate action! %s -> %s" % (oldCandelas, candelas))
+        events.Success(actor=player.thing,
+                       actorMessage=actorMessage,
+                       otherMessage=otherMessage).broadcast()
+        ll.candelas = candelas
+
 
 class Describe(TargetAction):
     expr = (pyparsing.Literal("describe") +
@@ -550,6 +599,37 @@ class Create(NoTargetAction):
 
 
 
+class ObjectPluginHelper(object):
+    """
+    A helper for creating plugins for the 'Create' command.
+
+    Create will search for L{iimaginary.IThingType} plugins and allow users to
+    instantiate a new L{objects.Thing} using the one with the name which
+    matches what was supplied to the action.
+    """
+
+    implements(plugin.IPlugin, iimaginary.IThingType)
+
+    def __init__(self, typeName, typeObject):
+        """
+        @type typeName: C{unicode}
+        @param typeName: A short string describing the kind of object this
+        plugin will create.
+
+        @param typeObject: A factory for creating instances of
+        L{objects.Thing}.  This will be invoked with four keyword arguments:
+        store, name, description, and proper.  See attributes of
+        L{objects.Thing} for documentation of these arguments.
+        """
+        self.type = typeName
+        self.typeObject = typeObject
+
+
+    def getType(self):
+        return self.typeObject
+
+
+
 class Drop(TargetAction):
     expr = (pyparsing.Literal("drop") +
             pyparsing.White() +
@@ -598,7 +678,7 @@ class Dig(NoTargetAction):
             pyparsing.restOfLine.setResultsName("name"))
 
     def do(self, player, line, direction, name):
-        if player.thing.location.getExitNamed(direction, None) is not None:
+        if iimaginary.IContainer(player.thing.location).getExitNamed(direction, None) is not None:
             raise eimaginary.ActionFailure(events.ThatDoesntMakeSense(
                 actor=player.thing,
                 actorMessage="There is already an exit in that direction."))
@@ -625,7 +705,7 @@ class Bury(NoTargetAction):
             DIRECTION_LITERAL)
 
     def do(self, player, line, direction):
-        for exit in player.thing.location.getExits():
+        for exit in iimaginary.IContainer(player.thing.location).getExits():
             if exit.name == direction:
                 if exit.sibling is not None:
                     evt = events.Success(
@@ -656,7 +736,7 @@ class Go(NoTargetAction):
 
     def do(self, player, line, direction):
         try:
-            exit = player.thing.location.getExitNamed(direction)
+            exit = iimaginary.IContainer(player.thing.location).getExitNamed(direction)
         except KeyError:
             raise eimaginary.ActionFailure(events.ThatDoesntWork(
                 actor=player.thing,
@@ -831,12 +911,12 @@ class Search(NoTargetAction):
             commands.targetString("name"))
 
     def do(self, player, line, name):
-        srch = player.thing.search(2, iimaginary.IThing, name)
+        srch = player.thing.search(2, iimaginary.IVisible, name)
         evt = events.Success(
             actor=player.thing,
             actorMessage=language.ExpressList(
                 list(iterutils.interlace('\n',
-                                         (language.Noun(o).description()
+                                         (o.visualize()
                                           for o
                                           in srch)))))
         evt.broadcast()
@@ -900,7 +980,7 @@ class Scrutinize(TargetAction):
         if targetContainer is not None:
             v['contents'] = list(targetContainer.getContents())
 
-        exits = list(target.getExits())
+        exits = list(iimaginary.IContainer(target).getExits())
         if exits:
             v['exits'] = exits
         s = pprint.pformat((target.__class__.__name__, v))

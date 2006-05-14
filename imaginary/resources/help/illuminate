@@ -1,0 +1,6 @@
+ILLUMINATE
+
+Usage: illuminate <candelas>
+
+Set the ambient illumination level of your current location.  Candelas is a
+non-negative integer.  A hand-held torch is approximately 80 candelas.
