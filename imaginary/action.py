@@ -5,8 +5,6 @@ import pprint
 
 from zope.interface import implements
 
-import pyparsing
-
 from twisted.python import util, log
 from twisted import plugin
 
@@ -15,7 +13,7 @@ from axiom import iaxiom, attributes
 import imaginary.plugins
 from imaginary.wiring import realm
 from imaginary import (iimaginary, eimaginary, iterutils, commands, events,
-                       objects, text as T, language)
+                       objects, text as T, language, pyparsing)
 
 class Action(commands.Command):
     infrastructure = True

@@ -2,12 +2,10 @@
 
 from zope.interface import implements
 
-import pyparsing
-
 from twisted.internet import defer
 from twisted.python import context
 
-from imaginary import iimaginary, eimaginary
+from imaginary import iimaginary, eimaginary, pyparsing
 
 
 _quoteRemovingQuotedString = pyparsing.quotedString.copy()
