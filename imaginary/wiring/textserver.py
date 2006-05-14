@@ -208,7 +208,6 @@ class TextServer(insults.TerminalProtocol):
 
     def line_COMMAND(self, line):
         if line.strip().lower() == 'quit':
-            self.player.lowLevelSend("Bye!")
             self.player.disconnect()
         else:
             self.player.parse(line)
