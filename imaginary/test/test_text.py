@@ -1,8 +1,10 @@
 
-import pprint
+import pprint, string
 
 from twisted.trial import unittest
+from twisted.conch.insults import insults, helper
 
+from imaginary.wiring import textserver
 from imaginary import text as T
 from imaginary import unc
 
@@ -202,4 +204,198 @@ class Colorization(unittest.TestCase):
                [T.fg.normal, 'world'],
                '.']),
             '\x1b[36;45mHello \x1b[0;45mworld\x1b[36m.\x1b[0m')
+
+
+class AsynchronousIncrementalUTF8DecoderTestCase(unittest.TestCase):
+    """
+    Test L{imaginary.wiring.textserver.AsynchronousIncrementalUTF8Decoder}
+    """
+    def setUp(self):
+        self.a = textserver.AsynchronousIncrementalUTF8Decoder()
+
+
+    def testASCII(self):
+        for ch in 'hello, world':
+            self.a.add(ch)
+        self.assertEquals(self.a.get(), u'hello, world')
+
+
+    def testTwoBytes(self):
+        character = u'\N{LATIN CAPITAL LETTER A WITH GRAVE}'
+        byte1, byte2 = character.encode('utf-8')
+        self.a.add(byte1)
+        self.assertEquals(self.a.get(), u'')
+        self.a.add(byte2)
+        self.assertEquals(self.a.get(), character)
+
+
+    def testThreeBytes(self):
+        character = u'\N{HIRAGANA LETTER A}'
+        byte1, byte2, byte3 = character.encode('utf-8')
+        self.a.add(byte1)
+        self.assertEquals(self.a.get(), u'')
+        self.a.add(byte2)
+        self.assertEquals(self.a.get(), u'')
+        self.a.add(byte3)
+        self.assertEquals(self.a.get(), character)
+
+
+    def testFourBytes(self):
+        character = u'\N{BYZANTINE MUSICAL SYMBOL PSILI}'
+        byte1, byte2, byte3, byte4 = character.encode('utf-8')
+        self.a.add(byte1)
+        self.assertEquals(self.a.get(), u'')
+        self.a.add(byte2)
+        self.assertEquals(self.a.get(), u'')
+        self.a.add(byte3)
+        self.assertEquals(self.a.get(), u'')
+        self.a.add(byte4)
+        self.assertEquals(self.a.get(), character)
+
+
+    def testSeveralCharacters(self):
+        char1 = u'\N{LATIN CAPITAL LETTER A WITH GRAVE}'
+        byte1, byte2 = char1.encode('utf-8')
+        self.a.add(byte1)
+        self.assertEquals(self.a.get(), u'')
+        self.a.add(byte2)
+        self.assertEquals(self.a.get(), char1)
+
+        char2 = u'\N{HIRAGANA LETTER A}'
+        byte1, byte2, byte3 = char2.encode('utf-8')
+        self.a.add(byte1)
+        self.assertEquals(self.a.get(), char1)
+        self.a.add(byte2)
+        self.assertEquals(self.a.get(), char1)
+        self.a.add(byte3)
+        self.assertEquals(self.a.get(), char1 + char2)
+
+        char3 = u'\N{BYZANTINE MUSICAL SYMBOL PSILI}'
+        byte1, byte2, byte3, byte4 = char3.encode('utf-8')
+        self.a.add(byte1)
+        self.assertEquals(self.a.get(), char1 + char2)
+        self.a.add(byte2)
+        self.assertEquals(self.a.get(), char1 + char2)
+        self.a.add(byte3)
+        self.assertEquals(self.a.get(), char1 + char2)
+        self.a.add(byte4)
+        self.assertEquals(self.a.get(), char1 + char2 + char3)
+
+
+    def testReset(self):
+        self.a.add('a')
+        self.a.reset()
+        self.assertEquals(self.a.get(), u'')
+
+
+    def testNarrowWidth(self):
+        self.a.add('a')
+        self.assertEquals(self.a.width(), 1)
+
+
+    def testWideWidth(self):
+        map(self.a.add, u'\N{HIRAGANA LETTER A}'.encode('utf-8'))
+        self.assertEquals(self.a.width(), 2)
+
+
+    def testMixedWidth(self):
+        self.a.add('a')
+        map(self.a.add, u'\N{HIRAGANA LETTER A}'.encode('utf-8'))
+        self.assertEquals(self.a.width(), 3)
+        map(self.a.add, u'\N{HIRAGANA LETTER A}'.encode('utf-8'))
+        self.a.add('a')
+        self.assertEquals(self.a.width(), 6)
+
+
+    def testPop(self):
+        self.a.add('a')
+        self.assertEquals(self.a.pop(), u'a')
+        self.assertEquals(self.a.get(), u'')
+
+
+    def testPopIncompleteCharacter(self):
+        self.a.add(u'\N{LATIN CAPITAL LETTER A WITH GRAVE}'.encode('utf-8')[0])
+        self.assertRaises(ValueError, self.a.pop)
+
+
+    def testPopEmpty(self):
+        self.assertRaises(IndexError, self.a.pop)
+
+
+
+class UTF8TerminalBuffer(helper.TerminalBuffer):
+    # An unfortunate hack'n'paste of
+    # helper.TerminalBuffer.insertAtCursor
+    def insertAtCursor(self, b):
+        if b == '\r':
+            self.x = 0
+        elif b == '\n' or self.x >= self.width:
+            self.x = 0
+            self._scrollDown()
+        # The following conditional has been changed from the original.
+        if (b > '\x7f' or b in string.printable) and b not in '\r\n':
+            ch = (b, self._currentCharacterAttributes())
+            if self.modes.get(insults.modes.IRM):
+                self.lines[self.y][self.x:self.x] = [ch]
+                self.lines[self.y].pop()
+            else:
+                self.lines[self.y][self.x] = ch
+            self.x += 1
+
+
+
+class TextServerTestCase(unittest.TestCase):
+    """
+    Tests for L{imaginary.wiring.textserver}
+    """
+
+    def setUp(self):
+        self.terminal = UTF8TerminalBuffer()
+        self.terminal.connectionMade()
+        self.protocol = textserver.TextServer()
+        self.protocol.makeConnection(self.terminal)
+        self.terminal.reset()
+
+
+    def testUTF8Input(self):
+        character = u'\N{HIRAGANA LETTER A}'
+        for ch in character.encode('utf-8'):
+            self.protocol.keystrokeReceived(ch, None)
+        self.assertEquals(str(self.terminal).strip(), 
+                          character.encode('utf-8'))
+
+
+    def testNonPrintableInput(self):
+        lines = []
+        self.protocol.lineReceived = lines.append
+
+        bytes = range(0, 127)
+        for special in [8, 10, 13]:
+            bytes.remove(special)
+        bytes = ''.join(map(chr, bytes)) + 'WOO'
+
+        expected = ''.join([byte for byte in bytes 
+                            if byte >= ' ' and byte != '\x7f'])
+        expected = expected.decode('ascii')
+
+        for byte in bytes:
+            self.protocol.keystrokeReceived(byte, None)
+        self.protocol.keystrokeReceived('\n', None)
+        self.assertEquals(lines, [expected])
+
+
+    def testBackspace(self):
+        lines = []
+        self.protocol.lineReceived = lines.append
+
+        bytes = 'abc\bd'
+        for byte in bytes:
+            self.protocol.keystrokeReceived(byte, None)
+        self.protocol.keystrokeReceived(self.terminal.BACKSPACE, None)
+        self.protocol.keystrokeReceived('e', None)
+        self.protocol.keystrokeReceived('\n', None)
+
+        self.assertEquals(lines, [u'abe'])
+
+
 
