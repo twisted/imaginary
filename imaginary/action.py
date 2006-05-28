@@ -547,24 +547,6 @@ def creationSuccess(player, creation):
 
 
 
-class Spawn(NoTargetAction):
-    expr = (pyparsing.Literal("spawn") +
-            pyparsing.White() +
-            commands.targetString("name") +
-            pyparsing.Optional(pyparsing.White() +
-                               pyparsing.restOfLine.setResultsName("description")))
-
-    def do(self, player, line, name, description=u'an undescribed monster'):
-        mob = objects.Thing(store=player.store, name=name, description=description)
-        objects.Actor(store=player.store).installOn(mob)
-        creationSuccess(player.thing, mob).broadcast()
-        try:
-            mob.moveTo(player.thing.location)
-        except eimaginary.DoesntFit:
-            raise insufficientSpace(player.thing)
-
-
-
 class Create(NoTargetAction):
     expr = (pyparsing.Literal("create") +
             pyparsing.White() +
@@ -761,16 +743,17 @@ class Go(NoTargetAction):
         else:
             arriveDirection = object.OPPOSITE_DIRECTIONS[exit.name]
 
-        evt = events.Success(
-            location=dest,
-            actor=player.thing,
-            otherMessage=(player.thing, " arrives from the ", arriveDirection, "."))
-        evt.broadcast()
-
         LookAround().do(player, "look") # XXX A convention for
                                         # programmatically invoked
                                         # commands?  None as the
                                         # line?
+
+        evt = events.ArrivalEvent(
+            thing=player.thing,
+            origin=None,
+            direction=arriveDirection)
+        evt.broadcast()
+
 
 class Restore(TargetAction):
     expr = (pyparsing.Literal("restore") +

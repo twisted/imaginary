@@ -1,3 +1,6 @@
+# -*- test-case-name: imaginary.test.test_player -*-
+
+from zope.interface import implements
 
 from twisted.internet import defer
 from twisted.python import log
@@ -6,8 +9,11 @@ from imaginary import iimaginary, eimaginary, text as T, commands
 
 
 class Player(object):
-    """UI integration layer for Actors to protocols.
     """
+    UI integration layer for Actors to protocols.
+    """
+    implements(iimaginary.IEventObserver)
+
     proto = None
     realm = None
 
@@ -16,7 +22,7 @@ class Player(object):
     def __init__(self, actor):
         self.actor = actor
         self.player = iimaginary.IActor(actor)
-        self.player.intelligence = self
+        self.player.setEphemeralIntelligence(self)
 
 
     def setProtocol(self, proto):
@@ -64,8 +70,8 @@ class Player(object):
         if self.proto and self.proto.terminal:
             self.proto.player = None
             self.proto.terminal.loseConnection()
-        if self.player.intelligence is self:
-            self.player.intelligence = None
+        if self.player.getIntelligence() is self:
+            self.player.setEphemeralIntelligence(None)
 
 
     def prepare(self, concept):

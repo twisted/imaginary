@@ -518,9 +518,6 @@ class Actable(object):
     experience = 0
     level = 0
 
-    # Something with a send method, maybe, sometimes.
-    intelligence = None
-
     CONDITIONS = (
         'dead',
         'dying',
@@ -553,7 +550,7 @@ class Actable(object):
         return self.CONDITIONS[idx + 1]
 
 
-    # IEventObserver
+    # IActor
     def send(self, *event):
         if len(event) != 1 or isinstance(event[0], (str, tuple)):
             event = events.Success(
@@ -561,13 +558,14 @@ class Actable(object):
                 actorMessage=event)
         else:
             event = event[0]
-        if self.intelligence is not None:
-            self.prepare(event)()
+        self.prepare(event)()
 
 
+    # IEventObserver
     def prepare(self, concept):
-        if self.intelligence is not None:
-            return self.intelligence.prepare(concept)
+        intelligence = self.getIntelligence()
+        if intelligence is not None:
+            return intelligence.prepare(concept)
         return lambda: None
 
 
@@ -598,8 +596,14 @@ class Actor(item.Item, Actable, item.InstallableMixin):
     strength = attributes.reference(doc="""
     """)
 
-    intelligence = attributes.inmemory(doc="""
-    The intelligence provider associated with this actor, generally a L{wiring.player.Player} instance.
+    _ephemeralIntelligence = attributes.inmemory(doc="""
+    Maybe the L{IEventObserver} associated with this actor, generally a
+    L{wiring.player.Player} instance.
+    """)
+
+    _enduringIntelligence = attributes.reference(doc="""
+    Maybe the persistent L{IEventObserver} associated with this actor.
+    Generally used with NPCs.
     """)
 
     installedOn = installedOn
@@ -624,6 +628,42 @@ class Actor(item.Item, Actable, item.InstallableMixin):
             self.stamina = Points(store=self.store, max=100)
         if self.strength is None:
             self.strength = Points(store=self.store, max=100)
+
+
+    def activate(self):
+        self._ephemeralIntelligence = None
+
+
+    def setEphemeralIntelligence(self, intelligence):
+        """
+        Set the ephemeral intelligence, generally one representing a PC's user
+        interface.
+        """
+        if self._enduringIntelligence:
+            raise ValueError("Tried setting an ephemeral intelligence %r when "
+                             "an enduring intelligence %r already existed"
+                             % (intelligence, self._enduringIntelligence))
+        self._ephemeralIntelligence = intelligence
+
+
+    def setEnduringIntelligence(self, intelligence):
+        """
+        Set the enduring intelligence, generally one representing an NPC's AI.
+        """
+        if self._ephemeralIntelligence:
+            raise ValueError("Tried setting an enduring intelligence %r when "
+                             "an ephemeral intelligence %r already existed"
+                             % (intelligence, self._ephemeralIntelligence))
+        self._enduringIntelligence = intelligence
+
+
+    def getIntelligence(self):
+        """
+        Get the current intelligence, be it ephemeral or enduring.
+        """
+        if self._ephemeralIntelligence is not None:
+            return self._ephemeralIntelligence
+        return self._enduringIntelligence
 
 
 

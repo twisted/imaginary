@@ -34,3 +34,9 @@ class PlayerTest(unittest.TestCase):
         self.assertEquals(self.transport.value(), "Hi\nHi\nHi\n")
         self.player.send(i for i in ("Hi", "\n"))
         self.assertEquals(self.transport.value(), "Hi\nHi\nHi\nHi\n")
+
+
+    def testDisconnect(self):
+        self.player.proto.terminal = None
+        self.player.disconnect()
+        self.assertIdentical(self.actor.getIntelligence(), None)

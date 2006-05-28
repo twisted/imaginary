@@ -116,12 +116,44 @@ class IActor(Interface):
         """
 
 
-class IEventObserver(Interface):
-    def send(event):
-        """Describe something to the actor.
+    def getIntelligence():
+        """
+        Return the current intelligence associated with this actor, be it
+        ephemeral or enduring.
 
-        @type event: L{IConcept} provider
-        @param event: Something that will be described to the actor.
+        @rtype: L{IEventObserver}.
+        """
+
+
+    def setEphemeralIntelligence(intelligence):
+        """
+        Set the intelligence for this actor to an ephemeral L{IEventObserver}.
+
+        @type intelligence: L{IEventObserver} provider.
+        """
+
+
+    def setEnduringIntelligence(intelligence):
+        """
+        Set the intelligence for this actor to a persistent L{IEventObserver}.
+
+        @type intelligence: L{IEventObserver} provider.
+        """
+
+
+
+class IEventObserver(Interface):
+    def prepare(concept):
+        """Return a callable which will describe something to the actor.
+
+        The callable will be invoked when it is entirely certain that the
+        concept is congruent with game reality.  For example, a concept for an
+        arrow striking its target might be prepared but the resulting callable
+        will not be invoked until the combat game system decides the arrow
+        really is striking its target.
+
+        @type concept: L{IConcept} provider
+        @param concept: Something that will be described to the actor.
         """
 
 

@@ -35,6 +35,7 @@ class CommandTestCaseMixin:
 
         self.realm = realm.ImaginaryRealm(store=self.store)
         self.player = self.realm.create(u"Test Player", u"password", gender=language.Gender.FEMALE)
+        self.playerContainer = iimaginary.IContainer(self.player)
         self.playerWrapper = player.Player(self.player)
 
         self.playerWrapper.useColors = False

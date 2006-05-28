@@ -35,12 +35,12 @@ class LookTestCase(unittest.TestCase):
         self.player = self.realm.create(u"Test Player", u"password", gender=language.Gender.FEMALE)
         locContainer.add(self.player)
         self.actor = iimaginary.IActor(self.player)
-        self.actor.intelligence = TestIntelligence()
+        self.actor.setEphemeralIntelligence(TestIntelligence())
 
 
     def testLookAroundEventBroadcasting(self):
         action.LookAround().runEventTransaction(self.actor, u"look", {})
-        evts = self.actor.intelligence.observedConcepts
+        evts = self.actor.getIntelligence().observedConcepts
         self.assertEquals(len(evts), 1)
         self.failUnless(isinstance(evts[0], events.Success))
 
@@ -57,7 +57,7 @@ class LookTestCase(unittest.TestCase):
         objects.Exit.link(self.location, target, u"south")
 
         action.LookAt().runEventTransaction(self.actor, u"look", {"target": u"south"})
-        evts = self.actor.intelligence.observedConcepts
+        evts = self.actor.getIntelligence().observedConcepts
         self.assertEquals(len(evts), 1)
         self.failUnless(isinstance(evts[0], events.Success))
         self.assertEquals(

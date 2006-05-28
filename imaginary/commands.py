@@ -105,6 +105,36 @@ class CommandType(type):
 
 
 
+def runEventTransaction(store, func, *args, **kwargs):
+    """
+    This takes responsibility for setting up the transactional event
+    broadcasting junk, handling action errors, and broadcasting commit or
+    revert events.
+    """
+    broadcaster = TransactionalEventBroadcaster()
+    def runHelper():
+        # Set up event context for the duration of the action
+        # run.  Additionally, handle raised ActionFailures by
+        # adding their events to the revert event list and
+        # re-raising them so they will revert the transaction.
+        try:
+            return context.call(
+                {iimaginary.ITransactionalEventBroadcaster: broadcaster},
+                func, *args, **kwargs)
+        except eimaginary.ActionFailure, e:
+            broadcaster.addRevertEvent(e.event.reify())
+            raise
+    try:
+        result = store.transact(runHelper)
+    except eimaginary.ActionFailure, e:
+        broadcaster.broadcastRevertEvents()
+        return None
+    else:
+        broadcaster.broadcastEvents()
+        return result
+
+
+
 class Command(object):
     __metaclass__ = CommandType
     infrastructure = True
@@ -119,33 +149,12 @@ class Command(object):
         Take a player, line, and dictionary of parse results and execute the
         actual Action implementation.
 
-        This takes responsibility for setting up the transactional event
-        broadcasting junk, handling action errors, and broadcasting commit or
-        revert events.
-
         @param player: A provider of C{self.actorInterface}
         @param line: A unicode string containing the original input
         @param match: A dictionary containing some parse results to pass
         through to the C{run} method.
+
         """
-        broadcaster = TransactionalEventBroadcaster()
-        def runHelper():
-            # Set up event context for the duration of the action
-            # run.  Additionally, handle raised ActionFailures by
-            # adding their events to the revert event list and
-            # re-raising them so they will revert the transaction.
-            try:
-                return context.call(
-                    {iimaginary.ITransactionalEventBroadcaster: broadcaster},
-                    self.run, player, line, **match)
-            except eimaginary.ActionFailure, e:
-                broadcaster.addRevertEvent(e.event.reify())
-                raise
-        try:
-            result = player.store.transact(runHelper)
-        except eimaginary.ActionFailure, e:
-            broadcaster.broadcastRevertEvents()
-            return None
-        else:
-            broadcaster.broadcastEvents()
-            return result
+        runEventTransaction(player.store, self.run, player, line, **match)
+
+

@@ -21,7 +21,7 @@ class WhoTestCase(unittest.TestCase):
         self.player = self.realm.create(u"testplayer", u"testpassword")
         self.actor = iimaginary.IActor(self.player)
         self.intelligence = TestIntelligence()
-        self.actor.intelligence = self.intelligence
+        self.actor.setEphemeralIntelligence(self.intelligence)
         self.others = []
         for i in xrange(5):
             self.others.append(self.realm.create(u"player-%d" % (i,), u"testpassword"))

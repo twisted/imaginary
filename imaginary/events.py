@@ -6,6 +6,7 @@ from twisted.python import context
 
 from imaginary import iimaginary, language
 
+
 class Event(language.BaseExpress):
     implements(iimaginary.IConcept)
 
@@ -97,3 +98,31 @@ class Success(Event):
         broadcaster = context.get(iimaginary.ITransactionalEventBroadcaster)
         if broadcaster is not None:
             broadcaster.addEvent(self.reify())
+        else:
+            self.reify()()
+
+
+
+class ArrivalEvent(Success):
+    """
+    An event representing the arrival of an object at a location from an
+    origin.
+    """
+    def __init__(self, thing, origin=None, direction=None):
+        self.thing = thing
+        self.origin = origin
+        self.direction = direction
+        self.location = self.thing.location
+
+
+    def conceptFor(self, observer):
+        if observer is self.thing:
+            return None
+        if self.origin is not None:
+            msg = [" arrives from ", self.origin, "."]
+        elif self.direction is not None:
+            msg = [" arrives from the ", self.direction, "."]
+        else:
+            msg = [" arrives."]
+        msg.insert(0, self.thing)
+        return language.Sentence(msg)

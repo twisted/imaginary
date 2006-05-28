@@ -377,38 +377,6 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertEquals(x[5].groups(), ())
 
 
-    def testSpawn(self):
-        self._test(
-            "spawn foobar",
-            ["A foobar created."],
-            ["Test Player creates a foobar."])
-        foobar = self.find(u"foobar")
-        self.assertEquals(foobar.name, "foobar")
-        self.assertEquals(foobar.description, "an undescribed monster")
-        self.assertEquals(foobar.location, self.location)
-
-        self._test(
-            'spawn "bar foo"',
-            ["A bar foo created."],
-            ["Test Player creates a bar foo."])
-        barfoo = self.find(u"bar foo")
-        self.assertEquals(barfoo.name, "bar foo")
-        self.assertEquals(barfoo.description, "an undescribed monster")
-        self.assertEquals(barfoo.location, self.location)
-
-        self._test(
-            'spawn "described monster" It looks like a monster with a description.',
-            ["A described monster created."],
-            ["Test Player creates a described monster."])
-        monster = self.find(u"described monster")
-        self.assertEquals(monster.name, "described monster")
-        self.assertEquals(monster.description, "It looks like a monster with a description.")
-        self.assertEquals(monster.location, self.location)
-
-        # XXX Some automatic cleanup maybe?
-        for m in foobar, barfoo, monster:
-            m.destroy()
-
     def testDig(self):
         self._test(
             "dig west dark tunnel",
