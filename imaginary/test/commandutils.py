@@ -2,10 +2,12 @@
 import pprint
 import re
 
+from zope.interface import implements
+
 from twisted.trial import unittest
 from twisted.test.proto_helpers import StringTransport
 
-from axiom import store
+from axiom import store, item, attributes
 
 from imaginary import iimaginary, objects, text, language
 from imaginary.wiring import player, realm
@@ -57,18 +59,18 @@ class CommandTestCaseMixin:
                 pass
 
     def _test(self, command, output, observed=()):
-        # Deprecate this or something
-        command = unicode(command, 'ascii')
-
-        self.playerWrapper.parse(command)
-
-        output.insert(0, "> " + command)
+        if command is not None:
+            # Deprecate this or something
+            if not isinstance(command, unicode):
+                command = unicode(command, 'ascii')
+            self.playerWrapper.parse(command)
+            output.insert(0, "> " + command)
 
         results = []
         for xport, oput in ((self.transport, output),
                             (self.otransport, observed)):
             results.append([])
-            gotLines = xport.value().splitlines()
+            gotLines = xport.value().decode('utf-8').splitlines()
             for i, (got, expected) in enumerate(map(None, gotLines, oput)):
                 got = got or ''
                 expected = expected or '$^'
@@ -104,3 +106,65 @@ def flatten(expr):
 class LanguageMixin(object):
     def flatten(self, expr):
         return flatten(expr)
+
+
+
+class MockIntelligence(item.Item):
+    """
+    A persistent intelligence which accumulates observed events in a
+    list for later retrieval and assertion. This should be
+    instantiated and passed to
+    L{iimaginary.IActor.setEnduringIntelligence}.
+
+    XXX: This should probably be unnecessary at some point. It is used
+    with code which assumes a persistent intelligence is involved.
+    """
+    implements(iimaginary.IEventObserver)
+
+    anAttribute = attributes.integer()
+    concepts = attributes.inmemory()
+
+    def activate(self):
+        self.concepts = []
+
+
+    def prepare(self, concept):
+        return lambda: self.concepts.append(concept)
+
+
+
+class MockEphemeralIntelligence(object):
+    """
+    Like L{MockIntelligence}, but it should be used with
+    L{iimaginary.IActor.setEphemeralIntelligence}.
+    """
+    implements(iimaginary.IEventObserver)
+
+    def __init__(self):
+        self.events = []
+
+
+    def prepare(self, event):
+        return lambda: self.events.append(event)
+
+
+
+def createPlayer(store, name):
+    """
+    Create a mock player with a mock intelligence with the given
+    name. The intelligence is a L{MockIntelligence} which can have its
+    concepts introspected.
+
+    @type store: L{axiom.store.Store}.
+    @type name: C{unicode}.
+    @param name: The name of the newly-created player.
+    @return: A three-tuple of (playerThing, playerActor, playerIntelligence).
+    """
+    player = objects.Thing(store=store, name=name)
+    pc = objects.Container(store=store, capacity=100)
+    pc.installOn(player)
+    playerActor = objects.Actor(store=store)
+    playerActor.installOn(player)
+    playerIntelligence = MockIntelligence(store=store)
+    playerActor.setEnduringIntelligence(playerIntelligence)
+    return player, playerActor, playerIntelligence

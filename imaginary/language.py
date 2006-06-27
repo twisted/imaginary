@@ -49,7 +49,6 @@ class Noun(object):
 
     def __init__(self, thing):
         self.thing = thing
-        self.unique = False
 
 
     def shortName(self):

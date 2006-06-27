@@ -72,9 +72,18 @@ class IThing(Interface):
     location = Attribute("An IThing which contains this IThing")
 
 
-    def moveTo(where):
+    def moveTo(where, arrivalEventFactory=None):
         """
         Change this things location to the new location, if possible.
+
+        @type where: L{IThing} provider.
+        @param where: The new location to be moved to.
+        
+        @type arrivalEventFactory: A callable which takes a single
+        argument, the thing being moved, and returns an event.
+        @param arrivalEventFactory: Will be called to produce the
+        event to be broadcast to the new location upon arrival of this
+        thing. If not specified (or None), no event will be broadcast.
         """
 
 

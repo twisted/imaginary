@@ -6,7 +6,10 @@ from twisted.python import components
 
 from axiom import store, item, attributes
 
-from imaginary import eimaginary, objects, iimaginary
+from imaginary import iimaginary, eimaginary, objects, events
+from imaginary.test import commandutils
+
+
 
 class PointsTestCase(unittest.TestCase):
     def setUp(self):
@@ -111,6 +114,122 @@ class ObjectTestCase(unittest.TestCase):
         self.assertIdentical(obj.location, room)
         self.assertEquals(list(iimaginary.IContainer(room).getContents()), [obj])
         self.assertEquals(list(container.getContents()), [])
+
+
+
+class MovementTestCase(unittest.TestCase):
+    def setUp(self):
+        self.store = store.Store()
+        obj = objects.Thing(store=self.store, name=u"DOG")
+        room = objects.Thing(store=self.store, name=u"HOUSE")
+        objects.Container(store=self.store, capacity=1000).installOn(room)
+        obj.moveTo(room)
+
+        observer = objects.Thing(store=self.store, name=u"OBSERVER")
+        actor = objects.Actor(store=self.store)
+        actor.installOn(observer)
+        intelligence = commandutils.MockEphemeralIntelligence()
+        actor.setEphemeralIntelligence(intelligence)
+
+        self.obj = obj
+        self.room = room
+        self.observer = observer
+        self.intelligence = intelligence
+        self.actor = actor
+
+
+    def testMovementDepartureEvent(self):
+        """
+        Test that when a Thing is moved out of a location, a departure event is
+        broadcast to that location.
+        """
+        self.observer.moveTo(self.room)
+        self.intelligence.events[:] = []
+
+        self.obj.moveTo(None)
+
+        evts = self.intelligence.events
+        self.assertEquals(len(evts), 1)
+        self.failUnless(
+            isinstance(evts[0], events.DepartureEvent))
+        self.assertIdentical(evts[0].location, self.room)
+        self.assertIdentical(evts[0].actor, self.obj)
+
+
+    def testMovementArrivalEvent(self):
+        """
+        Test that when a Thing is moved to a location, an arrival event is
+        broadcast to that location.
+        """
+        destination = objects.Thing(store=self.store, name=u'ELSEWHERE')
+        objects.Container(store=self.store,
+                          capacity=1000).installOn(destination)
+
+        self.observer.moveTo(destination,
+                             arrivalEventFactory=events.MovementArrivalEvent)
+
+        evts = self.intelligence.events
+        self.assertEquals(len(evts), 1)
+        self.failUnless(isinstance(evts[0], events.MovementArrivalEvent))
+        self.assertIdentical(evts[0].thing, self.observer)
+        self.assertIdentical(evts[0].location, destination)
+        evts[:] = []
+
+        self.obj.moveTo(destination, arrivalEventFactory=events.MovementArrivalEvent)
+
+        evts = self.intelligence.events
+        self.assertEquals(len(evts), 1)
+        self.failUnless(
+            isinstance(evts[0], events.ArrivalEvent))
+        self.assertIdentical(evts[0].location, destination)
+        self.assertIdentical(evts[0].thing, self.obj)
+
+    # TODO - Test that a guy moving around sees first his own departure event
+    # and then his arrival event.
+
+    def test_parameterizedArrivalEvent(self):
+        """
+        moveTo should take a parameter which allows customization of
+        the arrival event that it emits.
+        """
+        destination = objects.Thing(store=self.store, name=u'ELSEWHERE')
+        objects.Container(store=self.store,
+                          capacity=1000).installOn(destination)
+
+        class DroppedEvent(events.MovementArrivalEvent):
+            def conceptFor(self, observer):
+                return "you rock."
+        self.observer.moveTo(destination, arrivalEventFactory=DroppedEvent)
+
+        evts = self.intelligence.events
+        self.assertEquals(len(evts), 1)
+        self.failUnless(isinstance(evts[0], DroppedEvent))
+        self.assertIdentical(evts[0].thing, self.observer)
+        self.assertIdentical(evts[0].location, destination)
+
+    def test_parameterizedArrivalAsNone(self):
+        """
+        If the parameter for customizing the arrival event is None, no
+        arrival event should be broadcast.
+        """
+        destination = objects.Thing(store=self.store, name=u'ELSEWHERE')
+        objects.Container(store=self.store,
+                          capacity=1000).installOn(destination)
+
+        self.observer.moveTo(destination, arrivalEventFactory=None)
+        self.assertEquals(self.intelligence.events, [])
+
+
+    def test_parameterizedArrivalDefaultsNone(self):
+        """
+        The default should be for moveTo not to broadcast an event.
+        """
+        destination = objects.Thing(store=self.store, name=u'ELSEWHERE')
+        objects.Container(store=self.store, 
+                          capacity=1000).installOn(destination)
+
+        self.observer.moveTo(destination)
+        self.assertEquals(self.intelligence.events, [])
 
 
 

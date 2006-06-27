@@ -5,13 +5,7 @@ from axiom import store
 
 from imaginary.wiring import realm
 from imaginary import iimaginary, action
-
-class TestIntelligence(object):
-    def __init__(self):
-        self.events = []
-
-    def prepare(self, event):
-        return lambda: self.events.append(event)
+from imaginary.test import commandutils
 
 
 class WhoTestCase(unittest.TestCase):
@@ -20,7 +14,7 @@ class WhoTestCase(unittest.TestCase):
         self.realm = realm.ImaginaryRealm(store=self.store)
         self.player = self.realm.create(u"testplayer", u"testpassword")
         self.actor = iimaginary.IActor(self.player)
-        self.intelligence = TestIntelligence()
+        self.intelligence = commandutils.MockEphemeralIntelligence()
         self.actor.setEphemeralIntelligence(self.intelligence)
         self.others = []
         for i in xrange(5):

@@ -346,15 +346,22 @@ class Thing(item.Item):
                 yield res
 
 
-    def moveTo(self, where):
+    def moveTo(self, where, arrivalEventFactory=None):
+        """
+        @see: L{iimaginary.IThing.moveTo}.
+        """
         if where is self.location:
             return
         oldLocation = self.location
+        if oldLocation is not None:
+            events.DepartureEvent(oldLocation, self).broadcast()
         if where is not None:
             where = iimaginary.IContainer(where)
             if oldLocation is not None and not self.portable:
                 raise eimaginary.CannotMove(self, where)
             where.add(self)
+            if arrivalEventFactory is not None:
+                arrivalEventFactory(self).broadcast()
         if oldLocation is not None:
             iimaginary.IContainer(oldLocation).remove(self)
 

@@ -1,26 +1,11 @@
 
-from zope.interface import implements
-
 from twisted.trial import unittest
+from twisted.internet import task
 
-from axiom import store, item, attributes
+from axiom import store
 
 from imaginary import iimaginary, events, objects, commands, npc
 from imaginary.test import commandutils
-
-
-class MockIntelligence(item.Item):
-    implements(iimaginary.IEventObserver)
-
-    anAttribute = attributes.integer()
-    concepts = attributes.inmemory()
-
-    def activate(self):
-        self.concepts = []
-
-
-    def prepare(self, concept):
-        return lambda: self.concepts.append(concept)
 
 
 class IntelligenceTestCase(unittest.TestCase):
@@ -37,7 +22,7 @@ class IntelligenceTestCase(unittest.TestCase):
 
         self.alice.moveTo(self.location)
 
-        self.intelligence = MockIntelligence(store=self.store)
+        self.intelligence = commandutils.MockIntelligence(store=self.store)
         self.actor.setEnduringIntelligence(self.intelligence)
 
 
@@ -82,7 +67,8 @@ class MouseTestCase(unittest.TestCase):
         self.player = objects.Thing(store=self.store, name=u"Mean Old Man")
         self.playerActor = objects.Actor(store=self.store)
         self.playerActor.installOn(self.player)
-        self.playerIntelligence = MockIntelligence(store=self.store)
+        self.playerIntelligence = commandutils.MockIntelligence(
+            store=self.store)
         self.playerActor.setEnduringIntelligence(self.playerIntelligence)
 
         self.player.moveTo(self.clock)
@@ -93,8 +79,13 @@ class MouseTestCase(unittest.TestCase):
         When a mean old man walks into the mouse's clock, the mouse will squeak
         ruthlessly.
         """
-        evt = events.ArrivalEvent(thing=self.player, origin=None)
+        clock = task.Clock()
+        self.mousehood._callLater = clock.callLater
+        evt = events.ArrivalEvent(actor=self.player)
         self.mouseActor.send(evt)
+
+        self.assertEquals(len(self.playerIntelligence.concepts), 0)
+        clock.advance(0)
 
         self.assertEquals(len(self.playerIntelligence.concepts), 1)
         event = self.playerIntelligence.concepts[0]
@@ -112,8 +103,18 @@ class MouseTestCase(unittest.TestCase):
             u"SQUEAK!")
 
 
+    def test_mouseActivation(self):
+        """
+        Activating a mouse should set the scheduling mechanism to the
+        reactor's.
+        """
+        from twisted.internet import reactor
+        self.assertEquals(self.mousehood._callLater, reactor.callLater)
 
-class MouseReactionTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
+
+
+class MouseReactionTestCase(commandutils.CommandTestCaseMixin,
+                            unittest.TestCase):
     def testCreation(self):
         """
         Test that a mouse can be created with the create command.
@@ -132,8 +133,10 @@ class MouseReactionTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase
         Test that when someone walks into a room with a mouse, the mouse
         squeaks and the person who walked in hears it.
         """
-
         mouse = npc.createMouse(store=self.store, name=u"squeaker")
+        clock = task.Clock()
+        intelligence = iimaginary.IActor(mouse).getIntelligence()
+        intelligence._callLater = clock.callLater
 
         elsewhere = objects.Thing(store=self.store, name=u"Mouse Hole")
         objects.Container(store=self.store, capacity=1000).installOn(elsewhere)
@@ -146,6 +149,8 @@ class MouseReactionTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase
             "south",
             [commandutils.E("[ Mouse Hole ]"),
              commandutils.E("( north )"),
-             commandutils.E("a squeaker"),
-             commandutils.E("SQUEAK!")],
+             commandutils.E("a squeaker")],
             ['Test Player leaves south.'])
+
+        clock.advance(0)
+        self._test(None, ["SQUEAK!"])

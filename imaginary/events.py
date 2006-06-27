@@ -105,6 +105,13 @@ class Success(Event):
 
 class ArrivalEvent(Success):
     """
+    An event representing the arrival of an object.
+    """
+
+
+
+class MovementArrivalEvent(ArrivalEvent):
+    """
     An event representing the arrival of an object at a location from an
     origin.
     """
@@ -126,3 +133,43 @@ class ArrivalEvent(Success):
             msg = [" arrives."]
         msg.insert(0, self.thing)
         return language.Sentence(msg)
+
+
+
+class DepartureEvent(Success):
+    """
+    An event representing the departure of an object at a location to a
+    destination.
+    """
+    def __init__(self, location, actor, **kw):
+        """
+        @type location: L{iimaginary.IThing} provider.
+        @param location: The location that the actor is leaving.
+        @type actor: L{iimaginary.IThing} provider.
+        @param actor: The actor that is leaving.
+        """
+        super(DepartureEvent, self).__init__(location, actor, **kw)
+
+
+class SpeechEvent(Success):
+    """
+    An event representing something somebody said.
+
+    @ivar speaker: The Thing which spoke.
+    @ivar text: The text which was spoken.
+    """
+    def __init__(self, speaker, text):
+        """
+        @type speaker: L{iimaginary.IThing} provider.
+        @param speaker: The actor emitting this speech.
+        @type text: C{unicode}
+        @param text: The text that the actor said.
+        """
+        self.speaker = speaker
+        self.text = text
+        Success.__init__(
+            self,
+            location=speaker.location,
+            actor=speaker,
+            actorMessage=["You say, '", text, "'"],
+            otherMessage=language.Sentence([speaker, " says, '", text, "'"]))

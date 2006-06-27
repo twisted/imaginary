@@ -11,10 +11,23 @@ from imaginary import iimaginary, eimaginary, pyparsing
 _quoteRemovingQuotedString = pyparsing.quotedString.copy()
 _quoteRemovingQuotedString.setParseAction(pyparsing.removeQuotes)
 
+class UnicodeWord(pyparsing.Token):
+    def parseImpl(self, instring, loc, doActions=True):
+        maxLoc = len(instring)
+        while loc < maxLoc and instring[loc].isspace():
+            loc += 1
+        start = loc
+        while loc < maxLoc and not instring[loc].isspace():
+            loc += 1
+        end = loc
+        return end, instring[start:end]
+
+
+
 def targetString(name):
     return (
-        pyparsing.Word(pyparsing.alphanums) ^
-        _quoteRemovingQuotedString).setResultsName(name)
+        _quoteRemovingQuotedString ^
+        UnicodeWord()).setResultsName(name)
 
 
 

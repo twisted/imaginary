@@ -628,15 +628,15 @@ class Drop(TargetAction):
                     actor=player.thing,
                     actorMessage="You can't drop that."))
 
-        evt = events.Success(
-            actor=player.thing,
-            actorMessage=("You drop ", target, "."),
-            target=target,
-            targetMessage=(player.thing, " drops you."),
-            otherMessage=(player.thing, " drops ", target, "."))
-        evt.broadcast()
         try:
-            target.moveTo(player.thing.location)
+            target.moveTo(
+                player.thing.location,
+                arrivalEventFactory=lambda target: events.ArrivalEvent(
+                    actor=player.thing,
+                    actorMessage=("You drop ", target, "."),
+                    target=target,
+                    targetMessage=(player.thing, " drops you."),
+                    otherMessage=(player.thing, " drops ", target, ".")))
         except eimaginary.DoesntFit:
             raise insufficientSpace(player.thing)
 
@@ -731,28 +731,27 @@ class Go(NoTargetAction):
             otherMessage=(player.thing, " leaves ", direction, "."))
         evt.broadcast()
 
-        try:
-            player.thing.moveTo(dest)
-        except eimaginary.DoesntFit:
-            raise eimaginary.ActionFailure(events.ThatDoesntWork(
-                actor=player.thing,
-                actorMessage=language.ExpressString(u"There's no room for you there.")))
-
         if exit.sibling is not None:
             arriveDirection = exit.sibling.name
         else:
             arriveDirection = object.OPPOSITE_DIRECTIONS[exit.name]
 
-        LookAround().do(player, "look") # XXX A convention for
-                                        # programmatically invoked
-                                        # commands?  None as the
-                                        # line?
+        try:
+            player.thing.moveTo(
+                dest,
+                arrivalEventFactory=lambda player: events.MovementArrivalEvent(
+                    thing=player,
+                    origin=None,
+                    direction=arriveDirection))
+        except eimaginary.DoesntFit:
+            raise eimaginary.ActionFailure(events.ThatDoesntWork(
+                actor=player.thing,
+                actorMessage=language.ExpressString(u"There's no room for you there.")))
 
-        evt = events.ArrivalEvent(
-            thing=player.thing,
-            origin=None,
-            direction=arriveDirection)
-        evt.broadcast()
+        # XXX A convention for programmatically invoked commands?
+        # None as the line?
+        LookAround().do(player, "look") 
+
 
 
 class Restore(TargetAction):
@@ -845,9 +844,7 @@ class Say(NoTargetAction):
             pyparsing.restOfLine.setResultsName("text"))
 
     def do(self, player, line, text):
-        evt = events.Success(actor=player.thing,
-                             actorMessage=["You say, '", text, "'"],
-                             otherMessage=[player.thing, " says, '", text, "'"])
+        evt = events.SpeechEvent(speaker=player.thing, text=text)
         evt.broadcast()
 
 
