@@ -82,56 +82,6 @@ class Points(item.Item):
         return self.current
 
 
-OPPOSITE_DIRECTIONS = {
-    u"north": u"south",
-    u"west": u"east",
-    u"northwest": u"southeast",
-    u"northeast": u"southwest"}
-for (k, v) in OPPOSITE_DIRECTIONS.items():
-    OPPOSITE_DIRECTIONS[v] = k
-
-
-class Exit(item.Item):
-    fromLocation = attributes.reference(doc="""
-    Where this exit leads from.
-    """, allowNone=False, whenDeleted=attributes.reference.CASCADE)
-
-    toLocation = attributes.reference(doc="""
-    Where this exit leads to.
-    """, allowNone=False, whenDeleted=attributes.reference.CASCADE)
-
-    name = attributes.text(doc="""
-    What this exit is called/which direction it is in.
-    """, allowNone=False)
-
-    sibling = attributes.reference(doc="""
-    The reverse exit object, if one exists.
-    """)
-
-
-    def link(cls, a, b, forwardName, backwardName=None):
-        if backwardName is None:
-            backwardName = OPPOSITE_DIRECTIONS[forwardName]
-        me = cls(store=a.store, fromLocation=a, toLocation=b, name=forwardName)
-        him = cls(store=b.store, fromLocation=b, toLocation=a, name=backwardName)
-        me.sibling = him
-        him.sibling = me
-    link = classmethod(link)
-
-
-    def destroy(self):
-        if self.sibling is not None:
-            self.sibling.deleteFromStore()
-        self.deleteFromStore()
-
-
-    # NOTHING
-    def conceptualize(self):
-        return language.ExpressList([u'the exit to ', language.Noun(self.toLocation).nounPhrase()])
-components.registerAdapter(lambda exit: exit.conceptualize(), Exit, iimaginary.IConcept)
-
-
-
 class Thing(item.Item):
     implements(iimaginary.IThing, iimaginary.IVisible)
 
@@ -384,6 +334,56 @@ class Thing(item.Item):
             exits,
             self.powerupsFor(iimaginary.IDescriptionContributor))
 components.registerAdapter(lambda thing: language.Noun(thing).nounPhrase(), Thing, iimaginary.IConcept)
+
+
+
+OPPOSITE_DIRECTIONS = {
+    u"north": u"south",
+    u"west": u"east",
+    u"northwest": u"southeast",
+    u"northeast": u"southwest"}
+for (k, v) in OPPOSITE_DIRECTIONS.items():
+    OPPOSITE_DIRECTIONS[v] = k
+
+
+class Exit(item.Item):
+    fromLocation = attributes.reference(doc="""
+    Where this exit leads from.
+    """, allowNone=False, whenDeleted=attributes.reference.CASCADE, reftype=Thing)
+
+    toLocation = attributes.reference(doc="""
+    Where this exit leads to.
+    """, allowNone=False, whenDeleted=attributes.reference.CASCADE, reftype=Thing)
+
+    name = attributes.text(doc="""
+    What this exit is called/which direction it is in.
+    """, allowNone=False)
+
+    sibling = attributes.reference(doc="""
+    The reverse exit object, if one exists.
+    """)
+
+
+    def link(cls, a, b, forwardName, backwardName=None):
+        if backwardName is None:
+            backwardName = OPPOSITE_DIRECTIONS[forwardName]
+        me = cls(store=a.store, fromLocation=a, toLocation=b, name=forwardName)
+        him = cls(store=b.store, fromLocation=b, toLocation=a, name=backwardName)
+        me.sibling = him
+        him.sibling = me
+    link = classmethod(link)
+
+
+    def destroy(self):
+        if self.sibling is not None:
+            self.sibling.deleteFromStore()
+        self.deleteFromStore()
+
+
+    # NOTHING
+    def conceptualize(self):
+        return language.ExpressList([u'the exit to ', language.Noun(self.toLocation).nounPhrase()])
+components.registerAdapter(lambda exit: exit.conceptualize(), Exit, iimaginary.IConcept)
 
 
 

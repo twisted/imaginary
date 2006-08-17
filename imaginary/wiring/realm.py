@@ -26,7 +26,7 @@ class PlayerCredentials(item.Item):
     actor = attributes.reference(doc="""
     A reference to the L{objects.Thing} with which these credentials are
     associated.
-    """, whenDeleted=attributes.reference.CASCADE)
+    """, whenDeleted=attributes.reference.CASCADE, reftype=objects.Thing)
 
 
 
