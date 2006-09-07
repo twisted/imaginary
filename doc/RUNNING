@@ -1,5 +1,5 @@
-$ axiomatic -d pottery.axiom offering install pottery
-$ axiomatic -d pottery.axiom start
+$ axiomatic -d imaginary.axiom offering install imaginary
+$ axiomatic -d imaginary.axiom start
 $ telnet localhost 4023
 Trying 127.0.0.1...
 Connected to localhost.
