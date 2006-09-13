@@ -192,7 +192,7 @@ class fg:
 class bg:
     pass
 
-neutral = AttributeSet(unset, unset, unset, unset, unset, unset, unset)
+neutral = AttributeSet(unset, unset, unset, unset, unset, unset)
 
 for cls, attr in [(fg, 'fg'),
                   (bg, 'bg')]:
