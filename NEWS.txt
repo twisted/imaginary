@@ -1,3 +1,6 @@
+0.0.2 (2006-09-20:
+  - Some changes
+
 0.0.1 (2006-06-16):
   - Imported from Pottery repository
   - Imported from Imagination repository
