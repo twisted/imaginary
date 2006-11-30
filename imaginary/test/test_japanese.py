@@ -4,7 +4,6 @@ from twisted.internet import task
 from twisted.trial import unittest
 
 from axiom import store
-from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects, npc, commands, events, action
 from imaginary.resources import japanese
@@ -45,7 +44,7 @@ class HiraganaMouseTestCase(MouseChallengeMixin, unittest.TestCase):
 
         self.clock = objects.Thing(store=self.store, name=u"Clock")
         self.clockContainer = objects.Container(store=self.store, capacity=10)
-        installOn(self.clockContainer, self.clock)
+        self.clockContainer.installOn(self.clock)
 
         self.mouseName = u"\N{KATAKANA LETTER PI}\N{KATAKANA LETTER SMALL YU}"
         self.mouse = npc.createHiraganaMouse(
@@ -415,7 +414,7 @@ class HiraganaMouseCommandTestCase(commandutils.CommandTestCaseMixin, unittest.T
 
         closet = objects.Thing(store=self.store, name=u"Closet")
         closetContainer = objects.Container(store=self.store, capacity=500)
-        installOn(closetContainer, closet)
+        closetContainer.installOn(closet)
 
         mouse = npc.createHiraganaMouse(
             store=self.store,

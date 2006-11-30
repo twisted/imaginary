@@ -1,8 +1,6 @@
 
 from twisted.trial import unittest
 
-from axiom.dependency import installOn
-
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
 
@@ -42,7 +40,7 @@ class HitTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
         monster = objects.Thing(store=self.store, name=u"monster")
-        installOn(objects.Actor(store=self.store), monster)
+        objects.Actor(store=self.store).installOn(monster)
         monster.moveTo(self.location)
         x, y = self._test(
             "hit monster",

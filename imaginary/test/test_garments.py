@@ -1,7 +1,6 @@
 from twisted.trial import unittest
 
 from axiom import store
-from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects, garments, language
 from imaginary.test import commandutils
@@ -16,7 +15,7 @@ class WearIt(unittest.TestCase, commandutils.LanguageMixin):
 
         self.dummy = objects.Thing(store=self.store, name=u'dummy')
         self.dummyContainer = objects.Container(store=self.store, capacity=100)
-        installOn(self.dummyContainer, self.dummy)
+        self.dummyContainer.installOn(self.dummy)
 
         self.shirt = objects.Thing(store=self.store, name=u'shirt')
         self.shirtGarment = garments.Garment(
@@ -27,10 +26,10 @@ class WearIt(unittest.TestCase, commandutils.LanguageMixin):
                           garments.GarmentSlot.CHEST,
                           garments.GarmentSlot.BACK,
                           ])
-        installOn(self.shirtGarment, self.shirt)
+        self.shirtGarment.installOn(self.shirt)
 
         self.wearer = garments.Wearer(store=self.store)
-        installOn(self.wearer, self.dummy)
+        self.wearer.installOn(self.dummy)
 
 
     def testWearing(self):

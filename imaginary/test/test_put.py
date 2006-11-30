@@ -1,8 +1,6 @@
 
 from twisted.trial import unittest
 
-from axiom.dependency import installOn
-
 from imaginary.test import commandutils
 from imaginary import iimaginary, objects
 
@@ -13,7 +11,7 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.object.moveTo(self.player)
         self.container = objects.Thing(store=self.store, name=u"bar")
         self.containerContainer = objects.Container(store=self.store, capacity=1)
-        installOn(self.containerContainer, self.container)
+        self.containerContainer.installOn(self.container)
         self.container.moveTo(self.location)
         return r
 
@@ -65,7 +63,7 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
     def testNestedContainment(self):
         another = objects.Thing(store=self.store, name=u"another")
-        installOn(objects.Container(store=self.store, capacity=1), another)
+        objects.Container(store=self.store, capacity=1).installOn(another)
         self.containerContainer.add(another)
 
         self._test(
@@ -79,10 +77,10 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def testIndirectNestedContainment(self):
         innermost = objects.Thing(store=self.store, name=u"innermost")
         innermostContainer = objects.Container(store=self.store, capacity=1)
-        installOn(innermostContainer, innermost)
+        innermostContainer.installOn(innermost)
         middle = objects.Thing(store=self.store, name=u"middle")
         middleContainer = objects.Container(store=self.store, capacity=1)
-        installOn(middleContainer, middle)
+        middleContainer.installOn(middle)
         middleContainer.add(innermost)
         self.containerContainer.add(middle)
 

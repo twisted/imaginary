@@ -116,7 +116,7 @@ class ConchFactory(factory.SSHFactory):
 
 
 
-class SSHService(item.Item, service.Service):
+class SSHService(item.Item, item.InstallableMixin, service.Service):
     implements(iimaginary.ISSHService)
 
     portNumber = attributes.integer(
@@ -170,9 +170,12 @@ class SSHService(item.Item, service.Service):
         self.factory = None
         self.port = None
 
-    powerupInterfaces = (service.IService, iimaginary.ISSHService)
-    def installed(self):
-        self.setServiceParent(self.store)
+
+    def installOn(self, other):
+        super(SSHService, self).installOn(other)
+        other.powerUp(self, service.IService)
+        other.powerUp(self, iimaginary.ISSHService)
+        self.setServiceParent(other)
 
 
     def privilegedStartService(self):

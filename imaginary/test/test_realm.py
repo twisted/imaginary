@@ -1,7 +1,6 @@
 from twisted.trial import unittest
 
 from axiom import store
-from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects
 from imaginary.wiring import realm
@@ -10,9 +9,9 @@ class RealmTestCase(unittest.TestCase):
     def setUp(self):
         self.store = store.Store()
         self.origin = objects.Thing(store=self.store, name=u"origin")
-        installOn(objects.Container(store=self.store, capacity=1000), self.origin)
+        objects.Container(store=self.store, capacity=1000).installOn(self.origin)
         self.realm = realm.ImaginaryRealm(store=self.store)
-        installOn(self.realm, self.store)
+        self.realm.installOn(self.store)
 
 
     def testPlayerCreation(self):

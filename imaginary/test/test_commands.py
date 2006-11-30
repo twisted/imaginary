@@ -4,8 +4,6 @@
 
 from twisted.trial import unittest
 
-from axiom.dependency import installOn
-
 from imaginary import iimaginary, objects, commands
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
@@ -123,7 +121,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
         c = objects.Thing(store=self.store, name=u"bar")
         cContainer = objects.Container(store=self.store, capacity=1)
-        installOn(cContainer, c)
+        cContainer.installOn(c)
 
         iimaginary.IContainer(self.location).add(c)
         o = objects.Thing(store=self.store, name=u"baz")
@@ -410,7 +408,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertEquals(list(iimaginary.IContainer(self.location).getExits()), [])
 
         room = objects.Thing(store=self.store, name=u"destination", proper=True)
-        installOn(objects.Container(store=self.store, capacity=1000), room)
+        objects.Container(store=self.store, capacity=1000).installOn(room)
         objects.Exit.link(room, self.location, u'north')
 
         self._test(
@@ -450,7 +448,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["You can't go that way."])
 
         room = objects.Thing(store=self.store, name=u"destination")
-        installOn(objects.Container(store=self.store, capacity=1000), room)
+        objects.Container(store=self.store, capacity=1000).installOn(room)
         objects.Exit.link(self.location, room, u"west")
 
         self._test(
@@ -482,7 +480,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
                          "west", "southwest", "south", "southeast"]
         for d in allDirections[:len(allDirections) / 2]:
             room = objects.Thing(store=self.store, name=u"destination")
-            installOn(objects.Container(store=self.store, capacity=1000), room)
+            objects.Container(store=self.store, capacity=1000).installOn(room)
             objects.Exit.link(oldRoom, room, unicode(d, 'ascii'))
             oldRoom = room
 
@@ -529,7 +527,7 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
     def testOpenClose(self):
         container = objects.Thing(store=self.store, name=u"container")
-        installOn(objects.Container(store=self.store, capacity=1), container)
+        objects.Container(store=self.store, capacity=1).installOn(container)
         iimaginary.IContainer(self.location).add(container)
         self._test(
             "close container",

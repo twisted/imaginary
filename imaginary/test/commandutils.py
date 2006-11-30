@@ -8,7 +8,6 @@ from twisted.trial import unittest
 from twisted.test.proto_helpers import StringTransport
 
 from axiom import store, item, attributes
-from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects, text, language
 from imaginary.wiring import player, realm
@@ -34,7 +33,7 @@ class CommandTestCaseMixin:
             proper=True)
 
         locContainer = objects.Container(store=self.store, capacity=1000)
-        installOn(locContainer, self.location)
+        locContainer.installOn(self.location)
 
         self.realm = realm.ImaginaryRealm(store=self.store)
         self.player = self.realm.create(u"Test Player", u"password", gender=language.Gender.FEMALE)
@@ -163,9 +162,9 @@ def createPlayer(store, name):
     """
     player = objects.Thing(store=store, name=name)
     pc = objects.Container(store=store, capacity=100)
-    installOn(pc, player)
+    pc.installOn(player)
     playerActor = objects.Actor(store=store)
-    installOn(playerActor, player)
+    playerActor.installOn(player)
     playerIntelligence = MockIntelligence(store=store)
     playerActor.setEnduringIntelligence(playerIntelligence)
     return player, playerActor, playerIntelligence

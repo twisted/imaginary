@@ -3,10 +3,8 @@
 from zope.interface import implements, Interface
 
 from axiom import item, attributes
-from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects, events, language
-from imaginary.objects import ThingMixin
 
 
 class ICoin(Interface):
@@ -22,7 +20,7 @@ def createCreator(*powerups):
         store = kw['store']
         o = objects.Thing(**kw)
         for pup, pupkw in powerups:
-            installOn(pup(store=store, **pupkw or {}), o)
+            pup(store=store, **pupkw or {}).installOn(o)
         return o
     return create
 
@@ -30,18 +28,22 @@ def createCreator(*powerups):
 
 class Coinage(object):
     implements(ICoin)
-    powerupInterfaces = (ICoin)
+
+    def installOn(self, other):
+        super(Coinage, self).installOn(other)
+        other.powerUp(self, ICoin)
 
 
 
-class Quarter(item.Item, Coinage, ThingMixin):
+class Quarter(item.Item, Coinage, item.InstallableMixin):
+    installedOn = objects.installedOn
     thing = attributes.reference(doc="""
     The object this coin powers up.
     """)
 
 
 
-class VendingMachine(item.Item, objects.Containment, ThingMixin):
+class VendingMachine(item.Item, objects.Containment, item.InstallableMixin):
     implements(iimaginary.IContainer)
 
     capacity = attributes.integer(doc="""
@@ -52,6 +54,7 @@ class VendingMachine(item.Item, objects.Containment, ThingMixin):
     Indicates whether the container is currently closed or open.
     """, allowNone=False, default=True)
 
+    installedOn = objects.installedOn
     thing = attributes.reference(doc="""
     The object this container powers up.
     """)
@@ -102,7 +105,7 @@ class VendingMachine(item.Item, objects.Containment, ThingMixin):
 
 def createVendingMachine(store, name, description=u""):
     o = objects.Thing(store=store, name=name, description=description)
-    installOn(VendingMachine(store=store), o)
+    VendingMachine(store=store).installOn(o)
     return o
 
 

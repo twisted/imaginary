@@ -5,10 +5,8 @@ from twisted.trial import unittest
 from twisted.python import components
 
 from axiom import store, item, attributes
-from axiom.dependency import installOn
 
 from imaginary import iimaginary, eimaginary, objects, events
-from imaginary.objects import ThingMixin
 from imaginary.test import commandutils
 
 
@@ -80,7 +78,7 @@ class ObjectTestCase(unittest.TestCase):
 
         room = objects.Thing(store=self.store, name=u"test location")
         locContainer = objects.Container(store=self.store, capacity=1000)
-        installOn(locContainer, room)
+        locContainer.installOn(room)
         obj = objects.Thing(store=self.store, name=u"y")
         obj.moveTo(room)
 
@@ -92,7 +90,7 @@ class ObjectTestCase(unittest.TestCase):
     def testMoving(self):
         obj = objects.Thing(store=self.store, name=u"DOG")
         room = objects.Thing(store=self.store, name=u"HOUSE")
-        installOn(objects.Container(store=self.store, capacity=1000), room)
+        objects.Container(store=self.store, capacity=1000).installOn(room)
         obj.moveTo(room)
         self.assertIdentical(obj.location, room)
         obj.moveTo(room)
@@ -107,11 +105,11 @@ class ObjectTestCase(unittest.TestCase):
         obj = objects.Thing(store=self.store, name=u"mountain")
         obj.portable = False
         room = objects.Thing(store=self.store, name=u"place")
-        installOn(objects.Container(store=self.store, capacity=1000), room)
+        objects.Container(store=self.store, capacity=1000).installOn(room)
         obj.moveTo(room)
         elsewhere = objects.Thing(store=self.store, name=u"different place")
         container = objects.Container(store=self.store, capacity=1000)
-        installOn(container, elsewhere)
+        container.installOn(elsewhere)
         self.assertRaises(eimaginary.CannotMove, obj.moveTo, elsewhere)
         self.assertIdentical(obj.location, room)
         self.assertEquals(list(iimaginary.IContainer(room).getContents()), [obj])
@@ -124,12 +122,12 @@ class MovementTestCase(unittest.TestCase):
         self.store = store.Store()
         obj = objects.Thing(store=self.store, name=u"DOG")
         room = objects.Thing(store=self.store, name=u"HOUSE")
-        installOn(objects.Container(store=self.store, capacity=1000), room)
+        objects.Container(store=self.store, capacity=1000).installOn(room)
         obj.moveTo(room)
 
         observer = objects.Thing(store=self.store, name=u"OBSERVER")
         actor = objects.Actor(store=self.store)
-        installOn(actor, observer)
+        actor.installOn(observer)
         intelligence = commandutils.MockEphemeralIntelligence()
         actor.setEphemeralIntelligence(intelligence)
 
@@ -164,8 +162,8 @@ class MovementTestCase(unittest.TestCase):
         broadcast to that location.
         """
         destination = objects.Thing(store=self.store, name=u'ELSEWHERE')
-        installOn(objects.Container(store=self.store,
-                                    capacity=1000), destination)
+        objects.Container(store=self.store,
+                          capacity=1000).installOn(destination)
 
         self.observer.moveTo(destination,
                              arrivalEventFactory=events.MovementArrivalEvent)
@@ -195,8 +193,8 @@ class MovementTestCase(unittest.TestCase):
         the arrival event that it emits.
         """
         destination = objects.Thing(store=self.store, name=u'ELSEWHERE')
-        installOn(objects.Container(store=self.store,
-                                    capacity=1000), destination)
+        objects.Container(store=self.store,
+                          capacity=1000).installOn(destination)
 
         class DroppedEvent(events.MovementArrivalEvent):
             def conceptFor(self, observer):
@@ -215,8 +213,8 @@ class MovementTestCase(unittest.TestCase):
         arrival event should be broadcast.
         """
         destination = objects.Thing(store=self.store, name=u'ELSEWHERE')
-        installOn(objects.Container(store=self.store,
-                                    capacity=1000), destination)
+        objects.Container(store=self.store,
+                          capacity=1000).installOn(destination)
 
         self.observer.moveTo(destination, arrivalEventFactory=None)
         self.assertEquals(self.intelligence.events, [])
@@ -227,8 +225,8 @@ class MovementTestCase(unittest.TestCase):
         The default should be for moveTo not to broadcast an event.
         """
         destination = objects.Thing(store=self.store, name=u'ELSEWHERE')
-        installOn(objects.Container(store=self.store,
-                                    capacity=1000), destination)
+        objects.Container(store=self.store, 
+                          capacity=1000).installOn(destination)
 
         self.observer.moveTo(destination)
         self.assertEquals(self.intelligence.events, [])
@@ -244,10 +242,12 @@ class IFoo(Interface):
 components.registerAdapter(lambda o: (unexpected, o), objects.Thing, IFoo)
 
 
-class Proxy(item.Item, ThingMixin):
+class Proxy(item.Item, item.InstallableMixin):
     implements(iimaginary.IProxy)
 
     thing = attributes.reference()
+
+    installedOn = objects.installedOn
 
     provider = attributes.inmemory()
 
@@ -255,8 +255,10 @@ class Proxy(item.Item, ThingMixin):
 
     proxiedObjects = attributes.inmemory()
 
-    def __getPowerupInterfaces__(self, other):
-        yield (iimaginary.IProxy, self.priority)
+    def installOn(self, other):
+        super(Proxy, self).installOn(other)
+        other.powerUp(self, iimaginary.IProxy, self.priority)
+
 
     # IProxy
     def proxy(self, facet, iface):
@@ -265,11 +267,15 @@ class Proxy(item.Item, ThingMixin):
 
 
 
-class StubLocationProxy(item.Item, ThingMixin):
+class StubLocationProxy(item.Item, item.InstallableMixin):
     implements(iimaginary.ILocationProxy)
 
     thing = attributes.reference()
-    powerupInterfaces = (iimaginary.ILocationProxy)
+    installedOn = objects.installedOn
+
+    def installOn(self, other):
+        super(StubLocationProxy, self).installOn(other)
+        other.powerUp(self, iimaginary.ILocationProxy)
 
     def proxy(self, facet, interface):
         return (facet,)
@@ -281,7 +287,7 @@ class FindProvidersTestCase(unittest.TestCase):
         self.store = store.Store()
         obj = objects.Thing(store=self.store, name=u"generic object")
         room = objects.Thing(store=self.store, name=u"room")
-        installOn(objects.Container(store=self.store, capacity=1000), room)
+        objects.Container(store=self.store, capacity=1000).installOn(room)
         obj.moveTo(room)
         self.obj = obj
         self.room = room
@@ -368,7 +374,7 @@ class FindProvidersTestCase(unittest.TestCase):
         providers of IFoo.
         """
         p = Proxy(store=self.store, provider=None)
-        installOn(p, self.obj)
+        p.installOn(self.obj)
 
         self.assertEquals(
             list(self.obj.findProviders(IFoo, 1)),
@@ -383,7 +389,7 @@ class FindProvidersTestCase(unittest.TestCase):
         """
         expected = u"expected"
         p = Proxy(store=self.store, provider=expected)
-        installOn(p, self.obj)
+        p.installOn(self.obj)
 
         self.assertEquals(
             list(self.obj.findProviders(IFoo, 1)),
@@ -399,8 +405,8 @@ class FindProvidersTestCase(unittest.TestCase):
         firstProxy = Proxy(store=self.store, priority=1, provider=None)
         secondProxy = Proxy(store=self.store, priority=2, provider=expected)
 
-        installOn(firstProxy, self.obj)
-        installOn(secondProxy, self.obj)
+        firstProxy.installOn(self.obj)
+        secondProxy.installOn(self.obj)
 
         self.assertEquals(
             list(self.obj.findProviders(IFoo, 1)),
@@ -415,7 +421,7 @@ class FindProvidersTestCase(unittest.TestCase):
         expected = u"frotz"
         p = Proxy(store=self.store, provider=expected)
         p.proxiedObjects = []
-        installOn(p, self.room)
+        p.installOn(self.room)
 
         self.assertEquals(
             list(self.obj.findProviders(IFoo, 1)),
@@ -438,7 +444,7 @@ class FindProvidersTestCase(unittest.TestCase):
 
         """
         locationProxy = StubLocationProxy(store=self.store)
-        installOn(locationProxy, self.room)
+        locationProxy.installOn(self.room)
 
         self.assertEquals(list(self.obj.findProviders(iimaginary.IThing, 1)),
                           [(self.obj,), (self.room,)])
@@ -450,9 +456,9 @@ class FindProvidersTestCase(unittest.TestCase):
         indirectly contained by the location are also proxied.
         """
         locationProxy = StubLocationProxy(store=self.store)
-        installOn(locationProxy, self.room)
+        locationProxy.installOn(self.room)
 
-        installOn(objects.Container(store=self.store, capacity=9999), self.obj)
+        objects.Container(store=self.store, capacity=9999).installOn(self.obj)
         rock = objects.Thing(store=self.store, name=u"rock")
         rock.moveTo(self.obj)
 
@@ -466,10 +472,10 @@ class FindProvidersTestCase(unittest.TestCase):
         Test Location Proxy Only Applies To Contained Objects.
         """
         locationProxy = StubLocationProxy(store=self.store)
-        installOn(locationProxy, self.room)
+        locationProxy.installOn(self.room)
 
         nearby = objects.Thing(store=self.store, name=u"other room")
-        installOn(objects.Container(store=self.store, capacity=1000), nearby)
+        objects.Container(store=self.store, capacity=1000).installOn(nearby)
         ball = objects.Thing(store=self.store, name=u"ball")
         ball.moveTo(nearby)
 
@@ -488,13 +494,13 @@ class FindProvidersTestCase(unittest.TestCase):
         """
 
         nearby = objects.Thing(store=self.store, name=u"other room")
-        installOn(objects.Container(store=self.store, capacity=1000), nearby)
+        objects.Container(store=self.store, capacity=1000).installOn(nearby)
         ball = objects.Thing(store=self.store, name=u"ball")
         ball.moveTo(nearby)
 
 
         locationProxy = StubLocationProxy(store=self.store)
-        installOn(locationProxy, nearby)
+        locationProxy.installOn(nearby)
 
         objects.Exit.link(self.room, nearby, u"west")
 
@@ -555,7 +561,7 @@ class FindProvidersTestCase(unittest.TestCase):
             thing = self.obj
 
         p = Proxy(store=self.store, provider=result)
-        installOn(p, self.obj)
+        p.installOn(self.obj)
 
         self.assertIdentical(
             self.obj.proxiedThing(self.obj, iimaginary.IThing, 0),
@@ -571,7 +577,7 @@ class FindProvidersTestCase(unittest.TestCase):
             thing = self.room
 
         p = Proxy(store=self.store, provider=result)
-        installOn(p, self.obj)
+        p.installOn(self.obj)
 
         self.assertIdentical(
             self.obj.proxiedThing(self.room, iimaginary.IThing, 0),
@@ -584,7 +590,7 @@ class FindProvidersTestCase(unittest.TestCase):
         Test that search can find an exit.
         """
         room = objects.Thing(store=self.store, name=u"Northerly Room")
-        installOn(objects.Container(store=self.store, capacity=1000), room)
+        objects.Container(store=self.store, capacity=1000).installOn(room)
         objects.Exit.link(self.room, room, u"north")
 
         self.assertEquals(
