@@ -1,5 +1,7 @@
 from twisted.trial import unittest
 
+from axiom.dependency import installOn
+
 from imaginary import objects, quiche, iimaginary
 from imaginary.test import commandutils
 
@@ -69,7 +71,7 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def testProgrammaticQuichePurchase(self):
         location = objects.Thing(store=self.store, name=u"room")
         icloc = objects.Container(store=self.store, capacity=500)
-        icloc.installOn(location)
+        installOn(icloc, location)
 
         vm = quiche.createVendingMachine(store=self.store, name=u"Vendy", description=u"VEEEENDYYYYY")
         vm.moveTo(location)

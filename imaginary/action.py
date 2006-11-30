@@ -9,6 +9,7 @@ from twisted.python import util, log
 from twisted import plugin
 
 from axiom import iaxiom, attributes
+from axiom.dependency import installOn
 
 import imaginary.plugins
 from imaginary.wiring import realm
@@ -175,7 +176,7 @@ class Illuminate(NoTargetAction):
         candelas = int(candelas)
         ll = player.thing.store.findOrCreate(
             objects.LocationLighting,
-            lambda ll: ll.installOn(player.thing.location),
+            lambda ll: installOn(ll, player.thing.location),
             thing=player.thing.location)
         oldCandelas = ll.candelas
 
@@ -664,7 +665,7 @@ class Dig(NoTargetAction):
                 actorMessage="There is already an exit in that direction."))
 
         room = objects.Thing(store=player.store, name=name)
-        objects.Container(store=player.store, capacity=1000).installOn(room)
+        installOn(objects.Container(store=player.store, capacity=1000), room)
         objects.Exit.link(player.thing.location, room, direction)
 
         evt = events.Success(

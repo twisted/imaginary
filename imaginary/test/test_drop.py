@@ -2,6 +2,7 @@
 from twisted.trial.unittest import TestCase
 
 from axiom.store import Store
+from axiom.dependency import installOn
 
 from imaginary.test.commandutils import createPlayer
 from imaginary.objects import Thing, Container
@@ -19,7 +20,7 @@ class DropTestCase(TestCase):
 
         player, actor, intelligence = createPlayer(st, u"Foo")
         place = Thing(store=st, name=u"soko")
-        Container(store=st, capacity=1000).installOn(place)
+        installOn(Container(store=st, capacity=1000), place)
         player.moveTo(place)
 
         bauble = Thing(store=st, name=u"bauble")

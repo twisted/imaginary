@@ -6,6 +6,7 @@ from twisted.python import log
 from twisted.cred import checkers, credentials, portal
 
 from axiom import iaxiom, item, attributes
+from axiom.dependency import installOn
 
 from imaginary import iimaginary
 from imaginary import objects, eimaginary
@@ -30,8 +31,9 @@ class PlayerCredentials(item.Item):
 
 
 
-class ImaginaryRealm(item.Item, item.InstallableMixin):
+class ImaginaryRealm(item.Item):
     implements(portal.IRealm, checkers.ICredentialsChecker)
+    powerupInterfaces = (portal.IRealm, checkers.ICredentialsChecker)
 
     origin = attributes.reference(doc="""
     The location where new players enter the world.
@@ -50,14 +52,8 @@ class ImaginaryRealm(item.Item, item.InstallableMixin):
     def __init__(self, **kw):
         super(ImaginaryRealm, self).__init__(**kw)
         self.origin = objects.Thing(store=self.store, name=u"The Place")
-        objects.Container(store=self.store,
-                          capacity=1000).installOn(self.origin)
-
-
-    def installOn(self, other):
-        super(ImaginaryRealm, self).installOn(other)
-        other.powerUp(self, portal.IRealm)
-        other.powerUp(self, checkers.ICredentialsChecker)
+        installOn(objects.Container(store=self.store,
+                                    capacity=1000), self.origin)
 
 
     def activate(self):
@@ -70,8 +66,8 @@ class ImaginaryRealm(item.Item, item.InstallableMixin):
                                   weight=100,
                                   name=username,
                                   proper=True, **kw)
-        objects.Container(store=self.store, capacity=10).installOn(playerObj)
-        objects.Actor(store=self.store).installOn(playerObj)
+        installOn(objects.Container(store=self.store, capacity=10), playerObj)
+        installOn(objects.Actor(store=self.store), playerObj)
         PlayerCredentials(
             store=self.store,
             username=username,
@@ -79,7 +75,7 @@ class ImaginaryRealm(item.Item, item.InstallableMixin):
             actor=playerObj)
         iimaginary.IContainer(self.origin).add(playerObj)
         wearer = garments.Wearer(store=self.store)
-        wearer.installOn(playerObj)
+        installOn(wearer, playerObj)
         return playerObj
 
 

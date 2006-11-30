@@ -11,6 +11,7 @@ from zope.interface import implements
 from axiom import item, attributes
 
 from imaginary import iimaginary, language, objects, quiche
+from imaginary.objects import ThingMixin 
 
 
 class Unwearable(Exception):
@@ -77,12 +78,11 @@ for gslot in GARMENT_SLOTS:
 
 
 
-class Garment(item.Item, item.InstallableMixin):
+class Garment(item.Item, ThingMixin):
     implements(iimaginary.IClothing,
                iimaginary.IDescriptionContributor)
+    powerupInterfaces = (iimaginary.IClothing,  iimaginary.IDescriptionContributor)
 
-    # it's a behavior hooray
-    installedOn = objects.installedOn
     thing = attributes.reference()
 
     # templated / constant stuff
@@ -96,11 +96,6 @@ class Garment(item.Item, item.InstallableMixin):
     # transient / mutable stuff
     wearer = attributes.reference()
     wearLevel = attributes.integer(default=0)
-
-    def installOn(self, other):
-        super(Garment, self).installOn(other)
-        other.powerUp(self, iimaginary.IClothing)
-        other.powerUp(self, iimaginary.IDescriptionContributor)
 
 
     def conceptualize(self):
@@ -152,22 +147,18 @@ def _orderTopClothingByGlobalSlotList(tempClothes):
 
 
 
-class Wearer(item.Item, item.InstallableMixin):
+class Wearer(item.Item, ThingMixin):
     """
     The clothing-wearing component of an object that can wear clothing; e.g. a
     person or mannequin.
     """
 
     implements(iimaginary.IClothingWearer, iimaginary.IDescriptionContributor)
+    powerupInterfaces = (iimaginary.IClothingWearer, iimaginary.IDescriptionContributor,
+                         iimaginary.ILinkContributor)
 
-    installedOn = objects.installedOn
+
     thing = attributes.reference()
-
-    def installOn(self, other):
-        super(Wearer, self).installOn(other)
-        other.powerUp(self, iimaginary.IClothingWearer)
-        other.powerUp(self, iimaginary.IDescriptionContributor)
-        other.powerUp(self, iimaginary.ILinkContributor)
 
 
     def getGarmentDict(self):

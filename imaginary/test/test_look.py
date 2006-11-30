@@ -2,6 +2,7 @@
 from twisted.trial import unittest
 
 from axiom import store
+from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects, language, action, events
 from imaginary.wiring import realm
@@ -29,7 +30,7 @@ class LookTestCase(unittest.TestCase):
             proper=True)
 
         locContainer = objects.Container(store=self.store, capacity=1000)
-        locContainer.installOn(self.location)
+        installOn(locContainer, self.location)
 
         self.realm = realm.ImaginaryRealm(store=self.store)
         self.player = self.realm.create(u"Test Player", u"password", gender=language.Gender.FEMALE)
@@ -52,7 +53,7 @@ class LookTestCase(unittest.TestCase):
             description=u"Description of visible location.",
             proper=True)
         targetContainer = objects.Container(store=self.store, capacity=1000)
-        targetContainer.installOn(target)
+        installOn(targetContainer, target)
 
         objects.Exit.link(self.location, target, u"south")
 
