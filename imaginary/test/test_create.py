@@ -17,11 +17,10 @@ class IFoo(Interface):
 
 class Foo(item.Item):
     implements(IFoo)
+    powerupInterfaces = (IFoo,)
 
     foo = attributes.text()
 
-    def installOn(self, other):
-        other.powerUp(self, IFoo)
 
 
 createFoo = quiche.createCreator((Foo, {'foo': u'bar'}))

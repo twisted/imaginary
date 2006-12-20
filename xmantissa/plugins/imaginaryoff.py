@@ -25,6 +25,6 @@ imaginaryOffering = offering.Offering(
     """,
     siteRequirements = siteRequirements,
     appPowerups = [realm.ImaginaryRealm],
-    benefactorFactories = [],
+    installablePowerups = (),
     loginInterfaces = [(iimaginary.IActor, "Imaginary logins")],
     themes = [])

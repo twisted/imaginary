@@ -13,8 +13,6 @@ from axiom import item, attributes
 from imaginary.iimaginary import IThingPowerUp, IDescriptor, IVisible
 
 
-from imaginary.language import Gender
-
 
 DIRECTIONS = {
     u'north': 'south'

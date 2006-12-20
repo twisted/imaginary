@@ -3,6 +3,7 @@ from twisted.trial import unittest
 from twisted.internet import task
 
 from axiom import store
+from axiom.dependency import installOn
 
 from imaginary import iimaginary, events, objects, commands, npc
 from imaginary.test import commandutils
@@ -14,11 +15,11 @@ class IntelligenceTestCase(unittest.TestCase):
 
         self.location = objects.Thing(store=self.store, name=u"Place")
         self.locationContainer = objects.Container(store=self.store, capacity=1000)
-        self.locationContainer.installOn(self.location)
+        installOn(self.locationContainer, self.location)
 
         self.alice = objects.Thing(store=self.store, name=u"Alice")
         self.actor = objects.Actor(store=self.store)
-        self.actor.installOn(self.alice)
+        installOn(self.actor, self.alice)
 
         self.alice.moveTo(self.location)
 
@@ -57,7 +58,7 @@ class MouseTestCase(unittest.TestCase):
 
         self.clock = objects.Thing(store=self.store, name=u"Clock")
         self.clockContainer = objects.Container(store=self.store, capacity=10)
-        self.clockContainer.installOn(self.clock)
+        installOn(self.clockContainer, self.clock)
 
         self.mouse = npc.createMouse(store=self.store, name=u"Squeaker McSqueakenson")
         self.mouseActor = iimaginary.IActor(self.mouse)
@@ -66,7 +67,7 @@ class MouseTestCase(unittest.TestCase):
 
         self.player = objects.Thing(store=self.store, name=u"Mean Old Man")
         self.playerActor = objects.Actor(store=self.store)
-        self.playerActor.installOn(self.player)
+        installOn(self.playerActor, self.player)
         self.playerIntelligence = commandutils.MockIntelligence(
             store=self.store)
         self.playerActor.setEnduringIntelligence(self.playerIntelligence)
@@ -139,7 +140,7 @@ class MouseReactionTestCase(commandutils.CommandTestCaseMixin,
         intelligence._callLater = clock.callLater
 
         elsewhere = objects.Thing(store=self.store, name=u"Mouse Hole")
-        objects.Container(store=self.store, capacity=1000).installOn(elsewhere)
+        installOn(objects.Container(store=self.store, capacity=1000), elsewhere)
 
         objects.Exit.link(self.location, elsewhere, u"south")
 

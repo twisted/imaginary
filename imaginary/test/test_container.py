@@ -3,6 +3,7 @@
 from twisted.trial import unittest
 
 from axiom import store
+from axiom.dependency import installOn
 
 from imaginary import eimaginary, objects
 
@@ -11,7 +12,7 @@ class ContainerTestCase(unittest.TestCase):
         self.store = store.Store()
         self.containmentCore = objects.Thing(store=self.store, name=u"container")
         self.container = objects.Container(store=self.store, capacity=1)
-        self.container.installOn(self.containmentCore)
+        installOn(self.container, self.containmentCore)
         self.object = objects.Thing(store=self.store, name=u"object")
 
 

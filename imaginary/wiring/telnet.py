@@ -43,7 +43,7 @@ class ImaginaryTelnetFactory(protocol.ServerFactory):
 
 
 
-class TelnetService(item.Item, item.InstallableMixin, service.Service):
+class TelnetService(item.Item, service.Service):
     implements(iimaginary.ITelnetService)
 
     portNumber = attributes.integer(
@@ -68,11 +68,10 @@ class TelnetService(item.Item, item.InstallableMixin, service.Service):
         self.port = None
 
 
-    def installOn(self, other):
-        super(TelnetService, self).installOn(other)
-        other.powerUp(self, service.IService)
-        other.powerUp(self, iimaginary.ITelnetService)
-        self.setServiceParent(other)
+    powerupInterfaces = (service.IService, iimaginary.ITelnetService)
+
+    def installed(self):
+        self.setServiceParent(self.store)
 
 
     def privilegedStartService(self):

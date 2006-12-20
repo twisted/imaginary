@@ -1,7 +1,7 @@
 # -*- test-case-name: imaginary.test.test_text -*-
 
 
-import sys, string, unicodedata
+import sys, unicodedata
 
 from twisted.conch.insults import insults
 from twisted.python import log, util

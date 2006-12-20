@@ -11,26 +11,13 @@ from twisted.python import reflect, components
 from epsilon import structlike
 
 from axiom import item, attributes
-
+from axiom.dependency import installedOn
 
 from imaginary import iimaginary, eimaginary, text as T, events, language
 
-
-def installedOn():
-    def get(self):
-        return self.thing
-    def set(self, value):
-        self.thing = value
-    def delete(self):
-        del self.thing
-    doc = """
-    A proxy for the C{thing} attribute, intended to be used only by
-    L{item.InstallableMixin}, since it expects this attribute to have a
-    particular name, while we want another one.
-    """
-    return property(get, set, delete, doc)
-installedOn = installedOn()
-
+class ThingMixin:
+    def installed(self):
+        self.thing = installedOn(self)
 
 def merge(d1, *dn):
     """
@@ -393,6 +380,8 @@ class Containment(object):
 
     implements(iimaginary.IContainer, iimaginary.IDescriptionContributor,
                iimaginary.ILinkContributor)
+    powerupInterfaces = (iimaginary.IContainer, iimaginary.ILinkContributor,
+                         iimaginary.IDescriptionContributor)
 
     # Units of weight which can be contained
     capacity = None
@@ -474,13 +463,6 @@ class Containment(object):
         return ExpressSurroundings(self.getContents())
 
 
-    def installOn(self, other):
-        super(Containment, self).installOn(other)
-        other.powerUp(self, iimaginary.IContainer)
-        other.powerUp(self, iimaginary.ILinkContributor)
-        other.powerUp(self, iimaginary.IDescriptionContributor)
-
-
 
 class ExpressSurroundings(language.ItemizedList):
     def concepts(self, observer):
@@ -490,7 +472,7 @@ class ExpressSurroundings(language.ItemizedList):
 
 
 
-class Container(item.Item, Containment, item.InstallableMixin):
+class Container(item.Item, Containment, ThingMixin):
     """A generic powerup that implements containment."""
 
     capacity = attributes.integer(doc="""
@@ -501,7 +483,6 @@ class Container(item.Item, Containment, item.InstallableMixin):
     Indicates whether the container is currently closed or open.
     """, allowNone=False, default=False)
 
-    installedOn = installedOn
     thing = attributes.reference(doc="""
     The object this container powers up.
     """)
@@ -520,6 +501,7 @@ class ExpressCondition(language.BaseExpress):
 
 class Actable(object):
     implements(iimaginary.IActor, iimaginary.IEventObserver)
+    powerupInterfaces = (iimaginary.IActor, iimaginary.IEventObserver, iimaginary.IDescriptionContributor)
 
     # Yay, experience!
     experience = 0
@@ -538,11 +520,7 @@ class Actable(object):
         'great')
 
 
-    def installOn(self, other):
-        super(Actable, self).installOn(other)
-        other.powerUp(self, iimaginary.IActor)
-        other.powerUp(self, iimaginary.IEventObserver)
-        other.powerUp(self, iimaginary.IDescriptionContributor)
+
 
     # IDescriptionContributor
     def conceptualize(self):
@@ -595,7 +573,7 @@ class Actable(object):
 
 
 
-class Actor(item.Item, Actable, item.InstallableMixin):
+class Actor(item.Item, Actable, ThingMixin):
     hitpoints = attributes.reference(doc="""
     """)
     stamina = attributes.reference(doc="""
@@ -613,7 +591,6 @@ class Actor(item.Item, Actable, item.InstallableMixin):
     Generally used with NPCs.
     """)
 
-    installedOn = installedOn
     thing = attributes.reference(doc="""
     The L{IThing} that this is installed on.
     """)
@@ -674,8 +651,9 @@ class Actor(item.Item, Actable, item.InstallableMixin):
 
 
 
-class LocationLighting(item.Item, item.InstallableMixin):
+class LocationLighting(item.Item, ThingMixin):
     implements(iimaginary.ILocationProxy)
+    powerupInterfaces = (iimaginary.ILocationProxy,)
 
     candelas = attributes.integer(doc="""
     The luminous intensity in candelas.
@@ -685,11 +663,7 @@ class LocationLighting(item.Item, item.InstallableMixin):
 
     thing = attributes.reference()
 
-    installedOn = installedOn
 
-    def installOn(self, other):
-        super(LocationLighting, self).installOn(other)
-        other.powerUp(self, iimaginary.ILocationProxy)
 
 
     def getCandelas(self):
@@ -725,8 +699,9 @@ class _DarkLocationProxy(structlike.record('thing')):
 
 
 
-class LightSource(item.Item, item.InstallableMixin):
+class LightSource(item.Item, ThingMixin):
     implements(iimaginary.ILightSource)
+    powerupInterfaces = (iimaginary.ILightSource,)
 
     candelas = attributes.integer(doc="""
     The luminous intensity in candelas.
@@ -735,9 +710,6 @@ class LightSource(item.Item, item.InstallableMixin):
     """, default=1, allowNone=False)
 
     thing = attributes.reference()
-    installedOn = installedOn
 
-    def installOn(self, other):
-        super(LightSource, self).installOn(other)
-        other.powerUp(self, iimaginary.ILightSource)
+
 
