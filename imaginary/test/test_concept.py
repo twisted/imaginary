@@ -39,11 +39,11 @@ class NounTestCase(unittest.TestCase):
             )
         self.male = FakeThing(
             name=u"billy",
-            gender=places.Gender.MALE,
+            gender=language.Gender.MALE,
             )
         self.female = FakeThing(
             name=u"janey",
-            gender=places.Gender.FEMALE,
+            gender=language.Gender.FEMALE,
             )
         self.observer = FakeThing()
         self.noun = language.Noun(self.thing)
