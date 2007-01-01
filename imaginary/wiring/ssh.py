@@ -1,9 +1,9 @@
+# -*- test-case-name: imaginary.test.test_wiring -*-
 
 from zope.interface import implements
 
 from twisted.python.components import registerAdapter
-from twisted.internet import defer, reactor
-from twisted.application import service
+from twisted.internet import defer
 from twisted.protocols import policies
 from twisted.conch.ssh import factory, userauth, keys, session
 from twisted.conch.interfaces import IConchUser
@@ -15,6 +15,7 @@ from twisted.conch.scripts import ckeygen
 
 from axiom import item, attributes, userbase
 
+from xmantissa.ixmantissa import IProtocolFactoryFactory
 from xmantissa import stats
 
 from imaginary import iimaginary
@@ -116,12 +117,10 @@ class ConchFactory(factory.SSHFactory):
 
 
 
-class SSHService(item.Item, service.Service):
-    implements(iimaginary.ISSHService)
+class SSHService(item.Item):
+    implements(IProtocolFactoryFactory, iimaginary.ISSHService)
 
-    portNumber = attributes.integer(
-        "The TCP port to bind to serve SSH.",
-        default=4022)
+    powerupInterfaces = (IProtocolFactoryFactory, iimaginary.ISSHService)
 
     publicKeyFile = attributes.path(doc="""
     Path to a file containing a public key for this SSH server.
@@ -131,14 +130,9 @@ class SSHService(item.Item, service.Service):
     Path to a file containing a private key for this SSH server.
     """, allowNone=False)
 
-    # These are for the Service stuff
-    parent = attributes.inmemory()
-    running = attributes.inmemory()
-
     # A cred portal, a Twisted TCP factory and a IListeningPort.
     portal = attributes.inmemory()
     factory = attributes.inmemory()
-    port = attributes.inmemory()
 
     # When enabled, toss all traffic into logfiles.
     debug = False
@@ -168,37 +162,24 @@ class SSHService(item.Item, service.Service):
     def activate(self):
         self.portal = None
         self.factory = None
-        self.port = None
-
-    powerupInterfaces = (service.IService, iimaginary.ISSHService)
-    def installed(self):
-        self.setServiceParent(self.store)
 
 
-    def privilegedStartService(self):
-        ls = self.store.findUnique(userbase.LoginSystem)
-        appStore = ls.accountByAddress(u'Imaginary', None)
-        realm = portal.IRealm(appStore)
-        chk = checkers.ICredentialsChecker(appStore)
-        p = portal.Portal(realm, [chk])
+    # IProtocolFactoryFactory
+    def getFactory(self):
+        if self.factory is None:
+            ls = self.store.findUnique(userbase.LoginSystem)
+            appStore = ls.accountByAddress(u'Imaginary', None)
+            realm = portal.IRealm(appStore)
+            chk = checkers.ICredentialsChecker(appStore)
+            p = portal.Portal(realm, [chk])
 
-        self.factory = ConchFactory(
-            realm, p,
-            {"ssh-rsa": keys.getPublicKeyString(data=self.publicKeyFile.open().read())},
-            {"ssh-rsa": keys.getPrivateKeyObject(data=self.privateKeyFile.open().read(), passphrase='no passphrase')})
+            self.factory = ConchFactory(
+                realm, p,
+                {"ssh-rsa": keys.getPublicKeyString(data=self.publicKeyFile.open().read())},
+                {"ssh-rsa": keys.getPrivateKeyObject(data=self.privateKeyFile.open().read(), passphrase='no passphrase')})
 
-        if self.debug:
-            self.factory = policies.TrafficLoggingFactory(self.factory, 'ssh')
+            if self.debug:
+                self.factory = policies.TrafficLoggingFactory(self.factory, 'ssh')
 
-        self.factory = stats.BandwidthMeasuringFactory(self.factory, 'ssh')
-
-        if self.portNumber is not None:
-            self.port = reactor.listenTCP(self.portNumber, self.factory)
-
-
-    def stopService(self):
-        L = []
-        if self.port is not None:
-            L.append(defer.maybeDeferred(self.port.stopListening))
-            self.port = None
-        return defer.DeferredList(L)
+            self.factory = stats.BandwidthMeasuringFactory(self.factory, 'ssh')
+        return self.factory

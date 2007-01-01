@@ -1,9 +1,9 @@
+# -*- test-case-name: imaginary.test.test_wiring -*-
 
 from zope.interface import implements
 
-from twisted.internet import protocol, reactor, defer
+from twisted.internet import protocol
 from twisted.cred import credentials, portal, checkers
-from twisted.application import service
 from twisted.protocols import policies
 
 from twisted.conch import telnet
@@ -11,6 +11,7 @@ from twisted.conch.insults import insults
 
 from axiom import item, attributes, userbase
 
+from xmantissa.ixmantissa import IProtocolFactoryFactory
 from xmantissa import stats
 
 from imaginary import iimaginary
@@ -43,58 +44,40 @@ class ImaginaryTelnetFactory(protocol.ServerFactory):
 
 
 
-class TelnetService(item.Item, service.Service):
-    implements(iimaginary.ITelnetService)
+class TelnetService(item.Item):
+    implements(IProtocolFactoryFactory, iimaginary.ITelnetService)
 
-    portNumber = attributes.integer(
-        "The TCP port to bind to serve telnet.",
-        default=4023)
-
-    # These are for the Service stuff
-    parent = attributes.inmemory()
-    running = attributes.inmemory()
+    powerupInterfaces = (IProtocolFactoryFactory, iimaginary.ITelnetService)
 
     # A cred portal, a Twisted TCP factory and an IListeningPort.
     portal = attributes.inmemory()
     factory = attributes.inmemory()
-    port = attributes.inmemory()
 
     # When enabled, toss all traffic into logfiles.
     debug = False
 
+    # An attribute which exists only because Axiom requires at least one
+    # attribute on any Item subclass.
+    garbage = attributes.integer(default=82671623)
+
     def activate(self):
         self.portal = None
         self.factory = None
-        self.port = None
 
 
-    powerupInterfaces = (service.IService, iimaginary.ITelnetService)
+    # IProtocolFactoryFactory
+    def getFactory(self):
+        if self.factory is None:
+            ls = self.store.findUnique(userbase.LoginSystem)
+            appStore = ls.accountByAddress(u'Imaginary', None)
+            realm = portal.IRealm(appStore)
+            chk = checkers.ICredentialsChecker(appStore)
+            p = portal.Portal(realm, [chk])
 
-    def installed(self):
-        self.setServiceParent(self.store)
+            self.factory = ImaginaryTelnetFactory(realm, p, textserver.TextServer)
 
+            if self.debug:
+                self.factory = policies.TrafficLoggingFactory(self.factory, 'telnet')
 
-    def privilegedStartService(self):
-        ls = self.store.findUnique(userbase.LoginSystem)
-        appStore = ls.accountByAddress(u'Imaginary', None)
-        realm = portal.IRealm(appStore)
-        chk = checkers.ICredentialsChecker(appStore)
-        p = portal.Portal(realm, [chk])
-
-        self.factory = ImaginaryTelnetFactory(realm, p, textserver.TextServer)
-
-        if self.debug:
-            self.factory = policies.TrafficLoggingFactory(self.factory, 'telnet')
-
-        self.factory = stats.BandwidthMeasuringFactory(self.factory, 'telnet')
-
-        if self.portNumber is not None:
-            self.port = reactor.listenTCP(self.portNumber, self.factory)
-
-
-    def stopService(self):
-        L = []
-        if self.port is not None:
-            L.append(defer.maybeDeferred(self.port.stopListening))
-            self.port = None
-        return defer.DeferredList(L)
+            self.factory = stats.BandwidthMeasuringFactory(self.factory, 'telnet')
+        return self.factory
