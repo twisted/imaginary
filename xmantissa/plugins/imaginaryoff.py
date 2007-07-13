@@ -21,7 +21,7 @@ else:
 imaginaryOffering = offering.Offering(
     name = u"imaginary",
     description = u"""
-    A Text Adventure!  Kill the dragon!  Kill it!!!
+    A simulation framework for text adventures.
     """,
     siteRequirements = siteRequirements,
     appPowerups = [realm.ImaginaryRealm],
