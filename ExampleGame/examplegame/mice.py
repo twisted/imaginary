@@ -8,7 +8,7 @@ from axiom import item, attributes
 from axiom.dependency import installOn
 
 from imaginary import iimaginary, events, objects, action, language
-from imaginary.resources import japanese
+from examplegame import japanese
 
 
 class Mouse(item.Item):

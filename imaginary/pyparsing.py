@@ -416,7 +416,7 @@ class ParseResults(object):
             if isinstance(v,ParseResults):
                 if v.keys():
                     out.append('\n')
-                    out.append( dump(v,indent,depth+1) )
+                    out.append( self.dump(v,indent,depth+1) )
                     out.append('\n')
                 else:
                     out.append(str(v))

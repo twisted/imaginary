@@ -5,7 +5,9 @@ from zope.interface import implements
 from twisted.internet import defer
 from twisted.python import log
 
-from imaginary import iimaginary, eimaginary, text as T, commands
+from imaginary import iimaginary, eimaginary, text as T
+
+from imaginary.action import Action
 
 
 class Player(object):
@@ -59,7 +61,7 @@ class Player(object):
             self.proto.write('\r\nerror\r\n')
 
         self.send(('> ', line, '\n'))
-        d = defer.maybeDeferred(commands.Command.parse, self.actor, line)
+        d = defer.maybeDeferred(Action.parse, self.actor, line)
         d.addCallbacks(cbParse, ebParse)
         d.addErrback(ebAmbiguity)
         d.addErrback(ebUnexpected)

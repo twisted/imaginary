@@ -5,8 +5,10 @@ from twisted.internet import task
 from axiom import store
 from axiom.dependency import installOn
 
-from imaginary import iimaginary, events, objects, commands, npc
+from imaginary import iimaginary, events, objects
 from imaginary.test import commandutils
+
+from examplegame import mice
 
 
 class IntelligenceTestCase(unittest.TestCase):
@@ -60,7 +62,7 @@ class MouseTestCase(unittest.TestCase):
         self.clockContainer = objects.Container(store=self.store, capacity=10)
         installOn(self.clockContainer, self.clock)
 
-        self.mouse = npc.createMouse(store=self.store, name=u"Squeaker McSqueakenson")
+        self.mouse = mice.createMouse(store=self.store, name=u"Squeaker McSqueakenson")
         self.mouseActor = iimaginary.IActor(self.mouse)
         self.mousehood = self.mouseActor.getIntelligence()
         self.mouse.moveTo(self.clock)
@@ -96,7 +98,7 @@ class MouseTestCase(unittest.TestCase):
 
 
     def test_mouseCanSqueak(self):
-        commands.runEventTransaction(self.store, self.mousehood.squeak)
+        events.runEventTransaction(self.store, self.mousehood.squeak)
         self.assertEquals(len(self.playerIntelligence.concepts), 1)
         event = self.playerIntelligence.concepts[0]
         self.assertEquals(
@@ -126,7 +128,7 @@ class MouseReactionTestCase(commandutils.CommandTestCaseMixin,
             ['Test Player creates squeaker.'])
 
         [mouse] = list(self.playerContainer.getContents())
-        self.failUnless(isinstance(iimaginary.IActor(mouse).getIntelligence(), npc.Mouse))
+        self.failUnless(isinstance(iimaginary.IActor(mouse).getIntelligence(), mice.Mouse))
 
 
     def testSqueak(self):
@@ -134,7 +136,7 @@ class MouseReactionTestCase(commandutils.CommandTestCaseMixin,
         Test that when someone walks into a room with a mouse, the mouse
         squeaks and the person who walked in hears it.
         """
-        mouse = npc.createMouse(store=self.store, name=u"squeaker")
+        mouse = mice.createMouse(store=self.store, name=u"squeaker")
         clock = task.Clock()
         intelligence = iimaginary.IActor(mouse).getIntelligence()
         intelligence._callLater = clock.callLater

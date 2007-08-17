@@ -6,12 +6,12 @@ from twisted.trial import unittest
 from axiom import store
 from axiom.dependency import installOn
 
-from imaginary import iimaginary, objects, npc, commands, events, action
-from imaginary.resources import japanese
+from imaginary import iimaginary, objects, events, action
 
 from imaginary.test import commandutils
 
-
+from examplegame import mice
+from examplegame import japanese
 
 class MouseChallengeMixin(object):
     """
@@ -48,7 +48,7 @@ class HiraganaMouseTestCase(MouseChallengeMixin, unittest.TestCase):
         installOn(self.clockContainer, self.clock)
 
         self.mouseName = u"\N{KATAKANA LETTER PI}\N{KATAKANA LETTER SMALL YU}"
-        self.mouse = npc.createHiraganaMouse(
+        self.mouse = mice.createHiraganaMouse(
             store=self.store,
             name=self.mouseName)
         self.mouseActor = iimaginary.IActor(self.mouse)
@@ -72,7 +72,7 @@ class HiraganaMouseTestCase(MouseChallengeMixin, unittest.TestCase):
         When explicitly told to challenge with a given romaji syllable, the
         mouse should say a hiragana letter.
         """
-        commands.runEventTransaction(
+        events.runEventTransaction(
             self.store,
             self.mousehood.challenge,
             character=u"\N{HIRAGANA LETTER A}")
@@ -89,7 +89,7 @@ class HiraganaMouseTestCase(MouseChallengeMixin, unittest.TestCase):
         When explicitly told to challenge without specifying a syllable, the
         mouse should say a random one.
         """
-        commands.runEventTransaction(self.store, self.mousehood.challenge)
+        events.runEventTransaction(self.store, self.mousehood.challenge)
         self.assertEquals(len(self.playerIntelligence.concepts), 1)
         event = self.playerIntelligence.concepts[0]
         self.assertChallenge(event)
@@ -174,7 +174,7 @@ class HiraganaMouseTestCase(MouseChallengeMixin, unittest.TestCase):
         """
         Don't stop challenging when you're not challenging.
         """
-        self.assertRaises(npc.ChallengeVacuum, self.mousehood.stopChallenging)
+        self.assertRaises(mice.ChallengeVacuum, self.mousehood.stopChallenging)
 
 
     def test_startChallengingTwiceFails(self):
@@ -182,7 +182,7 @@ class HiraganaMouseTestCase(MouseChallengeMixin, unittest.TestCase):
         Don't start challenging twice.
         """
         self.mousehood.startChallenging()
-        self.assertRaises(npc.ChallengeCollision, self.mousehood.startChallenging)
+        self.assertRaises(mice.ChallengeCollision, self.mousehood.startChallenging)
 
 
     def test_challengeRecurrence(self):
@@ -391,7 +391,7 @@ class HiraganaMouseTestCase(MouseChallengeMixin, unittest.TestCase):
         del self.mouseActor
         del self.mousehood
         self.assertEquals(deletions, [ref])
-        mousehood = self.store.findUnique(npc.HiraganaMouse)
+        mousehood = self.store.findUnique(mice.HiraganaMouse)
         from twisted.internet import reactor
         self.assertEquals(mousehood._callLater, reactor.callLater)
 
@@ -417,7 +417,7 @@ class HiraganaMouseCommandTestCase(commandutils.CommandTestCaseMixin, unittest.T
         closetContainer = objects.Container(store=self.store, capacity=500)
         installOn(closetContainer, closet)
 
-        mouse = npc.createHiraganaMouse(
+        mouse = mice.createHiraganaMouse(
             store=self.store,
             name=self.mouseName,
             proper=True)

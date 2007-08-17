@@ -1,7 +1,8 @@
 # -*- test-case-name: imaginary.test.test_garments -*-
 
-from imaginary import action, garments
+from imaginary.creation import CreationPluginHelper
+from imaginary.garments import (createShirt, createPants, createUnderwear)
 
-shirtPlugin = action.ObjectPluginHelper('shirt', garments.createShirt)
-pantsPlugin = action.ObjectPluginHelper('pants', garments.createPants)
-underwearPlugin = action.ObjectPluginHelper('underwear', garments.createUnderwear)
+shirtPlugin = CreationPluginHelper('shirt', createShirt)
+pantsPlugin = CreationPluginHelper('pants', createPants)
+underwearPlugin = CreationPluginHelper('underwear', createUnderwear)

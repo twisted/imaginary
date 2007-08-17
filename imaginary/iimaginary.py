@@ -396,11 +396,50 @@ class IClothingWearer(IThingPowerUp):
     A person who can wear clothing.
     """
 
+    def putOn(garment):
+        """
+        Put on an article of clothing.
+
+        @param garment: An article of clothing.
+        @type garment: L{IClothing} provider
+
+        @raise: L{TooBulky}, if the new article of clothing will not fit
+        because this wearer is already wearing a bulkier article of clothing in
+        that slot.
+        """
+
+
+    def takeOff(garment):
+        """
+        Remove an article of clothing.
+
+        @param garment: An article of clothing that this wearer is wearing.
+
+        @raise: L{InaccessibleGarment}: if the article of clothing is either
+        not being worn, or is being worn beneath another article of clothing
+        which must be removed first.
+        """
+
+
 
 class IClothing(IThingPowerUp):
     """
-    This interface sucks.
+    A piece of clothing which can be worn by an L{IClothingWearer}.
     """
+
+    garmentSlots = Attribute(
+        """
+        A list of unicode strings that describe the parts of the body where
+        this article of clothing can be worn, taken from the list of constants
+        in L{imaginary.garments.GARMENT_SLOTS}.
+        """)
+
+    bulk = Attribute(
+        """
+        An integer, 1 or greater, abstractly describing how thick this garment
+        is.  A bulkier garment cannot be worn over a less bulky one.
+        """)
+
 
 
 class IDescriptor(IThingPowerUp):

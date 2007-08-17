@@ -1,12 +1,13 @@
 
-"""Unit tests for Imaginary commands.
+"""Unit tests for Imaginary actions.
 """
 
 from twisted.trial import unittest
 
 from axiom.dependency import installOn
 
-from imaginary import iimaginary, objects, commands
+from imaginary import iimaginary, objects, events
+from imaginary.action import Action
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
 
@@ -16,7 +17,7 @@ PTR = "[A-F0-9]{1,8}"
 class TransactionalEventBroadcasterTestCase(unittest.TestCase):
     def testAddEvent(self):
         L = []
-        teb = commands.TransactionalEventBroadcaster()
+        teb = events.TransactionalEventBroadcaster()
         teb.addEvent(lambda: L.append('win'))
         teb.addRevertEvent(lambda: L.append('lose'))
         teb.broadcastEvents()
@@ -25,7 +26,7 @@ class TransactionalEventBroadcasterTestCase(unittest.TestCase):
 
     def testAddRevertEvent(self):
         L = []
-        teb = commands.TransactionalEventBroadcaster()
+        teb = events.TransactionalEventBroadcaster()
         teb.addEvent(lambda: L.append('lose'))
         teb.addRevertEvent(lambda: L.append('win'))
         teb.broadcastRevertEvents()
@@ -33,13 +34,13 @@ class TransactionalEventBroadcasterTestCase(unittest.TestCase):
 
 
     def testBadEvents(self):
-        teb = commands.TransactionalEventBroadcaster()
+        teb = events.TransactionalEventBroadcaster()
         self.assertRaises(ValueError, teb.addEvent, None)
         self.assertRaises(ValueError, teb.addRevertEvent, None)
 
 
 
-class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
+class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
     def testBadCommand(self):
         self._test(
@@ -72,14 +73,14 @@ class Commands(commandutils.CommandTestCaseMixin, unittest.TestCase):
              "barbaz",
              "barbaz"])
 
-    def testCommands(self):
+    def testActions(self):
         cmds = dict.fromkeys([
-                getattr(cls, 'commandName', cls.__name__.lower())
+                getattr(cls, 'actionName', cls.__name__.lower())
                 for cls
-                in commands.Command.commands]).keys()
+                in Action.actions]).keys()
         cmds.sort()
         self._test(
-            "commands",
+            "actions",
             [' '.join(cmds)])
 
     def testGet(self):

@@ -8,7 +8,7 @@ from twisted.trial import unittest
 
 from epsilon import structlike
 
-from imaginary import language, places, unc, text as T
+from imaginary import language, unc, text as T
 from imaginary.test import commandutils
 
 class FakeThing(object):

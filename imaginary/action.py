@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_commands -*-
+# -*- test-case-name: imaginary.test.test_actions -*-
 
 import time, os, random, operator
 import pprint
@@ -6,18 +6,86 @@ import pprint
 from zope.interface import implements
 
 from twisted.python import util, log
-from twisted import plugin
+from twisted.internet import defer
 
 from axiom import iaxiom, attributes
 from axiom.dependency import installOn
 
 import imaginary.plugins
 from imaginary.wiring import realm
-from imaginary import (iimaginary, eimaginary, iterutils, commands, events,
+from imaginary import (iimaginary, eimaginary, iterutils, events,
                        objects, text as T, language, pyparsing)
 
-class Action(commands.Command):
+
+## Hacks because pyparsing doesn't have fantastic unicode support
+_quoteRemovingQuotedString = pyparsing.quotedString.copy()
+_quoteRemovingQuotedString.setParseAction(pyparsing.removeQuotes)
+
+class UnicodeWord(pyparsing.Token):
+    def parseImpl(self, instring, loc, doActions=True):
+        maxLoc = len(instring)
+        while loc < maxLoc and instring[loc].isspace():
+            loc += 1
+        start = loc
+        while loc < maxLoc and not instring[loc].isspace():
+            loc += 1
+        end = loc
+        return end, instring[start:end]
+
+
+
+class _ActionType(type):
+    actions = []
+    def __new__(cls, name, bases, attrs):
+        infrastructure = attrs.pop('infrastructure', False)
+        t = super(_ActionType, cls).__new__(cls, name, bases, attrs)
+        if not infrastructure:
+            cls.actions.append(t)
+        return t
+
+
+    def parse(self, player, line):
+        for cls in self.actions:
+            try:
+                match = cls.match(player, line)
+            except pyparsing.ParseException:
+                pass
+            else:
+                if match is not None:
+                    match = dict(match)
+                    for k,v in match.items():
+                        if isinstance(v, pyparsing.ParseResults):
+                            match[k] = v[0]
+
+                    return cls().runEventTransaction(player, line, match)
+        return defer.fail(eimaginary.NoSuchCommand(line))
+
+
+
+class Action(object):
+    __metaclass__ = _ActionType
     infrastructure = True
+
+
+    def runEventTransaction(self, player, line, match):
+        """
+        Take a player, line, and dictionary of parse results and execute the
+        actual Action implementation.
+
+        @param player: A provider of C{self.actorInterface}
+        @param line: A unicode string containing the original input
+        @param match: A dictionary containing some parse results to pass
+        through to the C{run} method.
+
+        """
+        events.runEventTransaction(
+            player.store, self.run, player, line, **match)
+
+
+    def match(cls, player, line):
+        return cls.expr.parseString(line)
+    match = classmethod(match)
+
 
     def run(self, player, line, **kw):
         begin = time.time()
@@ -51,14 +119,6 @@ class Action(commands.Command):
 
 
 
-def getPlugins(iface, package):
-    """Get plugins. See L{twisted.plugin.getPlugins}.
-
-    I only exist so that I can be monkeypatched. :-S
-    """
-    return plugin.getPlugins(iface, package)
-
-
 class NoTargetAction(Action):
     """
     @cvar actorInterface: Interface that the actor must provide.
@@ -76,6 +136,13 @@ class NoTargetAction(Action):
 
     def run(self, player, line, **kw):
         return super(NoTargetAction, self).run(self.actorInterface(player), line, **kw)
+
+
+def targetString(name):
+    return (
+        _quoteRemovingQuotedString ^
+        UnicodeWord()).setResultsName(name)
+
 
 
 class TargetAction(NoTargetAction):
@@ -114,7 +181,7 @@ class ToolAction(TargetAction):
 
 
 class LookAround(NoTargetAction):
-    commandName = "look"
+    actionName = "look"
     expr = pyparsing.Literal("look") + pyparsing.StringEnd()
 
     def do(self, player, line):
@@ -130,7 +197,7 @@ class LookAround(NoTargetAction):
 
 
 class LookAt(TargetAction):
-    commandName = "look"
+    actionName = "look"
     expr = (pyparsing.Literal("look") +
             pyparsing.Optional(pyparsing.White() +
                                pyparsing.Literal("at")) +
@@ -206,7 +273,7 @@ class Illuminate(NoTargetAction):
 class Describe(TargetAction):
     expr = (pyparsing.Literal("describe") +
             pyparsing.White() +
-            commands.targetString("target") +
+            targetString("target") +
             pyparsing.White() +
             pyparsing.restOfLine.setResultsName("description"))
 
@@ -225,7 +292,7 @@ class Describe(TargetAction):
 class Name(TargetAction):
     expr = (pyparsing.Literal("name") +
             pyparsing.White() +
-            commands.targetString("target") +
+            targetString("target") +
             pyparsing.White() +
             pyparsing.restOfLine.setResultsName("name"))
 
@@ -245,7 +312,7 @@ class Name(TargetAction):
 class Open(TargetAction):
     expr = (pyparsing.Literal("open") +
             pyparsing.White() +
-            commands.targetString("target"))
+            targetString("target"))
 
     targetInterface = iimaginary.IContainer
 
@@ -271,7 +338,7 @@ class Open(TargetAction):
 class Close(TargetAction):
     expr = (pyparsing.Literal("close") +
             pyparsing.White() +
-            commands.targetString("target"))
+            targetString("target"))
 
     targetInterface = iimaginary.IContainer
 
@@ -326,7 +393,7 @@ class Remove(TargetAction):
     expr = ((pyparsing.Literal("remove") |
              pyparsing.Literal("take off")) +
             pyparsing.White() +
-            commands.targetString("target"))
+            targetString("target"))
 
     targetInterface = iimaginary.IClothing
     actorInterface = iimaginary.IClothingWearer
@@ -362,7 +429,7 @@ class Remove(TargetAction):
 class Wear(TargetAction):
     expr = (pyparsing.Literal("wear") +
             pyparsing.White() +
-            commands.targetString("target"))
+            targetString("target"))
 
     targetInterface = iimaginary.IClothing
     actorInterface = iimaginary.IClothingWearer
@@ -425,15 +492,15 @@ class Equipment(NoTargetAction):
 
 
 class TakeFrom(ToolAction):
-    commandName = "take"
+    actionName = "take"
 
     expr = ((pyparsing.Literal("get") ^ pyparsing.Literal("take")) +
             pyparsing.White() +
-            commands.targetString("target") +
+            targetString("target") +
             pyparsing.Optional(pyparsing.White() +
                                pyparsing.Literal("from")) +
             pyparsing.White() +
-            commands.targetString("tool"))
+            targetString("tool"))
 
     def targetNotAvailable(self, player, exc):
         return "Nothing like that around here."
@@ -459,11 +526,11 @@ class PutIn(ToolAction):
 
     expr = (pyparsing.Literal("put") +
             pyparsing.White() +
-            commands.targetString("tool") +
+            targetString("tool") +
             pyparsing.Optional(pyparsing.White() +
                                pyparsing.Literal("in")) +
             pyparsing.White() +
-            commands.targetString("target"))
+            targetString("target"))
 
     def do(self, player, line, tool, target):
         ctool = iimaginary.IContainer(tool, None)
@@ -509,7 +576,7 @@ class PutIn(ToolAction):
 class Take(TargetAction):
     expr = ((pyparsing.Literal("get") ^ pyparsing.Literal("take")) +
             pyparsing.White() +
-            commands.targetString("target"))
+            targetString("target"))
 
     def targetNotAvailable(self, player, exc):
         return u"Nothing like that around here."
@@ -538,83 +605,10 @@ def insufficientSpace(player):
 
 
 
-def creationSuccess(player, creation):
-    return events.Success(
-        actor=player,
-        target=creation,
-        actorMessage=language.Sentence([creation, " created."]),
-        targetMessage=language.Sentence([player, " creates you."]),
-        otherMessage=language.Sentence([player, " creates ", creation, "."]))
-
-
-
-class Create(NoTargetAction):
-    expr = (pyparsing.Literal("create") +
-            pyparsing.White() +
-            commands.targetString("typeName") +
-            pyparsing.White() +
-            commands.targetString("name") +
-            pyparsing.Optional(pyparsing.White() +
-                               pyparsing.restOfLine.setResultsName("description")))
-
-    def do(self, player, line, typeName, name, description=None):
-        if not description:
-            description = u'an undescribed object'
-        for plug in getPlugins(iimaginary.IThingType, imaginary.plugins):
-            if plug.type == typeName:
-                o = plug.getType()(store=player.store, name=name,
-                                   description=description, proper=True)
-                break
-        else:
-            raise eimaginary.ActionFailure(
-                events.ThatDoesntMakeSense(
-                    actor=player.thing,
-                    actorMessage=language.ExpressString(
-                        u"Can't find " + typeName + u".")))
-
-        creationSuccess(player.thing, o).broadcast()
-        try:
-            o.moveTo(player.thing)
-        except eimaginary.DoesntFit:
-            raise insufficientSpace(player.thing)
-
-
-
-class ObjectPluginHelper(object):
-    """
-    A helper for creating plugins for the 'Create' command.
-
-    Create will search for L{iimaginary.IThingType} plugins and allow users to
-    instantiate a new L{objects.Thing} using the one with the name which
-    matches what was supplied to the action.
-    """
-
-    implements(plugin.IPlugin, iimaginary.IThingType)
-
-    def __init__(self, typeName, typeObject):
-        """
-        @type typeName: C{unicode}
-        @param typeName: A short string describing the kind of object this
-        plugin will create.
-
-        @param typeObject: A factory for creating instances of
-        L{objects.Thing}.  This will be invoked with four keyword arguments:
-        store, name, description, and proper.  See attributes of
-        L{objects.Thing} for documentation of these arguments.
-        """
-        self.type = typeName
-        self.typeObject = typeObject
-
-
-    def getType(self):
-        return self.typeObject
-
-
-
 class Drop(TargetAction):
     expr = (pyparsing.Literal("drop") +
             pyparsing.White() +
-            commands.targetString("target"))
+            targetString("target"))
 
     def targetNotAvailable(self, player, exc):
         return "Nothing like that around here."
@@ -749,7 +743,7 @@ class Go(NoTargetAction):
                 actor=player.thing,
                 actorMessage=language.ExpressString(u"There's no room for you there.")))
 
-        # XXX A convention for programmatically invoked commands?
+        # XXX A convention for programmatically invoked actions?
         # None as the line?
         LookAround().do(player, "look") 
 
@@ -861,25 +855,16 @@ class Emote(NoTargetAction):
                              otherMessage=[player.thing, " ", text])
         evt.broadcast()
 
-# class Rebuild(NoTargetAction):
-#     expr = pyparsing.Literal("rebuild")
 
-#     def do(self, player, line):
-#         rebuilt = []
-#         for k, v in sys.modules.items():
-#             if k.startswith('imaginary.') and v is not None:
-#                 rebuilt.append(k)
-#                 rebuild.rebuild(v)
-#         iimaginary.IActor(player).send("Rebuilt ", ', '.join(rebuilt), ".")
 
-class Commands(NoTargetAction):
-    expr = pyparsing.Literal("commands")
+class Actions(NoTargetAction):
+    expr = pyparsing.Literal("actions")
 
     def do(self, player, line):
         cmds = dict.fromkeys(
-            getattr(cmd, 'commandName', cmd.__name__.lower())
+            getattr(cmd, 'actionName', cmd.__name__.lower())
             for cmd
-            in self.__class__.commands).keys()
+            in self.__class__.actions).keys()
         cmds.sort()
         player.send((iterutils.interlace(" ", cmds), "\n"))
 
@@ -887,7 +872,7 @@ class Commands(NoTargetAction):
 
 class Search(NoTargetAction):
     expr = (pyparsing.Literal("search") +
-            commands.targetString("name"))
+            targetString("name"))
 
     def do(self, player, line, name):
         srch = player.thing.search(2, iimaginary.IVisible, name)
@@ -944,7 +929,7 @@ class Who(NoTargetAction):
 class Scrutinize(TargetAction):
     expr = (pyparsing.Literal("scrutinize") +
             pyparsing.White() +
-            commands.targetString("target"))
+            targetString("target"))
 
     def targetRadius(self, player):
         return 3
@@ -995,7 +980,7 @@ class Inventory(NoTargetAction):
 class Help(NoTargetAction):
     expr = (pyparsing.Literal("help") +
             pyparsing.White() +
-            commands.targetString("topic"))
+            targetString("topic"))
 
     def do(self, player, line, topic):
         topic = topic.lower().strip()

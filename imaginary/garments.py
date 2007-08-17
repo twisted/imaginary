@@ -10,7 +10,8 @@ from zope.interface import implements
 
 from axiom import item, attributes
 
-from imaginary import iimaginary, language, objects, quiche
+from imaginary import iimaginary, language, objects
+from imaginary.creation import createCreator
 from imaginary.objects import ThingMixin
 
 
@@ -232,7 +233,7 @@ class ExpressClothing(language.BaseExpress):
 
 
 
-createShirt = quiche.createCreator(
+createShirt = createCreator(
     (Garment, dict(garmentDescription=u'an undescribed shirt',
                    bulk=2,
                    garmentSlots=[GarmentSlot.CHEST,
@@ -241,12 +242,12 @@ createShirt = quiche.createCreator(
                                  GarmentSlot.LEFT_ARM])))
 
 
-createUnderwear = quiche.createCreator(
+createUnderwear = createCreator(
     (Garment, dict(garmentDescription=u'an undescribed pair of underwear',
                    bulk=1,
                    garmentSlots=[GarmentSlot.WAIST])))
 
-createPants = quiche.createCreator(
+createPants = createCreator(
     (Garment, dict(garmentDescription=u'an undescribed pair of pants',
                    bulk=2,
                    garmentSlots=[GarmentSlot.RIGHT_LEG,

@@ -1,4 +1,6 @@
 
-from imaginary import action, quiche
+from imaginary.objects import LightSource
+from imaginary.creation import CreationPluginHelper, createCreator
 
-theTorchPlugin = action.ObjectPluginHelper(u"torch", quiche.createTorch)
+theTorchPlugin = CreationPluginHelper(
+    u"torch", createCreator((LightSource, {"candelas": 80})))

@@ -7,7 +7,8 @@ from twisted.trial import unittest
 from axiom import item, attributes
 
 from imaginary.test import commandutils
-from imaginary import iimaginary, plugins, action, quiche
+from imaginary import iimaginary, plugins, creation
+from imaginary.creation import createCreator
 
 
 class IFoo(Interface):
@@ -23,7 +24,7 @@ class Foo(item.Item):
 
 
 
-createFoo = quiche.createCreator((Foo, {'foo': u'bar'}))
+createFoo = createCreator((Foo, {'foo': u'bar'}))
 
 
 class FooPlugin(object):
@@ -45,13 +46,13 @@ class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
     def setUp(self):
-        self.old_getPlugins = action.getPlugins
-        action.getPlugins = self._getPlugins
+        self.old_getPlugins = creation.getPlugins
+        creation.getPlugins = self._getPlugins
         return commandutils.CommandTestCaseMixin.setUp(self)
 
 
     def tearDown(self):
-        action.getPlugins = self.old_getPlugins
+        creation.getPlugins = self.old_getPlugins
         return commandutils.CommandTestCaseMixin.tearDown(self)
 
 

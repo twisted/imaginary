@@ -4,7 +4,7 @@ from zope.interface import implements
 
 from twisted.python import context
 
-from imaginary import iimaginary, language
+from imaginary import iimaginary, language, eimaginary
 
 
 class Event(language.BaseExpress):
@@ -65,6 +65,95 @@ class Event(language.BaseExpress):
         if c is not None:
             return [c.vt102(observer), '\n']
         return u''
+
+
+
+class TransactionalEventBroadcaster(object):
+    """
+    Collect a bunch of output events as a transaction is being executed, then
+    distribute them when it has completed.
+
+    Events can be added normally or as revert events.  Normal events are
+    broadcast after the transaction is successfully committed.  Revert events
+    are broadcast if the transaction failed somehow and was been reverted.
+    """
+    implements(iimaginary.ITransactionalEventBroadcaster)
+
+    def __init__(self):
+        self._events = []
+        self._revertEvents = []
+
+
+    def addEvent(self, event):
+        """
+        Add a normal event.
+
+        @param event: A no-argument callable to be invoked when this
+        transaction has been committed.
+        """
+        if not callable(event):
+            raise ValueError("Events must be callable", event)
+        self._events.append(event)
+
+
+    def addRevertEvent(self, event):
+        """
+        Add a revert event.
+
+        @param event: A no-argument callable to be invoked when this
+        transaction has been reverted.
+        """
+        if not callable(event):
+            raise ValueError("Events must be callable", event)
+        self._revertEvents.append(event)
+
+
+    def broadcastEvents(self):
+        """
+        Send all normal events.
+        """
+        events = self._events
+        self._events = self._revertEvents = None
+        map(apply, events)
+
+
+    def broadcastRevertEvents(self):
+        """
+        Send all revert events.
+        """
+        events = self._revertEvents
+        self._events = self._revertEvents = None
+        map(apply, events)
+
+
+
+def runEventTransaction(store, func, *args, **kwargs):
+    """
+    This takes responsibility for setting up the transactional event
+    broadcasting junk, handling action errors, and broadcasting commit or
+    revert events.
+    """
+    broadcaster = TransactionalEventBroadcaster()
+    def runHelper():
+        # Set up event context for the duration of the action
+        # run.  Additionally, handle raised ActionFailures by
+        # adding their events to the revert event list and
+        # re-raising them so they will revert the transaction.
+        try:
+            return context.call(
+                {iimaginary.ITransactionalEventBroadcaster: broadcaster},
+                func, *args, **kwargs)
+        except eimaginary.ActionFailure, e:
+            broadcaster.addRevertEvent(e.event.reify())
+            raise
+    try:
+        result = store.transact(runHelper)
+    except eimaginary.ActionFailure, e:
+        broadcaster.broadcastRevertEvents()
+        return None
+    else:
+        broadcaster.broadcastEvents()
+        return result
 
 
 

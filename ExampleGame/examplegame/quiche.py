@@ -1,5 +1,15 @@
 # -*- test-case-name: imaginary.test.test_vending -*-
 
+"""
+This module is a mid-level proof of concept of various features in Imaginary.
+
+Currently its implementation is a bit messy and it assumes lots of things about
+the reader's knowledge, but we are working on more thoroughly documenting it
+and making it into a good example of how to build functionality that interacts
+with multiple systems (currency, containment, object creation) in Imaginary.
+
+"""
+
 from zope.interface import implements, Interface
 
 from axiom import item, attributes
@@ -8,23 +18,14 @@ from axiom.dependency import installOn
 from imaginary import iimaginary, objects, events, language
 from imaginary.objects import ThingMixin
 
+from imaginary.creation import createCreator
+
 
 class ICoin(Interface):
     """
     Something small and probably flat and round and which probably serves as
     some form of currency.
     """
-
-
-
-def createCreator(*powerups):
-    def create(**kw):
-        store = kw['store']
-        o = objects.Thing(**kw)
-        for pup, pupkw in powerups:
-            installOn(pup(store=store, **pupkw or {}), o)
-        return o
-    return create
 
 
 
@@ -107,13 +108,7 @@ def createVendingMachine(store, name, description=u""):
 
 
 
-def createQuiche(store, name, description=u""):
-    return objects.Thing(store=store, name=name, description=description)
-
-
-
 createCoin = createCreator((Quarter, {}))
 createVendingMachine = createCreator((VendingMachine, {}))
 createQuiche = createCreator()
 
-createTorch = createCreator((objects.LightSource, {"candelas": 80}))

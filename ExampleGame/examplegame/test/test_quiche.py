@@ -2,8 +2,10 @@ from twisted.trial import unittest
 
 from axiom.dependency import installOn
 
-from imaginary import objects, quiche, iimaginary
+from imaginary import objects, iimaginary
 from imaginary.test import commandutils
+
+from examplegame import quiche
 
 
 class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
