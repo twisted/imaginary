@@ -47,9 +47,7 @@ Click the "Sign In" link in the upper right hand corner, and log in as "admin"
 with the password you chose previously while configuring Mantissa.
 
 If you logged in successfully, you should now be presented with a list of
-"offerings" that can be installed. Click on "Imaginary" to install it; Note
-that you will most likely see an error window appear when you do this, but it's
-purely cosmetic, so just click the "Close this window" link and ignore it.
+"offerings" that can be installed. Click on "Imaginary" to install it.
 
 Next, click on the purple Divmod icon in the upper left corner of the window to
 open the menu, and then click the "Admin" option and then the "Ports" sub-menu.
