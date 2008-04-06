@@ -927,6 +927,9 @@ class Who(NoTargetAction):
 
 
 class Scrutinize(TargetAction):
+    """
+    Show detailed information about the model structure of a game object.
+    """
     expr = (pyparsing.Literal("scrutinize") +
             pyparsing.White() +
             targetString("target"))
@@ -943,10 +946,9 @@ class Scrutinize(TargetAction):
         targetContainer = iimaginary.IContainer(target, None)
         if targetContainer is not None:
             v['contents'] = list(targetContainer.getContents())
-
-        exits = list(iimaginary.IContainer(target).getExits())
-        if exits:
-            v['exits'] = exits
+            exits = list(targetContainer.getExits())
+            if exits:
+                v['exits'] = exits
         s = pprint.pformat((target.__class__.__name__, v))
         # XXX FIXME Send a real Concept
         player.send(s, '\n')

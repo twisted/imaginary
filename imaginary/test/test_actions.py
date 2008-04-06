@@ -1,5 +1,6 @@
 
-"""Unit tests for Imaginary actions.
+"""
+Unit tests for Imaginary actions.
 """
 
 from twisted.trial import unittest
@@ -11,8 +12,10 @@ from imaginary.action import Action
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
 
+# Regular expression for matching variable parts of the output of certain
+# commands.
 PTR = "[A-F0-9]{1,8}"
-
+STOREID = "\\d+"
 
 class TransactionalEventBroadcasterTestCase(unittest.TestCase):
     def testAddEvent(self):
@@ -495,8 +498,11 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
                  ""])
 
 
-    def testScrutinize(self):
-        STOREID = "\\d+"
+    def test_scrutinize(self):
+        """
+        The scrutinize action takes a thing as a target and displays a lot of
+        details about its internal state and construction.
+        """
         self._test(
             "scrutinize me",
             [E("('Thing',"),
@@ -516,8 +522,16 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self._test(
             "scrutinize here",
             [E("('Thing',"),
-             E(" {'contents': [Thing(description=u'', gender=2, location=reference(") + STOREID + E("), name=u'Test Player', portable=True, proper=True, weight=100, storeID=") + r"\d+" + E(")@0x") + PTR + E(","),
-             E("               Thing(description=u'', gender=2, location=reference(") + STOREID + E("), name=u'Observer Player', portable=True, proper=True, weight=100, storeID=") + r"\d+" + E(")@0x") + PTR + E("],"),
+             E(" {'contents': [Thing(description=u'', gender=2, location="
+               "reference(") +
+             STOREID + E("), name=u'Test Player', portable=True, proper="
+                         "True, weight=100, storeID=") +
+             STOREID + E(")@0x") + PTR + E(","),
+             E("               Thing(description=u'', gender=2, location="
+               "reference(") +
+             STOREID + E("), name=u'Observer Player', portable=True, "
+                         "proper=True, weight=100, storeID=") +
+             STOREID + E(")@0x") + PTR + E("],"),
              E("  'description': u'Location for testing.',"),
              E("  'gender': 3,"),
              E("  'location': None,"),
@@ -526,6 +540,27 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
              E("  'proper': True,"),
              E("  'weight': 1})")])
 
+
+    def test_scrutinizeNonContainer(self):
+        """
+        The scrutinize action produces results for a thing which is not a
+        container.
+        """
+        o = objects.Thing(store=self.store, name=u"foo")
+        iimaginary.IContainer(self.location).add(o)
+        self._test(
+            "scrutinize foo",
+            [E(u"('Thing',"),
+             E(u" {'description': u'',"),
+             E(u"  'gender': 3,"),
+             E(u"  'location': Thing(description=u'Location for testing.', "
+               "gender=3, location=None, name=u'Test Location', portable="
+               "True, proper=True, weight=1, storeID=") +
+             STOREID + E(")@0x") + PTR + E(","),
+             E(u"  'name': u'foo',"),
+             E(u"  'portable': True,"),
+             E(u"  'proper': False,"),
+             E(u"  'weight': 1})")])
 
 
     def testOpenClose(self):
