@@ -1,14 +1,46 @@
 
 
 from zope.interface import Interface, implements, directlyProvides
+from zope.interface.verify import verifyObject
 
 from twisted.trial import unittest
 
-from axiom import item, attributes
+from axiom import store, item, attributes
 
 from imaginary.test import commandutils
 from imaginary import iimaginary, plugins, creation
 from imaginary.creation import createCreator
+from imaginary.plugins import imaginary_basic
+
+
+
+class ThingPlugin(commandutils.CommandTestCaseMixin, unittest.TestCase):
+    """
+    Tests for L{imaginary_basic.thingPlugin}, a plugin for creating simple
+    things with no special behavior.
+    """
+    def test_createThing(self):
+        """
+        L{plugins.thingPlugin} creates a L{Thing} with no additional behavior.
+        """
+        st = store.Store()
+        thing = imaginary_basic.thingPlugin.getType()(store=st, name=u"foo")
+        self.assertTrue(verifyObject(iimaginary.IThing, thing))
+        self.assertIdentical(thing.store, st)
+        self.assertEqual(thing.name, u"foo")
+
+
+    def test_createThingCommand(self):
+        """
+        Things can be created with the I{create} command.
+        """
+        self._test(
+            "create thing foo",
+            ["Foo created."],
+            ["Test Player creates foo."])
+        [foo] = self.playerContainer.getContents()
+        self.assertEqual(foo.name, u"foo")
+
 
 
 class IFoo(Interface):
@@ -25,6 +57,7 @@ class Foo(item.Item):
 
 
 createFoo = createCreator((Foo, {'foo': u'bar'}))
+
 
 
 class FooPlugin(object):
