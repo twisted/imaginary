@@ -129,7 +129,7 @@ class Create(NoTargetAction):
         for plug in getPlugins(IThingType, imaginary.plugins):
             if plug.type == typeName:
                 o = plug.getType()(store=player.store, name=name,
-                                   description=description, proper=True)
+                                   description=description, proper=False)
                 break
         else:
             raise ActionFailure(
