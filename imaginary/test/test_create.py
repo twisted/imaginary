@@ -36,11 +36,10 @@ class ThingPlugin(commandutils.CommandTestCaseMixin, unittest.TestCase):
         """
         self._test(
             "create thing foo",
-            ["A foo created."],
-            ["Test Player creates a foo."])
+            ["Foo created."],
+            ["Test Player creates foo."])
         [foo] = self.playerContainer.getContents()
         self.assertEqual(foo.name, u"foo")
-        self.assertFalse(foo.proper)
 
 
 
@@ -90,52 +89,33 @@ class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
         return commandutils.CommandTestCaseMixin.tearDown(self)
 
 
-    def test_create(self):
-        """
-        The I{create} command creates a thing of the type specified by its
-        first argument and with the name specified by its second argument.
-        """
+    def testCreate(self):
         self._test(
             "create foo bar",
-            ["A bar created."],
-            ["Test Player creates a bar."])
-        [foobar] = self.playerContainer.getContents()
+            ["Bar created."],
+            ["Test Player creates bar."])
+        foobar = self.find(u"bar")
         self.assertEquals(foobar.name, "bar")
         self.assertEquals(foobar.description, "an undescribed object")
         self.assertEquals(foobar.location, self.player)
-        self.assertFalse(foobar.proper)
         foo = IFoo(foobar)
         self.failUnless(isinstance(foo, Foo))
         self.assertEquals(foo.foo, u"bar")
 
-
-    def test_createMultiword(self):
-        """
-        The I{create} command creates a thing of the type specified by its
-        first argument and with the name specified by the contents of a second
-        quoted argument.
-        """
         self._test(
             "create foo 'bar foo'",
-            ["A bar foo created."],
-            ["Test Player creates a bar foo."])
-        [barfoo] = self.playerContainer.getContents()
+            ["Bar foo created."],
+            ["Test Player creates bar foo."])
+        barfoo = self.find(u"bar foo")
         self.assertEquals(barfoo.name, "bar foo")
         self.assertEquals(barfoo.description, 'an undescribed object')
         self.assertEquals(barfoo.location, self.player)
 
-
-    def test_createMultiwordWithDescription(self):
-        """
-        The I{create} command creates a thing of the type specified by its
-        first argument, with the name specified by its second argument, and
-        with a description specified by the remainder of the input line.
-        """
         self._test(
-            "create foo 'described thing' This is the thing's description.",
-            ["A described thing created."],
-            ["Test Player creates a described thing."])
-        [thing] = self.playerContainer.getContents()
+            "create foo 'described thing' This is the things description.",
+            ["Described thing created."],
+            ["Test Player creates described thing."])
+        thing = self.find(u"described thing")
         self.assertEquals(thing.name, "described thing")
-        self.assertEquals(thing.description, "This is the thing's description.")
+        self.assertEquals(thing.description, "This is the things description.")
         self.assertEquals(thing.location, self.player)

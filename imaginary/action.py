@@ -407,7 +407,7 @@ class Remove(TargetAction):
                 actor=player.thing,
                 target=target.thing,
                 actorMessage=(u"You cannot take off ",
-                              language.Noun(target.thing).definiteNounPhrase(),
+                              target.thing,
                               u" because you are wearing ",
                               e.obscuringGarment.thing, u"."),
                 otherMessage=language.Sentence([
@@ -419,9 +419,7 @@ class Remove(TargetAction):
         evt = events.Success(
             actor=player.thing,
             target=target.thing,
-            actorMessage=(u"You take off ",
-                          language.Noun(target.thing).definiteNounPhrase(),
-                          u"."),
+            actorMessage=(u"You take off ", target.thing, u"."),
             otherMessage=language.Sentence([
                 player.thing, u" takes off ", target.thing, u"."]))
         evt.broadcast()
@@ -476,7 +474,7 @@ class Equipment(NoTargetAction):
             attributes.AND(
                 garments.Garment.thing == objects.Thing.storeID,
                 garments.Garment.wearer == player),
-            sort=objects.Thing.name.ascending))
+            sort=objects.Thing.name.ascending).getColumn("name"))
         if equipment:
             evt = events.Success(
                 actor=player.thing,
