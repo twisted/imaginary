@@ -146,3 +146,27 @@ class Create(NoTargetAction):
 
 
 
+
+def listThingTypes():
+    """
+    Return a list of C{unicode} strings each of which gives the name of a type
+    which can be created with the create command.
+    """
+    return sorted([type.type for type in getPlugins(IThingType, imaginary.plugins)])
+
+
+
+class ListThingTypes(NoTargetAction):
+    """
+    An action which tells the invoker what thing types exist to be created with
+    the L{Create} command.
+    """
+    expr = Literal("list thing types")
+
+    def do(self, player, line):
+        """
+        Tell the player the thing types which exist.
+        """
+        events.Success(
+            actor=player.thing,
+            actorMessage=[(t, "\n") for t in listThingTypes()]).broadcast()

@@ -4,11 +4,12 @@ Unit tests for Imaginary actions.
 """
 
 from twisted.trial import unittest
+from twisted.python import filepath
 
 from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects, events
-from imaginary.action import Action
+from imaginary.action import Action, Help
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
 
@@ -583,3 +584,47 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "open container",
             ["The container is already open."],
             [])
+
+
+
+    def test_invalidHelp(self):
+        """
+        The help action tells the player that there is no help for topics for
+        which there is no help.
+        """
+        self._test(
+            # Hope you don't make a command with this name.
+            "help abcxyz123",
+            ["No help available on abcxyz123."],
+            [])
+        self._test(
+            "help /etc/passwd",
+            ["No help available on /etc/passwd."],
+            [])
+
+
+    def test_help(self):
+        """
+        The help action displays information from files in the resource
+        directory.
+        """
+        resources = filepath.FilePath(__file__).parent().sibling("resources")
+        self._test(
+            "help help",
+            resources.child("help").child("help").getContent().splitlines(),
+            [])
+
+
+    def test_helpMultiword(self):
+        """
+        The help action supports arguments with spaces in them.
+        """
+        fakeHelp = filepath.FilePath(self.mktemp())
+        fakeHelp.makedirs()
+        fakeHelp.child("foo bar").setContent("baz")
+        original = Help.helpContentPath
+        try:
+            Help.helpContentPath = fakeHelp
+            self._test("help foo bar", ["baz"], [])
+        finally:
+            Help.helpContentPath = original

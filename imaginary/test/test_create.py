@@ -119,3 +119,85 @@ class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertEquals(thing.name, "described thing")
         self.assertEquals(thing.description, "This is the things description.")
         self.assertEquals(thing.location, self.player)
+
+
+
+class ListCreatablesTests(commandutils.CommandTestCaseMixin, unittest.TestCase):
+    """
+    Tests for C{list creatables}.
+    """
+
+    def _getPlugins(self, interface, package):
+        """
+        A stub implementation of L{creation.getPlugins} meant to replace it
+        temporarily during tests.
+
+        @param interface: Must be IThingType.
+        @param package: Must be L{imaginary.plugins}.
+        @return: A list of two instances of L{FooPlugin}.
+        """
+        self.assertIdentical(interface, iimaginary.IThingType)
+        self.assertIdentical(package, plugins)
+        foo = FooPlugin()
+        bar = FooPlugin()
+        foo.type = "foo"
+        # Include some non-ascii to make sure it supports non-ascii.
+        bar.type = u"bar\N{HIRAGANA LETTER A}"
+        return [foo, bar]
+
+
+    def setUp(self):
+        """
+        Monkeypatch L{creation.getPlugins} with L{_getPlugins}.
+        """
+        self.oldGetPlugins = creation.getPlugins
+        creation.getPlugins = self._getPlugins
+        return commandutils.CommandTestCaseMixin.setUp(self)
+
+
+    def tearDown(self):
+        """
+        Unmonkeypatch L{creation.getPlugins}.
+        """
+        creation.getPlugins = self.oldGetPlugins
+        return commandutils.CommandTestCaseMixin.tearDown(self)
+
+
+    def test_listThingTypes(self):
+        """
+        L{listThingTypes} returns a list of strings in alphabetical order
+        describing types which can be created.
+        """
+        self.assertEqual(creation.listThingTypes(),
+                         [u"bar\N{HIRAGANA LETTER A}", u"foo"])
+
+
+    def test_listThingTypesCommand(self):
+        """
+        I{list thing types} displays the names of all types which can be
+        created.
+        """
+        self._test(
+            "list thing types",
+            [u"bar\N{HIRAGANA LETTER A}", u"foo"],
+            [])
+
+
+    def test_helpListThingTypes(self):
+        """
+        I{help list thing types} gives usage information for the I{list thing
+        types} action.
+        """
+        actorOutput, otherOutput = self.watchCommand("help list thing types")
+        self.assertIn("Show a list of names of things which can be created",
+                      actorOutput)
+        self.assertEquals(otherOutput, "")
+
+
+    def test_helpList(self):
+        """
+        The I{list} help text refers to I{list thing types}.
+        """
+        actorOutput, otherOutput = self.watchCommand("help list")
+        self.assertIn("thing types", actorOutput)
+        self.assertEqual(otherOutput, u"")

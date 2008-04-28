@@ -1,0 +1,5 @@
+LIST THING TYPES
+
+Usage: list thing types
+
+Show a list of names of things which can be created with the create command.

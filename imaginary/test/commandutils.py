@@ -59,6 +59,23 @@ class CommandTestCaseMixin:
             except AttributeError:
                 pass
 
+
+    def watchCommand(self, command):
+        """
+        Make C{self.player} run the given command and return the output both
+        she and C{self.observer} receive.
+
+        @param command: The textual command to run.
+        @type command: C{unicode}
+        @return: The player's output and the third-party observer's output.
+        @rtype: Two-tuple of C{unicode}
+        """
+        self.playerWrapper.parse(command)
+        return (
+            self.transport.value().decode('utf-8'),
+            self.otransport.value().decode('utf-8'))
+
+
     def _test(self, command, output, observed=()):
         if command is not None:
             # Deprecate this or something

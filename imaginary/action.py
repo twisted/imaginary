@@ -5,7 +5,7 @@ import pprint
 
 from zope.interface import implements
 
-from twisted.python import util, log
+from twisted.python import util, log, filepath
 from twisted.internet import defer
 
 from axiom import iaxiom, attributes
@@ -745,7 +745,7 @@ class Go(NoTargetAction):
 
         # XXX A convention for programmatically invoked actions?
         # None as the line?
-        LookAround().do(player, "look") 
+        LookAround().do(player, "look")
 
 
 
@@ -980,16 +980,24 @@ class Inventory(NoTargetAction):
 
 
 class Help(NoTargetAction):
+    """
+    A command for looking up help files.
+
+    @cvar helpContentPath: The path in which to search for files.
+    @type helpContentPath: L{filepath.FilePath}
+    """
     expr = (pyparsing.Literal("help") +
             pyparsing.White() +
-            targetString("topic"))
+            pyparsing.restOfLine.setResultsName("topic"))
+
+    helpContentPath = filepath.FilePath(imaginary.__file__).sibling(
+        "resources").child("help")
 
     def do(self, player, line, topic):
         topic = topic.lower().strip()
-        helpName = os.path.join(util.sibpath(imaginary.__file__, 'resources'), 'help', topic)
         try:
-            helpFile = file(helpName, 'r')
-        except (OSError, IOError):
+            helpFile = self.helpContentPath.child(topic).open()
+        except (OSError, IOError, filepath.InsecurePath):
             player.send("No help available on ", topic, ".", "\n")
         else:
             player.send(helpFile.read(), '\n')
