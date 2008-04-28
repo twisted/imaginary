@@ -10,52 +10,52 @@ from examplegame import quiche
 
 class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def testTheyExist(self):
-        self._test("create 'vending machine' vendy",
-                   ["Vendy created."],
+        self._test("create the 'vending machine' named vendy",
+                   ["You create vendy."],
                    ["Test Player creates vendy."])
 
 
     def testPopulateVendingMachine(self):
-        self._test("create 'vending machine' vendy",
-                   ["Vendy created."],
+        self._test("create the 'vending machine' named vendy",
+                   ["You create vendy."],
                    ["Test Player creates vendy."])
 
-        self._test("create quiche quiche",
-                   ["Quiche created."],
-                   ["Test Player creates quiche."])
+        self._test("create a quiche named quiche",
+                   ["You create a quiche."],
+                   ["Test Player creates a quiche."])
 
         self._test("open vendy",
                    ["You open vendy."],
                    ["Test Player opens vendy."])
 
         self._test("put quiche in vendy",
-                   ["You put quiche in vendy."],
-                   ["Test Player puts quiche in vendy."])
+                   ["You put a quiche in vendy."],
+                   ["Test Player puts a quiche in vendy."])
 
     def testBuyingQuiche(self):
-        self._test("create 'vending machine' vendy",
-                   ["Vendy created."],
+        self._test("create the 'vending machine' named vendy",
+                   ["You create vendy."],
                    ["Test Player creates vendy."])
 
         self._test("drop vendy",
                    ["You drop vendy."],
                    ["Test Player drops vendy."])
 
-        self._test("create quiche quiche",
-                   ["Quiche created."],
-                   ["Test Player creates quiche."])
+        self._test("create a quiche named quiche",
+                   ["You create a quiche."],
+                   ["Test Player creates a quiche."])
 
         self._test("open vendy",
                    ["You open vendy."],
                    ["Test Player opens vendy."])
 
         self._test("put quiche in vendy",
-                   ["You put quiche in vendy."],
-                   ["Test Player puts quiche in vendy."])
+                   ["You put a quiche in vendy."],
+                   ["Test Player puts a quiche in vendy."])
 
         for i in range(5):
-            self._test("create quarter quarter%s " % i,
-                       ["Quarter%s created." % i],
+            self._test("create the quarter named quarter%s " % i,
+                       ["You create quarter%s." % i],
                        ["Test Player creates quarter%s." % i])
 
         for i in range(4):
@@ -65,9 +65,9 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
         self._test("put quarter4 in vendy",
                    ["You put quarter4 in vendy.",
-                   "Vendy thumps loudly and spits out quiche onto the ground."],
+                   "Vendy thumps loudly and spits out a quiche onto the ground."],
                    ["Test Player puts quarter4 in vendy.",
-                    "Vendy thumps loudly and spits out quiche onto the ground."])
+                    "Vendy thumps loudly and spits out a quiche onto the ground."])
 
 
     def testProgrammaticQuichePurchase(self):

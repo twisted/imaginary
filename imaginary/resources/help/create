@@ -1,10 +1,12 @@
 CREATE
 
-Usage: create <type> <name> [description]
+Usage: create [a | an | the] <type> named <name> [description]
 
 Bring a new object of the specified type into existence, using the given name
-and, if provided, the description.  The object will be created in your
-inventory.  Creation may fail if you are unable to carry it.  Anyone able to
-see you or the created object will witness the creation.  The list of type
-available for creation is determined from the available IObjectType plugins on
-the system.
+and, if provided, the description.  If the "a" or "an" form is used, or if no
+article is supplied, the resulting object's name will be considered a common
+noun; if "the" is used, the name is considered a proper noun.  The object will
+be created in your inventory.  Creation may fail if you are unable to carry it.
+Anyone able to see you or the created object will witness the creation.  The
+list of type available for creation is determined from the available
+IObjectType plugins on the system.

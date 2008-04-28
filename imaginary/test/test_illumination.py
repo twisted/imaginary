@@ -138,9 +138,9 @@ class DarknessCommandTestCase(commandutils.CommandTestCaseMixin, unittest.TestCa
     def testTorch(self):
         installOn(objects.LocationLighting(store=self.store, candelas=0), self.location)
         self._test(
-            "create torch torch",
-            ["Torch created."],
-            ["Test Player creates torch."])
+            "create a torch named torch",
+            ["You create a torch."],
+            ["Test Player creates a torch."])
 
         self._test(
             "look",

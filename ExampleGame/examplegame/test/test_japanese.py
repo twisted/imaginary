@@ -446,8 +446,8 @@ class HiraganaMouseCommandTestCase(commandutils.CommandTestCaseMixin, unittest.T
         plugin system.
         """
         self._test(
-            u"create 'hiragana mouse' " + self.mouseName,
-            [commandutils.E(self.mouseName + u" created.")],
+            u"create the 'hiragana mouse' named " + self.mouseName,
+            [commandutils.E(u"You create " + self.mouseName + u".")],
             [commandutils.E(u"Test Player creates %s." % (self.mouseName,))])
 
         for thing in self.location.findProviders(iimaginary.IThing, 0):

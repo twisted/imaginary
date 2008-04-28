@@ -35,47 +35,46 @@ class ThingPlugin(commandutils.CommandTestCaseMixin, unittest.TestCase):
         Things can be created with the I{create} command.
         """
         self._test(
-            "create thing foo",
-            ["Foo created."],
-            ["Test Player creates foo."])
+            "create a thing named foo",
+            ["You create a foo."],
+            ["Test Player creates a foo."])
         [foo] = self.playerContainer.getContents()
         self.assertEqual(foo.name, u"foo")
 
 
 
-class IFoo(Interface):
+class IFruit(Interface):
     pass
 
 
 
-class Foo(item.Item):
-    implements(IFoo)
-    powerupInterfaces = (IFoo,)
+class Fruit(item.Item):
+    implements(IFruit)
+    powerupInterfaces = (IFruit,)
 
-    foo = attributes.text()
-
-
-
-createFoo = createCreator((Foo, {'foo': u'bar'}))
+    fresh = attributes.boolean(default=False)
 
 
 
-class FooPlugin(object):
+class FruitPlugin(object):
     directlyProvides(iimaginary.IThingType)
 
-    type = 'foo'
+    type = 'fruit'
 
     def getType(cls):
-        return createFoo
+        return createCreator((Fruit, {'fresh': True}))
     getType = classmethod(getType)
 
 
 
 class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
+    """
+    Tests for the I{create} action.
+    """
     def _getPlugins(self, iface, package):
         self.assertIdentical(iface, iimaginary.IThingType)
         self.assertIdentical(package, plugins)
-        return [FooPlugin]
+        return [FruitPlugin]
 
 
     def setUp(self):
@@ -89,36 +88,83 @@ class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
         return commandutils.CommandTestCaseMixin.tearDown(self)
 
 
-    def testCreate(self):
+    def test_createAThing(self):
+        """
+        The I{create a} form of the I{create} action makes a new L{Thing} using
+        the plugin which matches the type name specified and marks its name as
+        a common noun.
+        """
         self._test(
-            "create foo bar",
-            ["Bar created."],
-            ["Test Player creates bar."])
-        foobar = self.find(u"bar")
-        self.assertEquals(foobar.name, "bar")
-        self.assertEquals(foobar.description, "an undescribed object")
-        self.assertEquals(foobar.location, self.player)
-        foo = IFoo(foobar)
-        self.failUnless(isinstance(foo, Foo))
-        self.assertEquals(foo.foo, u"bar")
+            "create a fruit named apple",
+            ["You create an apple."],
+            ["Test Player creates an apple."])
+        apple = self.find(u"apple")
+        self.assertEquals(apple.name, "apple")
+        self.assertFalse(apple.proper)
+        self.assertEquals(apple.description, "an undescribed object")
+        self.assertEquals(apple.location, self.player)
+        fruit = IFruit(apple)
+        self.assertTrue(isinstance(fruit, Fruit))
+        self.assertTrue(fruit.fresh)
 
-        self._test(
-            "create foo 'bar foo'",
-            ["Bar foo created."],
-            ["Test Player creates bar foo."])
-        barfoo = self.find(u"bar foo")
-        self.assertEquals(barfoo.name, "bar foo")
-        self.assertEquals(barfoo.description, 'an undescribed object')
-        self.assertEquals(barfoo.location, self.player)
 
+    def test_createAnThing(self):
+        """
+        The I{create an} form of the I{create} action makes a new L{Thing}
+        using the plugin which matches the type name specified and marks its
+        name as a common noun.
+        """
         self._test(
-            "create foo 'described thing' This is the things description.",
-            ["Described thing created."],
-            ["Test Player creates described thing."])
-        thing = self.find(u"described thing")
-        self.assertEquals(thing.name, "described thing")
-        self.assertEquals(thing.description, "This is the things description.")
-        self.assertEquals(thing.location, self.player)
+            "create an fruit named pear",
+            ["You create a pear."],
+            ["Test Player creates a pear."])
+        pear = self.find(u"pear")
+        self.assertEquals(pear.name, "pear")
+        self.assertFalse(pear.proper)
+        self.assertEquals(pear.description, "an undescribed object")
+        self.assertEquals(pear.location, self.player)
+        fruit = IFruit(pear)
+        self.assertTrue(isinstance(fruit, Fruit))
+        self.assertTrue(fruit.fresh)
+
+
+    def test_createImpliedCommonNounThing(self):
+        """
+        The I{create} form of the I{create} action implies a common noun name
+        and behaves the same way as the I{create a} and I{create an} forms.
+        """
+        self._test(
+            "create fruit named 'bunch of grapes'",
+            ["You create a bunch of grapes."],
+            ["Test Player creates a bunch of grapes."])
+        pear = self.find(u"bunch of grapes")
+        self.assertEquals(pear.name, "bunch of grapes")
+        self.assertFalse(pear.proper)
+        self.assertEquals(pear.description, "an undescribed object")
+        self.assertEquals(pear.location, self.player)
+        fruit = IFruit(pear)
+        self.assertTrue(isinstance(fruit, Fruit))
+        self.assertTrue(fruit.fresh)
+
+
+    def test_createTheThing(self):
+        """
+        The I{create the} form of the I{create} action makes a new L{Thing}
+        using the plugin which matches the type name specified and marks its
+        name as a proper noun.
+        """
+        self._test(
+            "create the fruit named 'The Golden Apple'",
+            ["You create The Golden Apple."],
+            ["Test Player creates The Golden Apple."])
+        apple = self.find(u"The Golden Apple")
+        self.assertEqual(apple.name, "The Golden Apple")
+        self.assertTrue(apple.proper)
+        self.assertEqual(apple.description, "an undescribed object")
+        self.assertEqual(apple.location, self.player)
+        fruit = IFruit(apple)
+        self.assertTrue(isinstance(fruit, Fruit))
+        self.assertTrue(fruit.fresh)
 
 
 
@@ -134,12 +180,12 @@ class ListCreatablesTests(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
         @param interface: Must be IThingType.
         @param package: Must be L{imaginary.plugins}.
-        @return: A list of two instances of L{FooPlugin}.
+        @return: A list of two instances of L{FruitPlugin}.
         """
         self.assertIdentical(interface, iimaginary.IThingType)
         self.assertIdentical(package, plugins)
-        foo = FooPlugin()
-        bar = FooPlugin()
+        foo = FruitPlugin()
+        bar = FruitPlugin()
         foo.type = "foo"
         # Include some non-ascii to make sure it supports non-ascii.
         bar.type = u"bar\N{HIRAGANA LETTER A}"

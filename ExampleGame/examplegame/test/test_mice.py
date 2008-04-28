@@ -123,8 +123,8 @@ class MouseReactionTestCase(commandutils.CommandTestCaseMixin,
         Test that a mouse can be created with the create command.
         """
         self._test(
-            "create mouse squeaker",
-            ['Squeaker created.'],
+            "create the mouse named squeaker",
+            ['You create squeaker.'],
             ['Test Player creates squeaker.'])
 
         [mouse] = list(self.playerContainer.getContents())

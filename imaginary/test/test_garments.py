@@ -181,107 +181,107 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def testWearIt(self):
-        self._test("create pants 'pair of daisy dukes'",
-                   ["Pair of daisy dukes created."],
-                   ["Test Player creates pair of daisy dukes."])
+        self._test("create pants named 'pair of daisy dukes'",
+                   ["You create a pair of daisy dukes."],
+                   ["Test Player creates a pair of daisy dukes."])
         self._test("wear 'pair of daisy dukes'",
-                   ["You put on pair of daisy dukes."],
-                   ["Test Player puts on pair of daisy dukes."])
+                   ["You put on the pair of daisy dukes."],
+                   ["Test Player puts on a pair of daisy dukes."])
 
 
     def testTakeItOff(self):
         # WOO
-        self._test("create pants 'pair of daisy dukes'",
-                   ["Pair of daisy dukes created."],
-                   ["Test Player creates pair of daisy dukes."])
+        self._test("create pants named 'pair of daisy dukes'",
+                   ["You create a pair of daisy dukes."],
+                   ["Test Player creates a pair of daisy dukes."])
         self._test("wear 'pair of daisy dukes'",
-                   ["You put on pair of daisy dukes."],
-                   ["Test Player puts on pair of daisy dukes."])
+                   ["You put on the pair of daisy dukes."],
+                   ["Test Player puts on a pair of daisy dukes."])
         self._test("take off 'pair of daisy dukes'",
-                   ["You take off pair of daisy dukes."],
-                   ["Test Player takes off pair of daisy dukes."])
+                   ["You take off a pair of daisy dukes."],
+                   ["Test Player takes off a pair of daisy dukes."])
 
         self._test("wear 'pair of daisy dukes'",
-                   ["You put on pair of daisy dukes."],
-                   ["Test Player puts on pair of daisy dukes."])
+                   ["You put on the pair of daisy dukes."],
+                   ["Test Player puts on a pair of daisy dukes."])
         self._test("remove 'pair of daisy dukes'",
-                   ["You take off pair of daisy dukes."],
-                   ["Test Player takes off pair of daisy dukes."])
+                   ["You take off a pair of daisy dukes."],
+                   ["Test Player takes off a pair of daisy dukes."])
 
 
     def testProperlyDressed(self):
-        self._test("create pants 'pair of daisy dukes'",
-                   ["Pair of daisy dukes created."],
-                   ["Test Player creates pair of daisy dukes."])
-        self._test("create underwear 'lace panties'",
-                   ["Lace panties created."],
-                   ["Test Player creates lace panties."])
-        self._test("wear 'lace panties'",
-                   ["You put on lace panties."],
-                   ["Test Player puts on lace panties."])
+        self._test("create pants named 'pair of daisy dukes'",
+                   ["You create a pair of daisy dukes."],
+                   ["Test Player creates a pair of daisy dukes."])
+        self._test("create underwear named 'pair of lace panties'",
+                   ["You create a pair of lace panties."],
+                   ["Test Player creates a pair of lace panties."])
+        self._test("wear 'pair of lace panties'",
+                   ["You put on the pair of lace panties."],
+                   ["Test Player puts on a pair of lace panties."])
         self._test("wear 'pair of daisy dukes'",
-                   ["You put on pair of daisy dukes."],
-                   ["Test Player puts on pair of daisy dukes."])
+                   ["You put on the pair of daisy dukes."],
+                   ["Test Player puts on a pair of daisy dukes."])
         self._test("look me",
                    [E("[ Test Player ]"),
                     E("Test Player is great."),
-                    E("She is wearing pair of daisy dukes.")])
+                    E("She is wearing a pair of daisy dukes.")])
 
 
     def testTooBulky(self):
-        self._test("create pants 'pair of daisy dukes'",
-                   ["Pair of daisy dukes created."],
-                   ["Test Player creates pair of daisy dukes."])
-        self._test("create pants 'overalls'",
-                   ["Overalls created."],
-                   ["Test Player creates overalls."])
-        self._test("wear 'overalls'",
-                   ["You put on overalls."],
-                   ["Test Player puts on overalls."])
+        self._test("create pants named 'pair of daisy dukes'",
+                   ["You create a pair of daisy dukes."],
+                   ["Test Player creates a pair of daisy dukes."])
+        self._test("create pants named 'pair of overalls'",
+                   ["You create a pair of overalls."],
+                   ["Test Player creates a pair of overalls."])
+        self._test("wear 'pair of overalls'",
+                   ["You put on the pair of overalls."],
+                   ["Test Player puts on a pair of overalls."])
         self._test("wear 'pair of daisy dukes'",
-                   ["Overalls you are already wearing is too bulky for you to do that."],
+                   ["The pair of overalls you are already wearing is too bulky for you to do that."],
                    ["Test Player wrestles with basic personal problems."])
         self._test("look me",
                    [E("[ Test Player ]"),
                     E("Test Player is great."),
-                    E("She is wearing overalls."),
-                    E("pair of daisy dukes"),
+                    E("She is wearing a pair of overalls."),
+                    E("a pair of daisy dukes"),
                     ])
 
 
     def testInaccessibleGarment(self):
-        self._test("create pants 'pair of daisy dukes'",
-                   ["Pair of daisy dukes created."],
-                   ["Test Player creates pair of daisy dukes."])
-        self._test("create underwear 'lace panties'",
-                   ["Lace panties created."],
-                   ["Test Player creates lace panties."])
-        self._test("wear 'lace panties'",
-                   ["You put on lace panties."],
-                   ["Test Player puts on lace panties."])
+        self._test("create pants named 'pair of daisy dukes'",
+                   ["You create a pair of daisy dukes."],
+                   ["Test Player creates a pair of daisy dukes."])
+        self._test("create underwear named 'pair of lace panties'",
+                   ["You create a pair of lace panties."],
+                   ["Test Player creates a pair of lace panties."])
+        self._test("wear 'pair of lace panties'",
+                   ["You put on the pair of lace panties."],
+                   ["Test Player puts on a pair of lace panties."])
         self._test("wear 'pair of daisy dukes'",
-                   ["You put on pair of daisy dukes."],
-                   ["Test Player puts on pair of daisy dukes."])
-        self._test("remove 'lace panties'",
-                   [E("You cannot take off lace panties because you are wearing pair of daisy dukes.")],
+                   ["You put on the pair of daisy dukes."],
+                   ["Test Player puts on a pair of daisy dukes."])
+        self._test("remove 'pair of lace panties'",
+                   [E("You cannot take off a pair of lace panties because you are wearing a pair of daisy dukes.")],
                    ["Test Player gets a dumb look on her face."])
 
 
     def testEquipment(self):
-        self._test("create pants 'pair of daisy dukes'",
-                   ["Pair of daisy dukes created."],
-                   ["Test Player creates pair of daisy dukes."])
-        self._test("create underwear 'lace panties'",
-                   ["Lace panties created."],
-                   ["Test Player creates lace panties."])
-        self._test("wear 'lace panties'",
-                   ["You put on lace panties."],
-                   ["Test Player puts on lace panties."])
+        self._test("create pants named 'pair of daisy dukes'",
+                   ["You create a pair of daisy dukes."],
+                   ["Test Player creates a pair of daisy dukes."])
+        self._test("create underwear named 'pair of lace panties'",
+                   ["You create a pair of lace panties."],
+                   ["Test Player creates a pair of lace panties."])
+        self._test("wear 'pair of lace panties'",
+                   ["You put on the pair of lace panties."],
+                   ["Test Player puts on a pair of lace panties."])
         self._test("wear 'pair of daisy dukes'",
-                   ["You put on pair of daisy dukes."],
-                   ["Test Player puts on pair of daisy dukes."])
+                   ["You put on the pair of daisy dukes."],
+                   ["Test Player puts on a pair of daisy dukes."])
         self._test("equipment",
-                   ["You are wearing lace panties and pair of daisy dukes."]),
+                   ["You are wearing pair of daisy dukes and pair of lace panties."]),
 
 
     def testNoEquipment(self):

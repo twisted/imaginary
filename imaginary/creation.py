@@ -99,12 +99,13 @@ def creationSuccess(player, creation):
     Create and return an event describing that an object was successfully
     created.
     """
+    phrase = language.Noun(creation).nounPhrase()
     return events.Success(
         actor=player,
         target=creation,
-        actorMessage=language.Sentence([creation, " created."]),
+        actorMessage=language.Sentence(["You create ", phrase, "."]),
         targetMessage=language.Sentence([player, " creates you."]),
-        otherMessage=language.Sentence([player, " creates ", creation, "."]))
+        otherMessage=language.Sentence([player, " creates ", phrase, "."]))
 
 
 class Create(NoTargetAction):
@@ -113,14 +114,18 @@ class Create(NoTargetAction):
     registry.
     """
     expr = (Literal("create") +
+            Optional(White() +
+                     (Literal("an") | Literal("a") | Literal("the")).setResultsName("article")) +
             White() +
             targetString("typeName") +
+            White() +
+            Literal("named") +
             White() +
             targetString("name") +
             Optional(White() +
                      restOfLine.setResultsName("description")))
 
-    def do(self, player, line, typeName, name, description=None):
+    def do(self, player, line, typeName, name, description=None, article=None):
         """
         Create an item, and notify everyone present that it now exists.
         """
@@ -128,8 +133,9 @@ class Create(NoTargetAction):
             description = u'an undescribed object'
         for plug in getPlugins(IThingType, imaginary.plugins):
             if plug.type == typeName:
+                proper = (article == "the")
                 o = plug.getType()(store=player.store, name=name,
-                                   description=description, proper=True)
+                                   description=description, proper=proper)
                 break
         else:
             raise ActionFailure(
