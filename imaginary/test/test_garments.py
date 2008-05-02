@@ -189,8 +189,11 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
                    ["Test Player puts on a pair of daisy dukes."])
 
 
-    def testTakeItOff(self):
-        # WOO
+    def test_takeItOff(self):
+        """
+        A garment can be removed with the I{take off} action or the
+        I{remove} action.
+        """
         self._test("create pants named 'pair of daisy dukes'",
                    ["You create a pair of daisy dukes."],
                    ["Test Player creates a pair of daisy dukes."])
@@ -198,14 +201,14 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
                    ["You put on the pair of daisy dukes."],
                    ["Test Player puts on a pair of daisy dukes."])
         self._test("take off 'pair of daisy dukes'",
-                   ["You take off a pair of daisy dukes."],
+                   ["You take off the pair of daisy dukes."],
                    ["Test Player takes off a pair of daisy dukes."])
 
         self._test("wear 'pair of daisy dukes'",
                    ["You put on the pair of daisy dukes."],
                    ["Test Player puts on a pair of daisy dukes."])
         self._test("remove 'pair of daisy dukes'",
-                   ["You take off a pair of daisy dukes."],
+                   ["You take off the pair of daisy dukes."],
                    ["Test Player takes off a pair of daisy dukes."])
 
 
@@ -219,6 +222,7 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self._test("wear 'pair of lace panties'",
                    ["You put on the pair of lace panties."],
                    ["Test Player puts on a pair of lace panties."])
+
         self._test("wear 'pair of daisy dukes'",
                    ["You put on the pair of daisy dukes."],
                    ["Test Player puts on a pair of daisy dukes."])
@@ -263,7 +267,7 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
                    ["You put on the pair of daisy dukes."],
                    ["Test Player puts on a pair of daisy dukes."])
         self._test("remove 'pair of lace panties'",
-                   [E("You cannot take off a pair of lace panties because you are wearing a pair of daisy dukes.")],
+                   [E("You cannot take off the pair of lace panties because you are wearing a pair of daisy dukes.")],
                    ["Test Player gets a dumb look on her face."])
 
 
@@ -281,7 +285,7 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
                    ["You put on the pair of daisy dukes."],
                    ["Test Player puts on a pair of daisy dukes."])
         self._test("equipment",
-                   ["You are wearing pair of daisy dukes and pair of lace panties."]),
+                   ["You are wearing a pair of daisy dukes and a pair of lace panties."]),
 
 
     def testNoEquipment(self):

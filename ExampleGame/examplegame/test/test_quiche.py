@@ -29,8 +29,9 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
                    ["Test Player opens vendy."])
 
         self._test("put quiche in vendy",
-                   ["You put a quiche in vendy."],
+                   ["You put the quiche in vendy."],
                    ["Test Player puts a quiche in vendy."])
+
 
     def testBuyingQuiche(self):
         self._test("create the 'vending machine' named vendy",
@@ -50,7 +51,7 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
                    ["Test Player opens vendy."])
 
         self._test("put quiche in vendy",
-                   ["You put a quiche in vendy."],
+                   ["You put the quiche in vendy."],
                    ["Test Player puts a quiche in vendy."])
 
         for i in range(5):

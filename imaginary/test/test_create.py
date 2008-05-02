@@ -40,6 +40,7 @@ class ThingPlugin(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["Test Player creates a foo."])
         [foo] = self.playerContainer.getContents()
         self.assertEqual(foo.name, u"foo")
+        self.assertFalse(foo.proper)
 
 
 
@@ -165,6 +166,22 @@ class CreateTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
         fruit = IFruit(apple)
         self.assertTrue(isinstance(fruit, Fruit))
         self.assertTrue(fruit.fresh)
+
+
+    def test_createMultiwordWithDescription(self):
+        """
+        The I{create} command creates a thing of the type specified by its
+        first argument, with the name specified by its second argument, and
+        with a description specified by the remainder of the input line.
+        """
+        self._test(
+            "create a fruit named 'described fruit' This is the fruit's description.",
+            ["You create a described fruit."],
+            ["Test Player creates a described fruit."])
+        [thing] = self.playerContainer.getContents()
+        self.assertEquals(thing.name, "described fruit")
+        self.assertEquals(thing.description, "This is the fruit's description.")
+        self.assertEquals(thing.location, self.player)
 
 
 

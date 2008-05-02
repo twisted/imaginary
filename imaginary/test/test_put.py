@@ -20,7 +20,7 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def testPut(self):
         self._test(
             "put foo in bar",
-            ["You put a foo in the bar."],
+            ["You put the foo in the bar."],
             ["Test Player puts a foo in a bar."])
         self.assertIdentical(self.player.location, self.location)
         self.assertIdentical(self.object.location, self.container)

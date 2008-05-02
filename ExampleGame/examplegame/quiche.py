@@ -82,7 +82,10 @@ class VendingMachine(item.Item, objects.Containment, ThingMixin):
                 evt = events.Success(
                     actor=self.thing,
                     target=obj,
-                    otherMessage=language.Sentence([self.thing, " thumps loudly and spits out ", obj, " onto the ground."]))
+                    otherMessage=language.Sentence([
+                        language.Noun(self.thing).definiteNounPhrase(),
+                        " thumps loudly and spits out ", obj,
+                        " onto the ground."]))
                 state = self.closed
                 self.closed = False
                 try:

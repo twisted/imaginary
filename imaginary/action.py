@@ -407,7 +407,7 @@ class Remove(TargetAction):
                 actor=player.thing,
                 target=target.thing,
                 actorMessage=(u"You cannot take off ",
-                              target.thing,
+                              language.Noun(target.thing).definiteNounPhrase(),
                               u" because you are wearing ",
                               e.obscuringGarment.thing, u"."),
                 otherMessage=language.Sentence([
@@ -419,7 +419,9 @@ class Remove(TargetAction):
         evt = events.Success(
             actor=player.thing,
             target=target.thing,
-            actorMessage=(u"You take off ", target.thing, u"."),
+            actorMessage=(u"You take off ",
+                          language.Noun(target.thing).definiteNounPhrase(),
+                          u"."),
             otherMessage=language.Sentence([
                 player.thing, u" takes off ", target.thing, u"."]))
         evt.broadcast()
@@ -474,7 +476,7 @@ class Equipment(NoTargetAction):
             attributes.AND(
                 garments.Garment.thing == objects.Thing.storeID,
                 garments.Garment.wearer == player),
-            sort=objects.Thing.name.ascending).getColumn("name"))
+            sort=objects.Thing.name.ascending))
         if equipment:
             evt = events.Success(
                 actor=player.thing,
@@ -548,7 +550,9 @@ class PutIn(ToolAction):
             actor=player.thing,
             target=targetObject,
             tool=tool,
-            actorMessage=("You put ", tool, " in ", dnf, "."),
+            actorMessage=("You put ",
+                          language.Noun(tool).definiteNounPhrase(),
+                          " in ", dnf, "."),
             targetMessage=language.Sentence([player.thing, " puts ", " tool in you."]),
             toolMessage=language.Sentence([player.thing, " puts you in ", targetObject, "."]),
             otherMessage=language.Sentence([player.thing, " puts ", tool, " in ", targetObject, "."]))
@@ -628,7 +632,9 @@ class Drop(TargetAction):
                 player.thing.location,
                 arrivalEventFactory=lambda target: events.ArrivalEvent(
                     actor=player.thing,
-                    actorMessage=("You drop ", target, "."),
+                    actorMessage=("You drop ",
+                                  language.Noun(target).definiteNounPhrase(),
+                                  "."),
                     target=target,
                     targetMessage=(player.thing, " drops you."),
                     otherMessage=(player.thing, " drops ", target, ".")))

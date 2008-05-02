@@ -158,7 +158,7 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
         iimaginary.IContainer(self.player).add(o)
         self._test(
             "drop bar",
-            ["You drop a bar."],
+            ["You drop the bar."],
             ["Test Player drops a bar."])
         self.assertEquals(o.location, self.location)
 
