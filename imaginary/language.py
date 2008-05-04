@@ -174,7 +174,8 @@ class DescriptionConcept(structlike.record('name description exits others',
             try:
                 return self.preferredOrder.index(c.__class__.__name__)
             except ValueError:
-                return float('inf')
+                # Anything unrecognized goes after anything recognized.
+                return len(self.preferredOrder)
 
         descriptionConcepts.sort(key=index)
 
