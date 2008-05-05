@@ -1,0 +1,7 @@
+SET
+
+Usage: set <gender | proper> of <target> to <value>
+
+Change the value of a model attribute on a thing to a new value.  Acceptable
+values for gender are "male", "female", and "neuter".  Acceptable values for
+proper are "true" and "false".

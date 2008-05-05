@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_actions -*-
+# -*- test-case-name: imaginary.test.test_actions,imaginary.test.test_set -*-
 
 import time, os, random, operator
 import pprint
@@ -982,6 +982,107 @@ class Inventory(NoTargetAction):
     def do(self, player, line):
         events.Success(actor=player.thing,
                        actorMessage=ExpressInventory(player.thing)).broadcast()
+
+
+
+class Set(TargetAction):
+    """
+    Direct model-level state manipulation command.
+    """
+    expr = (
+        pyparsing.Literal("set") + pyparsing.White() +
+        targetString("attribute") + pyparsing.White() +
+        pyparsing.Literal("of") + pyparsing.White() +
+        targetString("target") + pyparsing.White() +
+        pyparsing.Literal("to") + pyparsing.White() +
+        targetString("value"))
+
+    def do(self, player, line, attribute, target, value):
+        """
+        Dispatch handling to an attribute-specific method.
+
+        @type attribute: C{unicode}
+        @param attribute: The model-level attribute of which to manipulate
+            the value.  Handling of each attribute will be dispatched to a
+            C{set_}-prefixed method for that attribute based on this value.
+
+        @type target: L{Thing}
+        @param target: The model object to manipulate.
+
+        @type value: C{unicode}
+        @param value: The new value for the specified attribute.
+        """
+        try:
+            method = getattr(self, "set_" + attribute.upper())
+        except AttributeError:
+            raise eimaginary.ActionFailure(
+                events.ThatDoesntMakeSense(
+                    actor=player.thing,
+                    actorMessage="You cannot set that."))
+        else:
+            method(player, line, target, value)
+
+
+    def set_GENDER(self, player, line, target, value):
+        """
+        Attempt to change the gender of a thing.
+
+        @param target: The thing to change the gender of.
+        @param value: A string naming a gender on L{language.Gender}.
+        """
+        try:
+            target.gender = getattr(language.Gender, value.upper())
+        except AttributeError:
+            gender = {language.Gender.MALE: "male",
+                      language.Gender.FEMALE: "female",
+                      language.Gender.NEUTER: "neuter"}.get(target.gender)
+            raise eimaginary.ActionFailure(events.ThatDoesntMakeSense(
+                    actor=player.thing,
+                    actorMessage=("Only male, female, and neuter are valid "
+                                  "genders.  You remain ", gender, ".")))
+        else:
+            if player.thing is target:
+                # XXX Why can't I do something with Noun to collapse these
+                # cases?
+                event = events.Success(
+                    actor=player.thing,
+                    actorMessage=(u"You set your gender to ", value, "."))
+            else:
+                event = events.Success(
+                    actor=player.thing,
+                    target=target,
+                    actorMessage=("You set ", language.Noun(target).hisHer(),
+                                  " gender to ", value, "."),
+                    targetMessage=(player.thing, " set your gender to ",
+                                   value, "."))
+            event.broadcast()
+
+
+    def set_PROPER(self, player, line, target, value):
+        """
+        Attempt to change the name of a thing from a proper noun to a common
+        noun or the other way around.
+
+        @param target: The thing to change.
+        @param value: The string C{"true"} or C{"false"}.
+        """
+        if value == "true":
+            target.proper = True
+            phrase = '" a proper noun.'
+        elif value == "false":
+            target.proper = False
+            phrase = '" a common noun.'
+        else:
+            raise eimaginary.ActionFailure(
+                events.ThatDoesntMakeSense(
+                    actor=player.thing,
+                    actorMessage=("Only true and false are valid settings "
+                                  "for proper.")))
+        events.Success(
+            actor=player.thing,
+            actorMessage=('You make the name of "',
+                          language.Noun(target).shortName(),
+                          phrase)).broadcast()
 
 
 
