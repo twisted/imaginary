@@ -566,7 +566,10 @@ class PutIn(ToolAction):
                 events.ThatDoesntWork(
                     actor=player.thing,
                     target=targetObject,
-                    tool=tool))
+                    tool=tool,
+                    actorMessage=language.Sentence([
+                            language.Noun(tool).definiteNounPhrase(),
+                            u" does not fit in ", dnf, u"."])))
         except eimaginary.Closed:
             raise eimaginary.ActionFailure(
                 events.ThatDoesntWork(

@@ -17,7 +17,12 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.container.moveTo(self.location)
         return r
 
-    def testPut(self):
+
+    def test_put(self):
+        """
+        The I{put} action changes the location of a thing from the actor's
+        inventory to the specified container.
+        """
         self._test(
             "put foo in bar",
             ["You put the foo in the bar."],
@@ -26,15 +31,6 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertIdentical(self.object.location, self.container)
         self.assertIdentical(self.container.location, self.location)
         self.assertEquals(list(self.containerContainer.getContents()), [self.object])
-
-
-    def testPutSelf(self):
-        self._test(
-            "put self in bar",
-            ["That doesn't work."],
-            [])
-        self.assertIdentical(self.player.location, self.location)
-        self.assertIn(self.player, iimaginary.IContainer(self.location).getContents())
 
 
     def testPutHere(self):
@@ -98,10 +94,26 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertEquals(list(innermostContainer.getContents()), [])
 
 
-    def testPutClosed(self):
+    def test_putClosedFails(self):
+        """
+        The I{put} action fails if the specified container is closed.
+        """
         self.containerContainer.closed = True
         self._test(
             "put foo in bar",
             ["The bar is closed."])
+        self.assertEquals(list(self.containerContainer.getContents()), [])
+        self.assertIdentical(self.object.location, self.player)
+
+
+    def test_putFullFails(self):
+        """
+        The I{put} action fails if the specified container is full.
+        """
+        self.containerContainer.capacity = 1
+        self.object.weight = 2
+        self._test(
+            "put foo in bar",
+            ["The foo does not fit in the bar."])
         self.assertEquals(list(self.containerContainer.getContents()), [])
         self.assertIdentical(self.object.location, self.player)
