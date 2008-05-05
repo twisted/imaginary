@@ -249,9 +249,9 @@ class Thing(item.Item):
 
         @return: An iterable of L{iimaginary.IThing} providers which are found.
         """
-        import warnings
-        warnings.warn("findProviders() biatch!", PendingDeprecationWarning, stacklevel=2)
-
+        # TODO - Move this into the action system.  It is about finding things
+        # using strings, which isn't what the action system is all about, but
+        # the action system is where we do that sort of thing now. -exarkun
         extras = []
 
         container = iimaginary.IContainer(self.location, None)
@@ -304,7 +304,14 @@ class Thing(item.Item):
 
 
     def knownAs(self, name):
-        return name == self.name
+        """
+        Return C{True} if C{name} might refer to this L{Thing}, C{False} otherwise.
+
+        XXX - See #2604.
+        """
+        name = name.lower()
+        mine = self.name.lower()
+        return name == mine or name in mine.split()
 
 
     # IVisible

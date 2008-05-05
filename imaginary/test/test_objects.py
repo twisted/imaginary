@@ -504,12 +504,42 @@ class FindProvidersTestCase(unittest.TestCase):
 
 
 
-    def testPositiveKnownAs(self):
-        self.failUnless(self.obj.knownAs(u"generic object"))
+    def test_exactlyKnownAs(self):
+        """
+        L{Thing.knownAs} returns C{True} when called with exactly the things
+        own name.
+        """
+        self.assertTrue(self.obj.knownAs(self.obj.name))
 
 
-    def testNegativeKnownAs(self):
-        self.failIf(self.obj.knownAs(u"specific object"))
+    def test_caseInsensitivelyKnownAs(self):
+        """
+        L{Thing.knownAs} returns C{True} when called with a string which
+        differs from its name only in case.
+        """
+        self.assertTrue(self.obj.knownAs(self.obj.name.upper()))
+        self.assertTrue(self.obj.knownAs(self.obj.name.title()))
+
+
+    def test_wholeWordSubstringKnownAs(self):
+        """
+        L{Thing.knownAs} returns C{True} when called with a string which
+        appears in the thing's name delimited by spaces.
+        """
+        self.obj.name = u"one two three"
+        self.assertTrue(self.obj.knownAs(u"one"))
+        self.assertTrue(self.obj.knownAs(u"two"))
+        self.assertTrue(self.obj.knownAs(u"three"))
+
+
+    def test_notKnownAs(self):
+        """
+        L{Thing.knownAs} returns C{False} when called with a string which
+        doesn't satisfy one of the above positive cases.
+        """
+        self.assertFalse(self.obj.knownAs(u"gunk" + self.obj.name))
+        self.obj.name = u"one two three"
+        self.assertFalse(self.obj.knownAs(u"ne tw"))
 
 
     def testNotReallyProxiedSelfThing(self):
@@ -577,6 +607,25 @@ class FindProvidersTestCase(unittest.TestCase):
             self.obj.proxiedThing(self.room, iimaginary.IThing, 0),
             result)
 
+
+
+    def test_searchForThings(self):
+        """
+        L{Thing.search} includes L{Thing} instances which are I{nearby} and
+        which have matching names.
+        """
+        name = u"box"
+        firstBox = objects.Thing(store=self.store, name=name)
+        firstBox.moveTo(self.room)
+        secondBox = objects.Thing(store=self.store, name=name)
+        secondBox.moveTo(self.room)
+
+        boxes = list(self.obj.search(1, iimaginary.IThing, name))
+        boxes.sort()
+        expected = [firstBox, secondBox]
+        expected.sort()
+
+        self.assertEqual(boxes, expected)
 
 
     def testSearchFindsExits(self):

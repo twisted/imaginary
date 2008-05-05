@@ -9,7 +9,7 @@ from twisted.python import filepath
 from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects, events
-from imaginary.action import Action, Help
+from imaginary.action import Action, TargetAction, Help
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
 
@@ -41,6 +41,32 @@ class TransactionalEventBroadcasterTestCase(unittest.TestCase):
         teb = events.TransactionalEventBroadcaster()
         self.assertRaises(ValueError, teb.addEvent, None)
         self.assertRaises(ValueError, teb.addRevertEvent, None)
+
+
+
+class TargetActionTests(commandutils.CommandTestCaseMixin, unittest.TestCase):
+    """
+    Tests for general functionality provided by L{TargetAction} which is not
+    specific to any particular action.
+    """
+    def test_resolveTarget(self):
+        """
+        L{TargetAction.resolve} finds things by name when passed a C{"target"}
+        string.
+        """
+        self.assertEqual(
+            TargetAction().resolve(self.player, "target", u"Observer Player"),
+            [self.observer])
+
+
+    def test_resolveTargetCaseInsensitively(self):
+        """
+        L{TargetAction.resolve} considers names case-insensitively when
+        searching for things.
+        """
+        self.assertEqual(
+            TargetAction().resolve(self.player, "target", u"observer player"),
+            [self.observer])
 
 
 
