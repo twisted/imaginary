@@ -538,7 +538,7 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
              E("  'gender': 2,"),
              E("  'location': Thing(description=u'Location for testing.', "
                "gender=3, location=None, name=u'Test Location', portable=True, "
-               "proper=True, weight=1, storeID=1)@0x") + "[A-F0-9]{1,8}"
+               "proper=True, weight=1, storeID=") + STOREID + E(")@0x") + PTR
                + E(","),
              E("  'name': u'Test Player',"),
              E("  'portable': True,"),
