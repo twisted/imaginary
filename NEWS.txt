@@ -1,3 +1,17 @@
+0.0.4 (2008-08-12):
+
+  - A "plain" Thing type has now been added and is available to the
+    "create" command.
+  - "scrutinize" now works when the target is not a container.
+  - a "list thing types" command has been added, to allow viewing
+    types of things that can be created.
+  - "create" now allows users to specify if a thing is considered a
+    common or proper noun.
+  - Improved grammar in action text for various verbs.
+  - Added a "set" action for changing thing attributes.
+  - Changed noun resolution to match substrings and to match
+    case-insensitively.
+
 0.0.3 (2007-01-23):
   - Work with Axiom dependency api
 
