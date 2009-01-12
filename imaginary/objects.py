@@ -117,16 +117,6 @@ class Thing(item.Item):
         return d
 
 
-    def locate(self, interface, name):
-        name = name.lower()
-        for (k, v) in self.links().iteritems():
-            if k.startswith(name):
-                for ob in v:
-                    facet = interface(ob, None)
-                    if facet is not None:
-                        yield (ob, facet)
-
-
     thing = property(lambda self: self)
 
     _ProviderStackElement = structlike.record('distance stability target proxies')
