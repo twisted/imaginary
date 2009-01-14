@@ -24,7 +24,15 @@ class PlayerProtocol(object):
 
 
 class CommandTestCaseMixin:
+    """
+    A mixin for TestCase classes which provides support for testing Imaginary
+    environments via command-line transcripts.
+    """
+
     def setUp(self):
+        """
+        Set up a store with a location, a player and an observer.
+        """
         self.store = store.Store()
 
         self.location = objects.Thing(
@@ -52,7 +60,11 @@ class CommandTestCaseMixin:
         self.otransport = StringTransport()
         self.observerWrapper.setProtocol(PlayerProtocol(self.otransport))
 
+
     def tearDown(self):
+        """
+        Disconnect the player and observer from their respective transports.
+        """
         for p in self.player, self.observer:
             try:
                 p.destroy()
@@ -77,6 +89,14 @@ class CommandTestCaseMixin:
 
 
     def _test(self, command, output, observed=()):
+        """
+        Test that when C{command} is executed, C{output} is produced (to the
+        actor) and C{observed} is produced (to the observer).
+
+        @type command: L{str}
+        @type output: iterable of L{str}
+        @type observed: iterable of L{str}
+        """
         if command is not None:
             # Deprecate this or something
             if not isinstance(command, unicode):
@@ -85,8 +105,9 @@ class CommandTestCaseMixin:
             output.insert(0, "> " + command)
 
         results = []
-        for xport, oput in ((self.transport, output),
-                            (self.otransport, observed)):
+        for perspective, xport, oput in ([
+                ('actor' ,self.transport, output),
+                ('observer', self.otransport, observed)]):
             results.append([])
             gotLines = xport.value().decode('utf-8').splitlines()
             for i, (got, expected) in enumerate(map(None, gotLines, oput)):
@@ -97,7 +118,8 @@ class CommandTestCaseMixin:
                     s1 = pprint.pformat(gotLines)
                     s2 = pprint.pformat(oput)
                     raise unittest.FailTest(
-                        "\n%s\ndid not match expected\n%s\n(Line %d)" % (s1, s2, i))
+                        "\n%s %s\ndid not match expected\n%s\n(Line %d)" % (
+                            repr(perspective), s1, s2, i))
                 results[-1].append(m)
             xport.clear()
         return results

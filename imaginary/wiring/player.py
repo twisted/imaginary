@@ -78,10 +78,13 @@ class Player(object):
 
     def prepare(self, concept):
         """
-        Actually format a concept into a byte string, capturing whatever
-        encapsulated world state as it exists right now.  Return a no-argument
-        callable that will actually send that string to my protocol, if I still
-        have one when it is called.
+        Implement L{iimaginary.IEventObserver.prepare} to format an L{IConcept}
+        into a VT102-format byte string, capturing whatever encapsulated world
+        state as it exists right now.
+
+        @return: a 0-argument callable that will actually send the
+            VT102-formatted string to this L{Player}'s protocol, if it still
+            has one when it is called.
         """
         stuff = concept.vt102(self.actor)
         def send():
@@ -95,7 +98,8 @@ class Player(object):
         Write a flattenable structure to my transport/protocol thingy.
         """
         #FIXME: Encoding should be done *inside* flatten, not here.
-        flatterStuff = T.flatten(stuff, useColors=self.useColors, currentAttrs=self.termAttrs)
+        flatterStuff = T.flatten(stuff, useColors=self.useColors,
+                                 currentAttrs=self.termAttrs)
         txt = u''.join(list(flatterStuff))
         bytes = txt.encode('utf-8')
         self.proto.write(bytes)

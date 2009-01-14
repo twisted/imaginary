@@ -4,6 +4,8 @@ from axiom import store
 from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects
+from imaginary.manipulation import Manipulator
+
 from imaginary.test import commandutils
 
 
@@ -149,12 +151,18 @@ class DarknessCommandTestCase(commandutils.CommandTestCaseMixin, unittest.TestCa
              "Observer Player"])
 
 
-    def testChangeIlluminationLevel(self):
+    def test_changeIlluminationLevel(self):
+        """
+        An administrator can change the illumination level of a room to a fixed
+        number by using the "illuminate" command.
+        """
         fade_to_black = "Your environs fade to black due to Ineffable Spooky Magic."
         no_change = "You do it.  Swell."
         dark_to_light = "Your environs are suddenly alight."
         brighten = "Your environs seem slightly brighter."
         endarken = "Your environs seem slightly dimmer."
+        theAdmin = Manipulator(store=self.store, thing=self.playerWrapper.actor)
+        self.playerWrapper.actor.powerUp(theAdmin)
 
         self._test(
             "illuminate 0",
@@ -194,3 +202,19 @@ class DarknessCommandTestCase(commandutils.CommandTestCaseMixin, unittest.TestCa
             [fade_to_black],
             [fade_to_black])
         self.assertEquals(ll.candelas, 0)
+
+
+    def test_regularUserCantIlluminate(self):
+        """
+        A regular, non-administrative user should not be able to illuminate a
+        room with the administrative command.
+        """
+        objects.LocationLighting(thing=self.location,
+                                 store=self.location.store,
+                                 candelas=100)
+        self._test(
+            "illuminate 0",
+            ["You are insufficiently brilliant to do that directly."])
+        self.assertEquals(self.store.findUnique(
+                objects.LocationLighting,
+                objects.LocationLighting.thing == self.location).candelas, 100)

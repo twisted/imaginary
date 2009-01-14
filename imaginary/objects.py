@@ -545,6 +545,11 @@ class Actable(object):
 
     # IEventObserver
     def prepare(self, concept):
+        """
+        Implement L{iimaginary.IEventObserver.prepare} to prepare C{concept}
+        with this L{Actable}'s C{intelligence}, if it has one; otherwise,
+        return a callable that does nothing.
+        """
         intelligence = self.getIntelligence()
         if intelligence is not None:
             return intelligence.prepare(concept)
@@ -659,8 +664,6 @@ class LocationLighting(item.Item, ThingMixin):
     """, default=100, allowNone=False)
 
     thing = attributes.reference()
-
-
 
 
     def getCandelas(self):

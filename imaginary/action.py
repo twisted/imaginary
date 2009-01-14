@@ -1,15 +1,16 @@
 # -*- test-case-name: imaginary.test.test_actions,imaginary.test.test_set -*-
 
-import time, os, random, operator
+import time, random, operator
 import pprint
 
 from zope.interface import implements
 
-from twisted.python import util, log, filepath
+from twisted.python import log, filepath
 from twisted.internet import defer
 
-from axiom import iaxiom, attributes
+from axiom import iaxiom
 from axiom.dependency import installOn
+from axiom.attributes import AND
 
 import imaginary.plugins
 from imaginary.wiring import realm
@@ -147,8 +148,13 @@ def targetString(name):
 
 class TargetAction(NoTargetAction):
     """
-    @cvar targetInterface
+    Subclass L{TargetAction} to implement an action that acts on a target, like
+    'take foo' or 'eat foo' where 'foo' is the target.
+
+    @cvar targetInterface: the interface which the 'target' parameter to 'do'
+        must provide.
     """
+
     infrastructure = True
 
     targetInterface = iimaginary.IThing
@@ -162,9 +168,15 @@ class TargetAction(NoTargetAction):
         return super(TargetAction, self).resolve(player, k, v)
 
 
+
 class ToolAction(TargetAction):
     """
-    @cvar toolInterface
+    Subclass L{ToolAction} to implement an action that acts on a target by
+    using a tool, like 'unlock door with key', where 'door' is the target and
+    'key' is the tool.
+
+    @cvar toolInterface: the L{zope.interface.Interface} which the 'tool'
+        parameter to 'do' must provide.
     """
     infrastructure = True
 
@@ -175,7 +187,8 @@ class ToolAction(TargetAction):
 
     def resolve(self, player, k, v):
         if k == "tool":
-            return list(player.thing.search(self.toolRadius(player), self.toolInterface, v))
+            return list(player.thing.search(
+                    self.toolRadius(player), self.toolInterface, v))
         return super(ToolAction, self).resolve(player, k, v)
 
 
@@ -229,29 +242,44 @@ class LookAt(TargetAction):
 
 class Illuminate(NoTargetAction):
     """
-    Change the ambient light level at the location of the actor.
+    Change the ambient light level at the location of the actor.  Since this is
+    an administrative action that directly manipulates the environment, the
+    actor must be a L{iimaginary.IManipulator}.
 
     The argument taken by this action is an integer which specifies the light
     level in U{candelas<http://en.wikipedia.org/wiki/Candela>}.
     """
 
+    actorInterface = iimaginary.IManipulator
+
     expr = (pyparsing.Literal("illuminate") +
             pyparsing.White() +
             pyparsing.Word("0123456789").setResultsName("candelas"))
 
-    def do(self, player, line, candelas):
-        candelas = int(candelas)
-        ll = player.thing.store.findOrCreate(
-            objects.LocationLighting,
-            lambda ll: installOn(ll, player.thing.location),
-            thing=player.thing.location)
-        oldCandelas = ll.candelas
 
+    def do(self, player, line, candelas):
+        """
+        Attempt to change the illumination of the player's surroundings.
+
+        @param player: a manipulator that can change the illumination of its
+            room.
+        @type player: L{IManipulator}
+
+        @param line: the text being parsed
+        @type line: L{str}
+
+        @param candelas: the number of candelas to change the ambient
+            illumination to.
+        @type candelas: L{str}
+        """
+        candelas = int(candelas)
+        oldCandelas = player.setIllumination(candelas)
         otherMessage = None
         if oldCandelas == candelas:
             actorMessage = u"You do it.  Swell."
         elif candelas == 0:
-            actorMessage = u"Your environs fade to black due to Ineffable Spooky Magic."
+            actorMessage = (
+                u"Your environs fade to black due to Ineffable Spooky Magic.")
             otherMessage = actorMessage
         elif oldCandelas == 0:
             actorMessage = u"Your environs are suddenly alight."
@@ -262,12 +290,10 @@ class Illuminate(NoTargetAction):
         elif candelas > oldCandelas:
             actorMessage = u"Your environs seem slightly brighter."
             otherMessage = actorMessage
-        else:
-            raise AssertionError("Impossible branch in illuminate action! %s -> %s" % (oldCandelas, candelas))
         events.Success(actor=player.thing,
                        actorMessage=actorMessage,
                        otherMessage=otherMessage).broadcast()
-        ll.candelas = candelas
+
 
 
 class Describe(TargetAction):
@@ -473,7 +499,7 @@ class Equipment(NoTargetAction):
         from imaginary import garments
         equipment = list(player.store.query(
             objects.Thing,
-            attributes.AND(
+            AND(
                 garments.Garment.thing == objects.Thing.storeID,
                 garments.Garment.wearer == player),
             sort=objects.Thing.name.ascending))

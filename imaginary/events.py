@@ -49,6 +49,21 @@ class Event(language.BaseExpress):
 
 
     def reify(self):
+        """
+        Determine which objects should receive this event and return a callable
+        object which will deliver it to them.
+
+        Note that this occurs during event propagation, and you probably don't
+        need to call it directly.
+
+        @see: L{iimaginary.IEventObserver.prepare} and
+            L{TransactionalEventBroadcaster} for a more thorough description of
+            how this method is used to interact with transactions.
+
+        @return: a 0-arg callable object which, when called, will call the
+            results of all L{IEventObserver}s which were contained within this
+            L{Event}'s location when this method, L{Event.reify}, was called.
+        """
         L = []
         for ob in iimaginary.IContainer(self.location).getContents():
             observer = iimaginary.IEventObserver(ob, None)

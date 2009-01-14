@@ -151,9 +151,36 @@ class IActor(Interface):
 
 
 
+class IManipulator(Interface):
+    """
+    An L{IManipulator} provider is an actor who can perform direct
+    manipulations of a world's environment (or at least, try to).
+    """
+
+    def setIllumination(candelas):
+        """
+        Attempt to set the ambient illumination this L{IManipulator}'s
+        location.
+
+        @param candelas: the desired ambient illumination value of the location
+            in candelas.
+
+        @type candelas: L{int}
+
+        @return: The previous ambient light level (in candelas)
+
+        @raise imaginary.eimaginary.ActionFailure: if the action cannot be
+            completed (for example, if this L{IManipulator} doesn't have
+            permission to change the lighting in its location).
+        """
+
+
+
 class IEventObserver(Interface):
     def prepare(concept):
-        """Return a callable which will describe something to the actor.
+        """
+        Capture the given concept in a callable which will describe something
+        to this observer.
 
         The callable will be invoked when it is entirely certain that the
         concept is congruent with game reality.  For example, a concept for an
@@ -161,8 +188,18 @@ class IEventObserver(Interface):
         will not be invoked until the combat game system decides the arrow
         really is striking its target.
 
+        This two-phase process is also used to deal with events occurring
+        during transactions.  While the event will be prepared immediately
+        during the execution of an action, the callable resulting from the
+        preparation will not be invoked until the transaction has completed.
+        If the transaction fails with an exception, then the callables will not
+        be invoked.
+
         @type concept: L{IConcept} provider
         @param concept: Something that will be described to the actor.
+
+        @return: a 0-argument callable which will deliver the given concept to
+            this observer.
         """
 
 

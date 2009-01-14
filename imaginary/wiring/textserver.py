@@ -142,8 +142,6 @@ class TextServer(insults.TerminalProtocol):
         self.width = width
         self.height = height
 
-        print 'now', self.width, self.height
-
         if self.state == 'COMMAND':
             self._prepareDisplay()
 
