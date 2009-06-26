@@ -1,0 +1,74 @@
+# -*- test-case-name: imaginary.test.test_world -*-
+
+"""
+@see L{ImaginaryWorld}
+"""
+
+from axiom.item import Item
+from axiom.attributes import inmemory, reference
+from axiom.dependency import installOn
+
+from imaginary.iimaginary import IContainer
+from imaginary.objects import Thing, Container, Actor
+
+
+class ImaginaryWorld(Item):
+    """
+    An instance of L{ImaginaryWorld} is a handle onto an Imaginary simulation.
+    All connected users are tracked on this item, and new characters are
+    created via the L{create} method.
+    """
+    origin = reference(
+        doc="""
+        The L{Thing} where all new characters will be placed.  It will be
+        created in the first call to L{create} if it is not provided.
+        """, reftype=Thing)
+
+    connected = inmemory(
+        doc="""
+        A C{list} of L{Thing} instances which correspond to the users currently
+        connected.
+        """)
+
+
+    def activate(self):
+        self.connected = []
+
+
+    def create(self, name, **kw):
+        """
+        Make a new character L{Thing} with the given name and return it.
+
+        @type name: C{unicode}
+        @rtype: L{Thing}
+        """
+        if self.origin is None:
+            self.origin = Thing(store=self.store, name=u"The Place")
+            installOn(Container(store=self.store, capacity=1000), self.origin)
+
+        character = Thing(store=self.store, weight=100,
+                          name=name, proper=True, **kw)
+        installOn(Container(store=self.store, capacity=10), character)
+        installOn(Actor(store=self.store), character)
+
+        # Unfortunately, world -> garments -> creation -> action ->
+        # world. See #2906. -exarkun
+        from imaginary.garments import Wearer
+        installOn(Wearer(store=self.store), character)
+
+        IContainer(self.origin).add(character)
+        return character
+
+
+    def loggedIn(self, character):
+        """
+        Indicate that a character is now participating in the simulation.
+        """
+        self.connected.append(character)
+
+
+    def loggedOut(self, character):
+        """
+        Indicate that a character is no longer participating in the simulation.
+        """
+        self.connected.remove(character)

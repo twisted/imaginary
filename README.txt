@@ -49,30 +49,45 @@ with the password you chose previously while configuring Mantissa.
 If you logged in successfully, you should now be presented with a list of
 "offerings" that can be installed. Click on "Imaginary" to install it.
 
-Next, click on the purple Divmod icon in the upper left corner of the window to
-open the menu, and then click the "Admin" option and then the "Ports" sub-menu.
+Next, mouse over the "Admin" menu at the upper left of the screen and then
+click on the "Products" sub-menu.
 
-In the "New Service" area at the bottom of the screen, enter the port number
-you'd like to use for Imaginary (such as 4023), choose "Telnet" in the
-"Protocol Factory" pulldown, leave the rest of the options untouched for now,
-and click the "createPort" button. You will hopefully be presented with a green
-confirmation dialog to confirm your success. Hooray!
+In the "Installable Powerups" section, check the box corresponding to
+"Imaginary Game".  Then click the "Installable Powerups" button below.  You
+will hopefully be presented with a green confirmation dialog to confirm your
+success.  This creates a "product" which can be given to users.
 
-Ideally, you will now be able to telnet into your Imaginary server. In a new
-terminal, telnet to localhost on the port you've chosen for Imaginary. For
-example:
+Mouse over the "Admin" menu again and click "Local Users".  You should be
+presented with a page including a table of users - probably with only the
+"admin" user in it.  Click the word "Endow" in the "Actions" column of that
+table, then select the product with "ImaginaryApp" in it (again, this is
+probably the only one presented) and click the "Installproducton
+admin@localhost" button.  You should again be presented with a green
+confirmation dialog.  Hooray!
 
-         telnet localhost 4023
+Ideally, you will now be able to ssh into your Imaginary server. In a new
+terminal, ssh to localhost on the Mantissa server's SSH port (by default, this
+is 8022).  For example:
 
-At the Imaginary username prompt, choose a new username (e.g. not "admin") and
-enter a new password. You will be prompted as to whether you would like to
-create this new user (answer (y)es), and then confirm your new password.
+         ssh -p 8022 admin@localhost@localhost
 
-You should now be logged into Imaginary, and see a row of dashes along the
-bottom of the display.  To confirm your new MUDness, try typing "look" and hit
-enter; You should see some indication of the generic place that you are in, the
-available exits, and other players in the area, though initially you won't see
-much more than "[The Place]".
+Note the odd username/host specifier - "admin@localhost" is the user, and the
+last "localhost" specifies the host to connect to.
+
+Log in with the same password you used to log in to the web interface.  You
+should be presented with a screen including several options, one of which is
+"imaginary".  Use tab to highlight that option (the highlighted option should
+appear red), then hit enter to select it.
+
+At the Imaginary character prompt, choose to create a new character; enter a
+new username (e.g. not "admin").  You will then join the game as that new
+character.
+
+Once in the game, you should see a row of dashes along the bottom of the
+display.  To confirm your new MUDness, try typing "look" and hit enter; You
+should see some indication of the generic place that you are in, the available
+exits, and other players in the area, though initially you won't see much more
+than "[The Place]".
 
 You can enter "actions" for a list of actions, and use "help" along with one of
 them ("help dig") for specific information on how to use them. You can even log

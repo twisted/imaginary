@@ -5,7 +5,7 @@ from axiom import store
 from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects, language, action, events
-from imaginary.wiring import realm
+from imaginary.world import ImaginaryWorld
 from imaginary.test import commandutils
 
 
@@ -32,8 +32,8 @@ class LookTestCase(unittest.TestCase):
         locContainer = objects.Container(store=self.store, capacity=1000)
         installOn(locContainer, self.location)
 
-        self.realm = realm.ImaginaryRealm(store=self.store)
-        self.player = self.realm.create(u"Test Player", u"password", gender=language.Gender.FEMALE)
+        self.world = ImaginaryWorld(store=self.store)
+        self.player = self.world.create(u"Test Player", gender=language.Gender.FEMALE)
         locContainer.add(self.player)
         self.actor = iimaginary.IActor(self.player)
         self.actor.setEphemeralIntelligence(TestIntelligence())

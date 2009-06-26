@@ -3,35 +3,35 @@ from twisted.trial import unittest
 
 from axiom import store
 
-from imaginary.wiring import realm
 from imaginary import iimaginary, action
 from imaginary.test import commandutils
+from imaginary.world import ImaginaryWorld
 
 
 class WhoTestCase(unittest.TestCase):
     def setUp(self):
         self.store = store.Store()
-        self.realm = realm.ImaginaryRealm(store=self.store)
-        self.player = self.realm.create(u"testplayer", u"testpassword")
+        self.world = ImaginaryWorld(store=self.store)
+        self.player = self.world.create(u"testplayer")
         self.actor = iimaginary.IActor(self.player)
         self.intelligence = commandutils.MockEphemeralIntelligence()
         self.actor.setEphemeralIntelligence(self.intelligence)
         self.others = []
         for i in xrange(5):
-            self.others.append(self.realm.create(u"player-%d" % (i,), u"testpassword"))
-        self.realm.loggedIn(self.player)
+            self.others.append(self.world.create(u"player-%d" % (i,)))
+        self.world.loggedIn(self.player)
 
 
     def testWhoExpression(self):
-        expr = action.ExpressWho(self.realm)
+        expr = action.ExpressWho(self.world)
         crud = ''.join(list(expr.plaintext(self.player)))
         self.assertEquals(len(crud.splitlines()), 3, crud)
 
 
     def testOthersAsWell(self):
         for other in self.others:
-            self.realm.loggedIn(other)
-        expr = action.ExpressWho(self.realm)
+            self.world.loggedIn(other)
+        expr = action.ExpressWho(self.world)
         crud = ''.join(list(expr.plaintext(self.player)))
         self.assertEquals(len(crud.splitlines()), 8, crud)
         for player in self.others:
@@ -42,4 +42,4 @@ class WhoTestCase(unittest.TestCase):
         action.Who().do(self.actor, "who")
         self.assertEquals(len(self.intelligence.events), 1)
         self.failUnless(isinstance(self.intelligence.events[0], action.ExpressWho))
-        self.assertIdentical(self.intelligence.events[0].original, self.realm)
+        self.assertIdentical(self.intelligence.events[0].original, self.world)

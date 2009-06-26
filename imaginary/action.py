@@ -13,10 +13,9 @@ from axiom.dependency import installOn
 from axiom.attributes import AND
 
 import imaginary.plugins
-from imaginary.wiring import realm
 from imaginary import (iimaginary, eimaginary, iterutils, events,
                        objects, text as T, language, pyparsing)
-
+from imaginary.world import ImaginaryWorld
 
 ## Hacks because pyparsing doesn't have fantastic unicode support
 _quoteRemovingQuotedString = pyparsing.quotedString.copy()
@@ -957,7 +956,7 @@ class Who(NoTargetAction):
     expr = pyparsing.Literal("who")
 
     def do(self, player, line):
-        player.send(ExpressWho(player.store.findUnique(realm.ImaginaryRealm)))
+        player.send(ExpressWho(player.store.findUnique(ImaginaryWorld)))
 
 
 

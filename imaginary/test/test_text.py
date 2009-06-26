@@ -1,4 +1,3 @@
-
 import pprint, string
 
 from twisted.trial import unittest
@@ -352,7 +351,7 @@ class TextServerTestCase(unittest.TestCase):
     def setUp(self):
         self.terminal = UTF8TerminalBuffer()
         self.terminal.connectionMade()
-        self.protocol = textserver.TextServer()
+        self.protocol = textserver.TextServerBase()
         self.protocol.makeConnection(self.terminal)
         self.terminal.reset()
 
@@ -361,7 +360,7 @@ class TextServerTestCase(unittest.TestCase):
         character = u'\N{HIRAGANA LETTER A}'
         for ch in character.encode('utf-8'):
             self.protocol.keystrokeReceived(ch, None)
-        self.assertEquals(str(self.terminal).strip(), 
+        self.assertEquals(str(self.terminal).strip(),
                           character.encode('utf-8'))
 
 
@@ -374,7 +373,7 @@ class TextServerTestCase(unittest.TestCase):
             bytes.remove(special)
         bytes = ''.join(map(chr, bytes)) + 'WOO'
 
-        expected = ''.join([byte for byte in bytes 
+        expected = ''.join([byte for byte in bytes
                             if byte >= ' ' and byte != '\x7f'])
         expected = expected.decode('ascii')
 
@@ -396,6 +395,3 @@ class TextServerTestCase(unittest.TestCase):
         self.protocol.keystrokeReceived('\n', None)
 
         self.assertEquals(lines, [u'abe'])
-
-
-

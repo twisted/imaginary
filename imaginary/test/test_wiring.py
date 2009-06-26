@@ -6,66 +6,74 @@ These tests are not particularly good at the moment.  They are, however, a
 minor step up from nothing.
 """
 
+from zope.interface.verify import verifyObject
+
 from twisted.trial.unittest import TestCase
-from twisted.internet.protocol import ServerFactory
+from twisted.python.filepath import FilePath
 
 from axiom.store import Store
 from axiom.dependency import installOn
+from axiom.userbase import LoginSystem, getAccountNames
 
-from imaginary.wiring.telnet import TelnetService
-from imaginary.wiring.ssh import SSHService
+from xmantissa.ixmantissa import ITerminalServerFactory
+from xmantissa.offering import installOffering
+from xmantissa.terminal import _AuthenticatedShellViewer
+from axiom.plugins.mantissacmd import Mantissa
+
+from imaginary.world import ImaginaryWorld
+from imaginary.wiring.textserver import ImaginaryApp
+from xmantissa.plugins.imaginaryoff import imaginaryOffering
 
 
-class TelnetTests(TestCase):
+class ImaginaryAppTests(TestCase):
     """
-    Tests for L{imaginary.wiring.telnet}
+    Tests for L{ImaginaryApp}, which provides access to Imaginary via
+    L{ShellServer}, the top-level Mantissa SSH handler.
     """
-    def setUp(self):
-        self.dbdir = self.mktemp()
-        self.store = Store(self.dbdir)
-
-
-    def test_serviceCreation(self):
+    def test_interface(self):
         """
-        Test that L{TelnetService} can at least be instantiated.
+        L{ImaginaryApp} implements L{ITerminalServerFactory}
         """
-        service = TelnetService(store=self.store)
+        self.assertTrue(verifyObject(ITerminalServerFactory, ImaginaryApp()))
 
 
-    def test_getFactory(self):
+    def test_powerup(self):
         """
-        Test that L{TelnetService.getFactory} returns a Twisted server factory.
+        L{installOn} powers up the target for L{ITerminalServerFactory} with
+        L{ImaginaryApp}.
         """
-        service = TelnetService(store=self.store)
-        installOn(service, self.store)
-        factory = service.getFactory()
-        self.failUnless(isinstance(factory, ServerFactory))
-    test_getFactory.todo = "TelnetService needs to do something with dependency declarations."
+        store = Store()
+        app = ImaginaryApp(store=store)
+        installOn(app, store)
+        self.assertIdentical(ITerminalServerFactory(store), app)
 
 
-
-class SSHTests(TestCase):
-    """
-    Tests for L{imaginary.wiring.ssh}
-    """
-    def setUp(self):
-        self.dbdir = self.mktemp()
-        self.store = Store(self.dbdir)
-
-
-    def test_serviceCreation(self):
+    def test_buildTerminalProtocol(self):
         """
-        Test that L{SSHService} can at least be instantiated.
+        L{ImaginaryApp.buildTerminalProtocol} returns a
+        L{CharacterSelectionTextServer} instance with a role representing the
+        store it is in, a reference to the L{ImaginaryWorld} installed on the
+        Imaginary application store, and a list of L{Thing} items shared to the
+        role.
         """
-        service = SSHService(store=self.store)
+        # XXX This is too many stores for a unit test to need to create.
+        siteStore = Store(filesdir=FilePath(self.mktemp()))
+        Mantissa().installSite(siteStore, u'example.com', u'', False)
+        installOffering(siteStore, imaginaryOffering, {})
+        login = siteStore.findUnique(LoginSystem)
+        account = login.addAccount(u'alice', u'example.com', u'password')
+        userStore = account.avatars.open()
 
+        app = ImaginaryApp(store=userStore)
+        installOn(app, userStore)
 
-    def test_getFactory(self):
-        """
-        Test that L{SSHService.getFactory} returns a Twisted server factory.
-        """
-        service = SSHService(store=self.store)
-        installOn(service, self.store)
-        factory = service.getFactory()
-        self.failUnless(isinstance(factory, ServerFactory))
-    test_getFactory.todo = "SSHService needs to do something with dependency declarations."
+        imaginary = login.accountByAddress(u'Imaginary', None).avatars.open()
+        world = imaginary.findUnique(ImaginaryWorld)
+
+        # Alice connects to her own ImaginaryApp (all that is possible at the
+        # moment).
+        viewer = _AuthenticatedShellViewer(getAccountNames(userStore))
+        proto = app.buildTerminalProtocol(viewer)
+        self.assertIdentical(proto.world, world)
+        self.assertEqual(proto.role.externalID, u'alice@example.com')
+        self.assertEqual(proto.choices, [])

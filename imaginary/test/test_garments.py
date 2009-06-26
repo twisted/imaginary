@@ -6,8 +6,7 @@ from axiom.dependency import installOn
 from imaginary import iimaginary, objects, garments, language
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
-from imaginary.wiring import realm
-
+from imaginary.world import ImaginaryWorld
 
 class WearIt(unittest.TestCase, commandutils.LanguageMixin):
 
@@ -43,11 +42,9 @@ class WearIt(unittest.TestCase, commandutils.LanguageMixin):
 class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
     def setUp(self):
         self.store = store.Store()
-        self.realm = realm.ImaginaryRealm(store=self.store)
-        self.daisy = self.realm.create(u"daisy", u"password",
-                                       gender=language.Gender.FEMALE)
-        self.observer = self.realm.create(u"NONDESCRIPT", u"I am boring :(",
-                                          gender=language.Gender.MALE)
+        self.world = ImaginaryWorld(store=self.store)
+        self.daisy = self.world.create(u"daisy", gender=language.Gender.FEMALE)
+        self.observer = self.world.create(u"NONDESCRIPT", gender=language.Gender.MALE)
         self.dukes = garments.createPants(store=self.store,
                                           name=u'pair of Daisy Dukes')
         self.blouse = garments.createShirt(store=self.store,

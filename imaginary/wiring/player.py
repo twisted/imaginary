@@ -17,7 +17,6 @@ class Player(object):
     implements(iimaginary.IEventObserver)
 
     proto = None
-    realm = None
 
     useColors = True
 
@@ -103,9 +102,3 @@ class Player(object):
         txt = u''.join(list(flatterStuff))
         bytes = txt.encode('utf-8')
         self.proto.write(bytes)
-
-
-    def destroy(self):
-        super(Player, self).destroy()
-        self.realm.destroy(self)
-        self.disconnect()

@@ -11,7 +11,8 @@ from axiom import store, item, attributes
 from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects, text, language
-from imaginary.wiring import player, realm
+from imaginary.wiring import player
+from imaginary.world import ImaginaryWorld
 
 E = re.escape
 
@@ -44,8 +45,9 @@ class CommandTestCaseMixin:
         locContainer = objects.Container(store=self.store, capacity=1000)
         installOn(locContainer, self.location)
 
-        self.realm = realm.ImaginaryRealm(store=self.store)
-        self.player = self.realm.create(u"Test Player", u"password", gender=language.Gender.FEMALE)
+        self.world = ImaginaryWorld(store=self.store)
+        self.player = self.world.create(
+            u"Test Player", gender=language.Gender.FEMALE)
         self.playerContainer = iimaginary.IContainer(self.player)
         self.playerWrapper = player.Player(self.player)
 
@@ -54,7 +56,8 @@ class CommandTestCaseMixin:
         self.transport = StringTransport()
         self.playerWrapper.setProtocol(PlayerProtocol(self.transport))
 
-        self.observer = self.realm.create(u"Observer Player", u"password", gender=language.Gender.FEMALE)
+        self.observer = self.world.create(
+            u"Observer Player", gender=language.Gender.FEMALE)
         self.observerWrapper = player.Player(self.observer)
         locContainer.add(self.observer)
         self.otransport = StringTransport()

@@ -1,15 +1,26 @@
 # -*- test-case-name: imaginary.test.test_text -*-
 
-
 import sys, unicodedata
 
+from zope.interface import implements
+
+from twisted.cred.portal import IRealm
 from twisted.conch.insults import insults
 from twisted.python import log, util
 from twisted import copyright as tcopyright
 
+from axiom.item import Item
+from axiom.dependency import dependsOn
+
+from xmantissa.ixmantissa import ITerminalServerFactory
+from xmantissa.terminal import ShellAccount
+from xmantissa.sharing import asAccessibleTo, itemFromProxy
+
 from imaginary import copyright as pcopyright
-from imaginary import eimaginary, resources
-from imaginary.wiring import player
+from imaginary import resources
+from imaginary.objects import Thing
+from imaginary.world import ImaginaryWorld
+from imaginary.wiring.player import Player
 
 
 _widths = {'W': 2, 'Na': 1}
@@ -24,7 +35,7 @@ def width(ch):
     try:
         return _widths[widthSpecifier]
     except KeyError:
-        raise KeyError("%r has a width that is not supported: %s" 
+        raise KeyError("%r has a width that is not supported: %s"
                        % (ch, widthSpecifier))
 
 
@@ -112,19 +123,34 @@ class AsynchronousIncrementalUTF8Decoder(object):
 
 
 
-class TextServer(insults.TerminalProtocol):
-    state = 'USERNAME'
+class TextServerBase(insults.TerminalProtocol):
+    """
+    L{TextServerBase} presents a simple two-region interface for controlling a
+    character.  The majority of the screen is used to present output and one
+    line at the bottom of the screen is used to collect input.
+
+    @ivar state: The input handling state this L{CharacterSelectionTextServer}
+        is in currently.  See the C{line_}-prefixed methods.
+
+    @ivar width: The width in columns of the client.
+    @type width: L{int}
+    @ivar height: The height in rows of the client.
+    @type height: L{int}
+
+    @ivar player: C{None} until a character actually enters play using this
+        connection, then a L{Player} wrapped around that character.
+    """
+    state = 'IGNORE'
 
     width = 80
     height = 24
 
     player = None
-    logout = None
 
-    motd = file(util.sibpath(resources.__file__, 'motd')).read() % {
-        'pythonVersion': sys.version,
-        'twistedVersion': tcopyright.version,
-        'imaginaryVersion': pcopyright.version}
+    def connectionMade(self):
+        self.decoder = AsynchronousIncrementalUTF8Decoder()
+        self.commandHistory = ['']
+        self.historyPosition = None
 
 
     def statefulDispatch(self, prefix, *a, **kw):
@@ -144,14 +170,6 @@ class TextServer(insults.TerminalProtocol):
 
         if self.state == 'COMMAND':
             self._prepareDisplay()
-
-
-    def connectionMade(self):
-        self.decoder = AsynchronousIncrementalUTF8Decoder()
-        self.write(self.motd + '\n')
-        self.write('Username: ')
-        self.commandHistory = ['']
-        self.historyPosition = None
 
 
     def _prepareDisplay(self):
@@ -196,11 +214,9 @@ class TextServer(insults.TerminalProtocol):
         elif keyID == self.terminal.BACKSPACE or keyID == '\b':
             if self.decoder.width():
                 ch = self.decoder.pop()
-                if self._echo:
-                    self._eraseOneInputCharacter(width(ch))
+                self._eraseOneInputCharacter(width(ch))
         elif isinstance(keyID, str) and keyID >= ' ':
-            if self._echo:
-                self._echoInput(keyID)
+            self._echoInput(keyID)
             self.decoder.add(keyID)
 
 
@@ -209,21 +225,9 @@ class TextServer(insults.TerminalProtocol):
         if self.player is not None:
             self.player.disconnect()
             self.player = None
-        if self.logout is not None:
-            self.logout()
-            self.logout = None
 
 
     # Other stuff
-    _echo = True
-    def echoOn(self):
-        self._echo = True
-
-
-    def echoOff(self):
-        self._echo = False
-
-
     def write(self, bytes):
         if self.state == 'COMMAND':
             self._positionCursorForOutput()
@@ -240,74 +244,130 @@ class TextServer(insults.TerminalProtocol):
         self.write("Your input %r was ignored.\n" % (line,))
 
 
-    def line_USERNAME(self, username):
-        self.username = username
-        self.echoOff()
-        self.write('Password: ')
-        return 'PASSWORD'
-
-
-    def line_PASSWORD(self, password):
-        username = self.username
-        del self.username
-        self.echoOn()
-        self.write('\n')
-        self.factory.login(username, password
-            ).addCallback(self._cbLogin
-            ).addErrback(self._ebBadPassword
-            ).addErrback(self._ebNoSuchUser, username
-            ).addErrback(log.err
-            )
-        return 'IGNORE'
-
-
-    def _cbLogin(self, (iface, avatar, logout)):
-        self.player = player.Player(avatar.thing)
-        self.logout = logout
-        self.player.setProtocol(self)
-        self.state = 'COMMAND'
-
-        self._prepareDisplay()
-
-
-    def _ebBadPassword(self, failure):
-        failure.trap(eimaginary.BadPassword)
-        self.write('Bad password\nUsername: ')
-        self.state = 'USERNAME'
-
-
-    def _ebNoSuchUser(self, failure, username):
-        failure.trap(eimaginary.NoSuchUser)
-        self.username = username
-        self.write("No such user.  Create? ")
-        self.state = 'MAYBE_CREATE'
-
-
-    def line_MAYBE_CREATE(self, line):
-        if line.lower() in ('y', 'yes'):
-            self.echoOff()
-            self.write('Enter a new password: ')
-            return 'NEW_PASSWORD'
-        else:
-            self.write('Username: ')
-            return 'USERNAME'
-
-
-    def line_NEW_PASSWORD(self, password):
-        username = self.username
-        del self.username
-        self.echoOn()
-        actor = self.factory.create(username, password)
-        self.player = player.Player(actor)
-        self.factory.loggedIn(actor)
-        self.player.setProtocol(self)
-        self._prepareDisplay()
-        return 'COMMAND'
-
-
     def line_COMMAND(self, line):
         if line.strip().lower() == 'quit':
             self.player.disconnect()
         else:
             self.player.parse(line)
             self.commandHistory.append(line)
+
+
+
+class CharacterSelectionTextServer(TextServerBase):
+    """
+    L{CharacterSelectionTextServer} presents a simple text menu for selecting
+    or creating a character and then enters the selected or created character
+    into an Imaginary simulation.
+
+    @ivar motd: Some text which will be displayed at connection setup time.
+
+    @ivar role: The L{Role} which will own any new characters created.
+
+    @ivar world: The L{ImaginaryWorld} which the selected character will be
+        entered into.
+
+    @ivar choices: A list of L{Thing}s which represent existing characters
+        which may be selected.
+    """
+
+    motd = file(util.sibpath(resources.__file__, 'motd')).read() % {
+        'pythonVersion': sys.version,
+        'twistedVersion': tcopyright.version,
+        'imaginaryVersion': pcopyright.version}
+
+    state = 'SELECT'
+
+    def __init__(self, role, world, choices):
+        self.role = role
+        self.world = world
+        self.choices = choices
+
+
+    def connectionMade(self):
+        TextServerBase.connectionMade(self)
+        self.terminal.reset()
+        self.write(self.motd)
+        self.write('Choose a character: \n')
+        self.write('  0) Create\n')
+        for n, actor in enumerate(self.choices):
+            self.write('  %d) %s\n' % (n + 1, actor.name.encode('utf-8')))
+        self.write('> ')
+
+
+    def line_SELECT(self, line):
+        which = int(line)
+        if which == 0:
+            self.write('Name? ')
+            return 'USERNAME'
+        else:
+            return self.play(self.choices[which - 1])
+
+
+    def play(self, character):
+        self.player = Player(character)
+        self.player.setProtocol(self)
+        self.world.loggedIn(character)
+        self._prepareDisplay()
+        return 'COMMAND'
+
+
+    def line_USERNAME(self, line):
+        """
+        Handle a username supplied in response to a prompt for one when
+        creating a new character.
+
+        This will create a user with the name given by C{line}, made available
+        to the role indicated by C{self.role}, and entered into play.
+        """
+        actor = self.world.create(line)
+        self.role.shareItem(actor)
+        return self.play(actor)
+
+
+
+class ImaginaryApp(Item):
+    """
+    A terminal application which presents an Imaginary game session.
+    """
+    powerupInterfaces = (ITerminalServerFactory,)
+    implements(*powerupInterfaces)
+
+    shell = dependsOn(ShellAccount)
+
+    name = 'imaginary'
+
+    def _charactersForViewer(self, store, role):
+        """
+        Find the characters the given role is allowed to play.
+
+        This will load any L{Thing}s from C{store} which are shared to C{role}.
+        It then unwraps them from their sharing wrapper and returns them (XXX
+        there should really be a way for this to work without the unwrapping,
+        no?  See #2909. -exarkun).
+        """
+        characters = []
+        things = store.query(Thing)
+        actors = asAccessibleTo(role, things)
+        characters.extend(map(itemFromProxy, actors))
+        return characters
+
+
+    def buildTerminalProtocol(self, viewer):
+        """
+        Create and return a L{TextServer} using a L{Player} owned by the store
+        this item is in.
+
+        This implementation is certainly wrong.  It probably reflects some
+        current limitations of Mantissa.  Primarily, the limitation is
+        interaction between different stores, in this case a user store and an
+        application store.
+        """
+        # XXX Get the Imaginary app store.  Eventually this should just be
+        # self.store.  See #2908.
+        imaginary = IRealm(self.store.parent).accountByAddress(u'Imaginary', None).avatars.open()
+
+        role = viewer.roleIn(imaginary)
+        characters = self._charactersForViewer(imaginary, role)
+
+        world = imaginary.findUnique(ImaginaryWorld)
+        return CharacterSelectionTextServer(role, world, characters)
