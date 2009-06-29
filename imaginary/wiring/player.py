@@ -52,7 +52,21 @@ class Player(object):
                 else:
                     msg = "Who's that?"
             else:
-                msg = "Could you be more specific?"
+                msg = ('Could you be more specific?  When you said "' +
+                       exc.partValue + '", did you mean ')
+                formatted = [
+                    ''.join(iimaginary.IConcept(
+                            potentialTarget).vt102(self.player))
+                    for potentialTarget in exc.objects]
+                formatted.sort()
+                for astring in formatted[:-1]:
+                    msg += astring
+                    if len(formatted) > 2:
+                        msg += ","
+                    msg += " "
+                msg += "or "
+                msg += formatted[-1]
+                msg += "?"
             self.send((msg, "\r\n"))
 
         def ebUnexpected(err):
