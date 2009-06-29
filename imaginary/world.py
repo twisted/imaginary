@@ -9,6 +9,7 @@ from axiom.attributes import inmemory, reference
 
 from imaginary.iimaginary import IContainer
 from imaginary.objects import Thing, Container, Actor
+from imaginary.events import MovementArrivalEvent
 
 
 class ImaginaryWorld(Item):
@@ -55,7 +56,10 @@ class ImaginaryWorld(Item):
         from imaginary.garments import Wearer
         Wearer.createFor(character)
 
-        IContainer(self.origin).add(character)
+        character.moveTo(
+            self.origin,
+            lambda player: MovementArrivalEvent(
+                thing=player, origin=None, direction=None))
         return character
 
 

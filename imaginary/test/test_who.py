@@ -9,16 +9,24 @@ from imaginary.world import ImaginaryWorld
 
 
 class WhoTestCase(unittest.TestCase):
+    """
+    Tests for L{ExpressWho} and the I{who} command.
+    """
     def setUp(self):
+        """
+        Create a store and an Imaginary world and populate it with a number
+        of players, one of which is equipped to record the events it
+        receives.
+        """
         self.store = store.Store()
         self.world = ImaginaryWorld(store=self.store)
+        self.others = []
+        for i in xrange(5):
+            self.others.append(self.world.create(u"player-%d" % (i,)))
         self.player = self.world.create(u"testplayer")
         self.actor = iimaginary.IActor(self.player)
         self.intelligence = commandutils.MockEphemeralIntelligence()
         self.actor.setEphemeralIntelligence(self.intelligence)
-        self.others = []
-        for i in xrange(5):
-            self.others.append(self.world.create(u"player-%d" % (i,)))
         self.world.loggedIn(self.player)
 
 

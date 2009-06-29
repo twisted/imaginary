@@ -42,7 +42,7 @@ class CommandTestCaseMixin:
 
         locContainer = objects.Container.createFor(self.location, capacity=1000)
 
-        self.world = ImaginaryWorld(store=self.store)
+        self.world = ImaginaryWorld(store=self.store, origin=self.location)
         self.player = self.world.create(
             u"Test Player", gender=language.Gender.FEMALE)
         self.playerContainer = iimaginary.IContainer(self.player)
@@ -59,6 +59,10 @@ class CommandTestCaseMixin:
         locContainer.add(self.observer)
         self.otransport = StringTransport()
         self.observerWrapper.setProtocol(PlayerProtocol(self.otransport))
+
+        # Clear the transport, since we don't care about the observer
+        # arrival event.
+        self.transport.clear()
 
 
     def tearDown(self):
