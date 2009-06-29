@@ -42,7 +42,7 @@ class AmbiguousArgument(ImaginaryError):
     """
 
     def __init__(self, action, part, partValue, objects):
-        ImaginaryError.__init__(self)
+        ImaginaryError.__init__(self, action, part, partValue, objects)
         self.action = action
         self.part = part
         self.partValue = partValue

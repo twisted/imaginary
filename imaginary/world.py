@@ -6,7 +6,6 @@
 
 from axiom.item import Item
 from axiom.attributes import inmemory, reference
-from axiom.dependency import installOn
 
 from imaginary.iimaginary import IContainer
 from imaginary.objects import Thing, Container, Actor
@@ -44,17 +43,17 @@ class ImaginaryWorld(Item):
         """
         if self.origin is None:
             self.origin = Thing(store=self.store, name=u"The Place")
-            installOn(Container(store=self.store, capacity=1000), self.origin)
+            Container.createFor(self.origin, capacity=1000)
 
         character = Thing(store=self.store, weight=100,
                           name=name, proper=True, **kw)
-        installOn(Container(store=self.store, capacity=10), character)
-        installOn(Actor(store=self.store), character)
+        Container.createFor(character, capacity=10)
+        Actor.createFor(character)
 
         # Unfortunately, world -> garments -> creation -> action ->
         # world. See #2906. -exarkun
         from imaginary.garments import Wearer
-        installOn(Wearer(store=self.store), character)
+        Wearer.createFor(character)
 
         IContainer(self.origin).add(character)
         return character

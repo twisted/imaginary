@@ -7,9 +7,7 @@ from zope.interface import implements
 
 from twisted import plugin
 
-from axiom.dependency import installOn
-
-import imaginary
+import imaginary.plugins
 
 from imaginary import objects
 from imaginary import events
@@ -36,29 +34,32 @@ def getPlugins(iface, package):
     return plugin.getPlugins(iface, package)
 
 
-def createCreator(*powerups):
+def createCreator(*enhancements):
     """
     Create and return a function which can create objects in the game world.
 
     This is a utility function to make it easy to define factories for certain
     configurations of power-ups to be used with Imaginary.  It doesn't do
     anything magical; you can replicate its effects simply by writing a
-    function that instantiates various powerups and calls L{installOn}
-    repeatedly with those created powerups.  L{createCreator} exists because
-    you will frequently need to do that, and it can be tedious.
+    function that calls L{Enhancement.createFor} on the set of L{Enhancement}s.
+    L{createCreator} exists because you will frequently need to do that, and it
+    can be tedious.
 
-    @param powerups: The arguments to this function are a list of 2-tuples of
-    (powerup-class, keyword arguments to powerup-class constructor).
+    @param enhancements: The arguments to this function are a list of 2-tuples
+        of (L{Enhancement}-subclass, keyword arguments to that class's
+        constructor).
 
     @return: a function which takes keyword arguments that will be passed on to
-    L{objects.Thing}'s constructor, and will return a Thing with an instance of
-    each class in 'powerups' installed on it.
+        L{objects.Thing}'s constructor, and will return a L{Thing} with an
+        instance of each class in C{enhancements} installed, via C{createFor},
+        on it.
+
+    @rtype: L{Thing}
     """
     def create(**kw):
-        store = kw['store']
         o = objects.Thing(**kw)
-        for pup, pupkw in powerups:
-            installOn(pup(store=store, **pupkw or {}), o)
+        for enhancementClass, enhancementKeywords in enhancements:
+            enhancementClass.createFor(o, **(enhancementKeywords or {}))
         return o
     return create
 

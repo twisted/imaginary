@@ -1,6 +1,7 @@
 # -*- test-case-name: imaginary.test -*-
 import pprint
-import re
+from re import compile, escape as E
+E                               # export for other modules
 
 from zope.interface import implements
 
@@ -8,13 +9,10 @@ from twisted.trial import unittest
 from twisted.test.proto_helpers import StringTransport
 
 from axiom import store, item, attributes
-from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects, text, language
 from imaginary.wiring import player
 from imaginary.world import ImaginaryWorld
-
-E = re.escape
 
 class PlayerProtocol(object):
     def __init__(self, transport):
@@ -42,8 +40,7 @@ class CommandTestCaseMixin:
             description=u"Location for testing.",
             proper=True)
 
-        locContainer = objects.Container(store=self.store, capacity=1000)
-        installOn(locContainer, self.location)
+        locContainer = objects.Container.createFor(self.location, capacity=1000)
 
         self.world = ImaginaryWorld(store=self.store)
         self.player = self.world.create(
@@ -91,13 +88,22 @@ class CommandTestCaseMixin:
             self.otransport.value().decode('utf-8'))
 
 
-    def _test(self, command, output, observed=()):
+    def assertCommandOutput(self, command, output, observed=()):
         """
-        Test that when C{command} is executed, C{output} is produced (to the
+        Verify that when C{command} is executed by this
+        L{CommandTestCaseMixin.playerWrapper}, C{output} is produced (to the
         actor) and C{observed} is produced (to the observer).
 
+        @param command: The string for L{CommandTestCaseMixin.playerWrapper} to
+            execute.
         @type command: L{str}
+
+        @param output: The expected output of C{command} for
+            L{CommandTestCaseMixin.player} to observe.
         @type output: iterable of L{str}
+
+        @param observed: The expected output that
+            L{CommandTestCaseMixin.observer} will observe.
         @type observed: iterable of L{str}
         """
         if command is not None:
@@ -116,7 +122,7 @@ class CommandTestCaseMixin:
             for i, (got, expected) in enumerate(map(None, gotLines, oput)):
                 got = got or ''
                 expected = expected or '$^'
-                m = re.compile(expected.rstrip() + '$').match(got.rstrip())
+                m = compile(expected.rstrip() + '$').match(got.rstrip())
                 if m is None:
                     s1 = pprint.pformat(gotLines)
                     s2 = pprint.pformat(oput)
@@ -126,6 +132,9 @@ class CommandTestCaseMixin:
                 results[-1].append(m)
             xport.clear()
         return results
+
+    # Old alias.
+    _test = assertCommandOutput
 
 
     def find(self, name):
@@ -204,10 +213,11 @@ def createPlayer(store, name):
     @return: A three-tuple of (playerThing, playerActor, playerIntelligence).
     """
     player = objects.Thing(store=store, name=name)
-    pc = objects.Container(store=store, capacity=100)
-    installOn(pc, player)
-    playerActor = objects.Actor(store=store)
-    installOn(playerActor, player)
+    objects.Container.createFor(player, capacity=100)
+    playerActor = objects.Actor.createFor(player)
     playerIntelligence = MockIntelligence(store=store)
     playerActor.setEnduringIntelligence(playerIntelligence)
     return player, playerActor, playerIntelligence
+
+__all__ = ['E', 'CommandTestCaseMixin', 'createPlayer', 'MockIntelligence',
+           'PlayerProtocol']

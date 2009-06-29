@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_vending -*-
+# -*- test-case-name: examplegame.test.test_quiche -*-
 
 """
 This module is a mid-level proof of concept of various features in Imaginary.
@@ -13,10 +13,9 @@ with multiple systems (currency, containment, object creation) in Imaginary.
 from zope.interface import implements, Interface
 
 from axiom import item, attributes
-from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects, events, language
-from imaginary.objects import ThingMixin
+from imaginary.enhancement import Enhancement
 
 from imaginary.creation import createCreator
 
@@ -35,14 +34,14 @@ class Coinage(object):
 
 
 
-class Quarter(item.Item, Coinage, ThingMixin):
+class Quarter(item.Item, Coinage, Enhancement):
     thing = attributes.reference(doc="""
     The object this coin powers up.
     """)
 
 
 
-class VendingMachine(item.Item, objects.Containment, ThingMixin):
+class VendingMachine(item.Item, objects.Containment, Enhancement):
     implements(iimaginary.IContainer)
 
     capacity = attributes.integer(doc="""
@@ -106,7 +105,7 @@ class VendingMachine(item.Item, objects.Containment, ThingMixin):
 
 def createVendingMachine(store, name, description=u""):
     o = objects.Thing(store=store, name=name, description=description)
-    installOn(VendingMachine(store=store), o)
+    VendingMachine.createFor(o)
     return o
 
 

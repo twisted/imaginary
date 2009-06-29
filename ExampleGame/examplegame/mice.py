@@ -1,11 +1,10 @@
-# -*- test-case-name: imaginary.test.test_npc,imaginary.test.test_japanese -*-
+# -*- test-case-name: examplegame.test.test_mice,examplegame.test.test_japanese -*-
 
 import random
 
 from zope.interface import implements
 
 from axiom import item, attributes
-from axiom.dependency import installOn
 
 from imaginary import iimaginary, events, objects, action, language
 from examplegame import japanese
@@ -255,8 +254,7 @@ def createMouseCreator(mouseIntelligenceFactory):
     def createMouse(**kw):
         store = kw['store']
         mouse = objects.Thing(**kw)
-        mouseActor = objects.Actor(store=store)
-        installOn(mouseActor, mouse)
+        mouseActor = objects.Actor.createFor(mouse)
         mousehood = mouseIntelligenceFactory(store=store)
         mouseActor.setEnduringIntelligence(mousehood)
         return mouse

@@ -4,7 +4,6 @@ from twisted.internet import task
 from twisted.trial import unittest
 
 from axiom import store
-from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects, events, action
 
@@ -44,8 +43,7 @@ class HiraganaMouseTestCase(MouseChallengeMixin, unittest.TestCase):
         self.store = store.Store()
 
         self.clock = objects.Thing(store=self.store, name=u"Clock")
-        self.clockContainer = objects.Container(store=self.store, capacity=10)
-        installOn(self.clockContainer, self.clock)
+        self.clockContainer = objects.Container.createFor(self.clock, capacity=10)
 
         self.mouseName = u"\N{KATAKANA LETTER PI}\N{KATAKANA LETTER SMALL YU}"
         self.mouse = mice.createHiraganaMouse(
@@ -343,7 +341,8 @@ class HiraganaMouseTestCase(MouseChallengeMixin, unittest.TestCase):
         self.mousehood.startChallenging()
         self.reactorTime.advance(self.mousehood.challengeInterval)
         action.Say().do(
-            self.player,
+            # http://divmod.org/trac/ticket/2917
+            iimaginary.IActor(self.player),
             None,
             japanese.hiragana[self.mousehood.getCurrentChallenge()])
 
@@ -365,7 +364,9 @@ class HiraganaMouseTestCase(MouseChallengeMixin, unittest.TestCase):
         self.mousehood.startChallenging()
         self.reactorTime.advance(self.mousehood.challengeInterval)
 
-        action.Say().do(self.player, None, u"lolololo pew")
+        action.Say().do(
+            # http://divmod.org/trac/ticket/2917
+            iimaginary.IActor(self.player), None, u"lolololo pew")
 
         self.failIfIdentical(self.mousehood.getCurrentChallenge(), None)
         self.reactorTime.advance(0)
@@ -414,8 +415,7 @@ class HiraganaMouseCommandTestCase(commandutils.CommandTestCaseMixin, unittest.T
         clock = task.Clock()
 
         closet = objects.Thing(store=self.store, name=u"Closet")
-        closetContainer = objects.Container(store=self.store, capacity=500)
-        installOn(closetContainer, closet)
+        closetContainer = objects.Container.createFor(closet, capacity=500)
 
         mouse = mice.createHiraganaMouse(
             store=self.store,

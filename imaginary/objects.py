@@ -11,13 +11,10 @@ from twisted.python import reflect, components
 from epsilon import structlike
 
 from axiom import item, attributes
-from axiom.dependency import installedOn
 
 from imaginary import iimaginary, eimaginary, text as T, events, language
 
-class ThingMixin:
-    def installed(self):
-        self.thing = installedOn(self)
+from imaginary.enhancement import Enhancement as _Enhancement
 
 def merge(d1, *dn):
     """
@@ -469,7 +466,7 @@ class ExpressSurroundings(language.ItemizedList):
 
 
 
-class Container(item.Item, Containment, ThingMixin):
+class Container(item.Item, Containment, _Enhancement):
     """A generic powerup that implements containment."""
 
     capacity = attributes.integer(doc="""
@@ -575,7 +572,7 @@ class Actable(object):
 
 
 
-class Actor(item.Item, Actable, ThingMixin):
+class Actor(item.Item, Actable, _Enhancement):
     hitpoints = attributes.reference(doc="""
     """)
     stamina = attributes.reference(doc="""
@@ -653,7 +650,7 @@ class Actor(item.Item, Actable, ThingMixin):
 
 
 
-class LocationLighting(item.Item, ThingMixin):
+class LocationLighting(item.Item, _Enhancement):
     implements(iimaginary.ILocationProxy)
     powerupInterfaces = (iimaginary.ILocationProxy,)
 
@@ -699,7 +696,7 @@ class _DarkLocationProxy(structlike.record('thing')):
 
 
 
-class LightSource(item.Item, ThingMixin):
+class LightSource(item.Item, _Enhancement):
     implements(iimaginary.ILightSource)
     powerupInterfaces = (iimaginary.ILightSource,)
 

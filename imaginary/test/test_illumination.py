@@ -1,7 +1,6 @@
 from twisted.trial import unittest
 
 from axiom import store
-from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects
 from imaginary.manipulation import Manipulator
@@ -14,9 +13,9 @@ class DarknessTestCase(unittest.TestCase):
     def setUp(self):
         self.store = store.Store()
         self.location = objects.Thing(store=self.store, name=u"Dark Room")
-        installOn(objects.Container(store=self.store, capacity=1000), self.location)
+        objects.Container.createFor(self.location, capacity=1000)
 
-        installOn(objects.LocationLighting(store=self.store, candelas=0), self.location)
+        objects.LocationLighting.createFor(self.location, candelas=0)
 
         self.rock = objects.Thing(store=self.store, name=u"Rock")
 
@@ -56,7 +55,7 @@ class DarknessTestCase(unittest.TestCase):
         location, objects in nearby illuminated rooms are returned.
         """
         nearby = objects.Thing(store=self.store, name=u"other room")
-        installOn(objects.Container(store=self.store, capacity=1000), nearby)
+        objects.Container.createFor(nearby, capacity=1000)
         ball = objects.Thing(store=self.store, name=u"ball")
         ball.moveTo(nearby)
 
@@ -84,7 +83,7 @@ class DarknessTestCase(unittest.TestCase):
         again.
         """
         torch = objects.Thing(store=self.store, name=u"torch")
-        installOn(objects.LightSource(store=self.store, candelas=80), torch)
+        objects.LightSource.createFor(torch, candelas=80)
         torch.moveTo(self.location)
 
         self.assertEquals(
@@ -97,9 +96,9 @@ class DarknessTestCase(unittest.TestCase):
         Test that a torch in an open container lights up a location.
         """
         torch = objects.Thing(store=self.store, name=u"torch")
-        installOn(objects.LightSource(store=self.store, candelas=80), torch)
+        objects.LightSource.createFor(torch, candelas=80)
 
-        installOn(objects.Container(store=self.store, capacity=1000), self.observer)
+        objects.Container.createFor(self.observer, capacity=1000)
 
         torch.moveTo(self.observer)
 
@@ -114,10 +113,9 @@ class DarknessTestCase(unittest.TestCase):
         illuminate a location.
         """
         torch = objects.Thing(store=self.store, name=u"torch")
-        installOn(objects.LightSource(store=self.store, candelas=80), torch)
+        objects.LightSource.createFor(torch, candelas=80)
 
-        c = objects.Container(store=self.store, capacity=1000)
-        installOn(c, self.observer)
+        c = objects.Container.createFor(self.observer, capacity=1000)
 
         torch.moveTo(self.observer)
         c.closed = True
@@ -130,7 +128,7 @@ class DarknessTestCase(unittest.TestCase):
 
 class DarknessCommandTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def testLookingIntoDarkness(self):
-        installOn(objects.LocationLighting(store=self.store, candelas=0), self.location)
+        objects.LocationLighting.createFor(self.location, candelas=0)
         self._test(
             "look",
             [commandutils.E("[ Blackness ]"),
@@ -138,7 +136,7 @@ class DarknessCommandTestCase(commandutils.CommandTestCaseMixin, unittest.TestCa
 
 
     def testTorch(self):
-        installOn(objects.LocationLighting(store=self.store, candelas=0), self.location)
+        objects.LocationLighting.createFor(self.location, candelas=0)
         self._test(
             "create a torch named torch",
             ["You create a torch."],

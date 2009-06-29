@@ -2,7 +2,6 @@
 from twisted.trial import unittest
 
 from axiom import store
-from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects, language, action, events
 from imaginary.world import ImaginaryWorld
@@ -29,8 +28,8 @@ class LookTestCase(unittest.TestCase):
             description=u"Location for testing.",
             proper=True)
 
-        locContainer = objects.Container(store=self.store, capacity=1000)
-        installOn(locContainer, self.location)
+        locContainer = objects.Container.createFor(
+            self.location, capacity=1000)
 
         self.world = ImaginaryWorld(store=self.store)
         self.player = self.world.create(u"Test Player", gender=language.Gender.FEMALE)
@@ -40,7 +39,8 @@ class LookTestCase(unittest.TestCase):
 
 
     def testLookAroundEventBroadcasting(self):
-        action.LookAround().runEventTransaction(self.actor, u"look", {})
+        action.LookAround().runEventTransaction(
+            self.player, u"look", {})
         evts = self.actor.getIntelligence().observedConcepts
         self.assertEquals(len(evts), 1)
         self.failUnless(isinstance(evts[0], events.Success))
@@ -52,12 +52,11 @@ class LookTestCase(unittest.TestCase):
             name=u"Visible Location",
             description=u"Description of visible location.",
             proper=True)
-        targetContainer = objects.Container(store=self.store, capacity=1000)
-        installOn(targetContainer, target)
-
+        objects.Container.createFor(target, capacity=1000)
         objects.Exit.link(self.location, target, u"south")
 
-        action.LookAt().runEventTransaction(self.actor, u"look", {"target": u"south"})
+        action.LookAt().runEventTransaction(
+            self.player, u"look", {"target": u"south"})
         evts = self.actor.getIntelligence().observedConcepts
         self.assertEquals(len(evts), 1)
         self.failUnless(isinstance(evts[0], events.Success))

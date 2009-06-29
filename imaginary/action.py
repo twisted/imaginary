@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_actions,imaginary.test.test_set -*-
+# -*- test-case-name: imaginary.test.test_actions -*-
 
 import time, random, operator
 import pprint
@@ -9,7 +9,6 @@ from twisted.python import log, filepath
 from twisted.internet import defer
 
 from axiom import iaxiom
-from axiom.dependency import installOn
 from axiom.attributes import AND
 
 import imaginary.plugins
@@ -693,7 +692,7 @@ class Dig(NoTargetAction):
                 actorMessage="There is already an exit in that direction."))
 
         room = objects.Thing(store=player.store, name=name)
-        installOn(objects.Container(store=player.store, capacity=1000), room)
+        objects.Container.createFor(room, capacity=1000)
         objects.Exit.link(player.thing.location, room, direction)
 
         evt = events.Success(

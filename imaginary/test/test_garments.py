@@ -1,9 +1,9 @@
 from twisted.trial import unittest
 
 from axiom import store
-from axiom.dependency import installOn
 
 from imaginary import iimaginary, objects, garments, language
+from imaginary.eimaginary import ActionFailure
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
 from imaginary.world import ImaginaryWorld
@@ -14,22 +14,19 @@ class WearIt(unittest.TestCase, commandutils.LanguageMixin):
         self.store = store.Store()
 
         self.dummy = objects.Thing(store=self.store, name=u'dummy')
-        self.dummyContainer = objects.Container(store=self.store, capacity=100)
-        installOn(self.dummyContainer, self.dummy)
+        self.dummyContainer = objects.Container.createFor(self.dummy, capacity=100)
 
         self.shirt = objects.Thing(store=self.store, name=u'shirt')
-        self.shirtGarment = garments.Garment(
-            store=self.store,
+        self.shirtGarment = garments.Garment.createFor(
+            self.shirt,
             garmentDescription=u'a shirt',
             garmentSlots=[garments.GarmentSlot.LEFT_ARM,
                           garments.GarmentSlot.RIGHT_ARM,
                           garments.GarmentSlot.CHEST,
                           garments.GarmentSlot.BACK,
                           ])
-        installOn(self.shirtGarment, self.shirt)
 
-        self.wearer = garments.Wearer(store=self.store)
-        installOn(self.wearer, self.dummy)
+        self.wearer = garments.Wearer.createFor(self.dummy)
 
 
     def testWearing(self):

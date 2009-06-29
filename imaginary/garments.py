@@ -12,7 +12,7 @@ from axiom import item, attributes
 
 from imaginary import iimaginary, language, objects
 from imaginary.creation import createCreator
-from imaginary.objects import ThingMixin
+from imaginary.enhancement import Enhancement
 
 
 class Unwearable(Exception):
@@ -79,7 +79,7 @@ for gslot in GARMENT_SLOTS:
 
 
 
-class Garment(item.Item, ThingMixin):
+class Garment(item.Item, Enhancement):
     implements(iimaginary.IClothing,
                iimaginary.IDescriptionContributor)
     powerupInterfaces = (iimaginary.IClothing, iimaginary.IDescriptionContributor)
@@ -148,7 +148,7 @@ def _orderTopClothingByGlobalSlotList(tempClothes):
 
 
 
-class Wearer(item.Item, ThingMixin):
+class Wearer(item.Item, Enhancement):
     """
     The clothing-wearing component of an object that can wear clothing; e.g. a
     person or mannequin.

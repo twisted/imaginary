@@ -7,10 +7,12 @@ from twisted.trial import unittest
 
 from axiom import store, item, attributes
 
-from imaginary.test import commandutils
 from imaginary import iimaginary, plugins, creation
 from imaginary.creation import createCreator
 from imaginary.plugins import imaginary_basic
+from imaginary.enhancement import Enhancement
+
+from imaginary.test import commandutils
 
 
 
@@ -49,11 +51,12 @@ class IFruit(Interface):
 
 
 
-class Fruit(item.Item):
+class Fruit(item.Item, Enhancement):
     implements(IFruit)
     powerupInterfaces = (IFruit,)
 
     fresh = attributes.boolean(default=False)
+    thing = attributes.reference(allowNone=False)
 
 
 

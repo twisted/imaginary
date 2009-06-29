@@ -2,7 +2,6 @@
 from twisted.trial.unittest import TestCase
 
 from axiom.store import Store
-from axiom.dependency import installOn
 
 from imaginary.test.commandutils import createPlayer
 from imaginary.objects import Thing, Container
@@ -20,12 +19,12 @@ class DropTestCase(TestCase):
 
         player, actor, intelligence = createPlayer(st, u"Foo")
         place = Thing(store=st, name=u"soko")
-        installOn(Container(store=st, capacity=1000), place)
-        player.moveTo(place)
+        player.moveTo(Container.createFor(place, capacity=1000))
 
         bauble = Thing(store=st, name=u"bauble")
         bauble.moveTo(player)
 
-        Drop().do(player, None, bauble)
-        self.assertEquals(len(intelligence.concepts), 1)
-        self.failUnless(isinstance(intelligence.concepts[0], ArrivalEvent))
+        Drop().runEventTransaction(player, None, dict(target=bauble.name))
+        self.assertEquals(len([concept for concept
+                               in intelligence.concepts
+                               if isinstance(concept, ArrivalEvent)]), 1)

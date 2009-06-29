@@ -6,8 +6,6 @@ Unit tests for Imaginary actions.
 from twisted.trial import unittest
 from twisted.python import filepath
 
-from axiom.dependency import installOn
-
 from imaginary import iimaginary, objects, events
 from imaginary.action import Action, TargetAction, Help
 from imaginary.test import commandutils
@@ -153,8 +151,7 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["Nothing like that around here."])
 
         c = objects.Thing(store=self.store, name=u"bar")
-        cContainer = objects.Container(store=self.store, capacity=1)
-        installOn(cContainer, c)
+        cContainer = objects.Container.createFor(c, capacity=1)
 
         iimaginary.IContainer(self.location).add(c)
         o = objects.Thing(store=self.store, name=u"baz")
@@ -441,7 +438,7 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertEquals(list(iimaginary.IContainer(self.location).getExits()), [])
 
         room = objects.Thing(store=self.store, name=u"destination", proper=True)
-        installOn(objects.Container(store=self.store, capacity=1000), room)
+        objects.Container.createFor(room, capacity=1000)
         objects.Exit.link(room, self.location, u'north')
 
         self._test(
@@ -481,7 +478,7 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["You can't go that way."])
 
         room = objects.Thing(store=self.store, name=u"destination")
-        installOn(objects.Container(store=self.store, capacity=1000), room)
+        objects.Container.createFor(room, capacity=1000)
         objects.Exit.link(self.location, room, u"west")
 
         self._test(
@@ -513,7 +510,7 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
                          "west", "southwest", "south", "southeast"]
         for d in allDirections[:len(allDirections) / 2]:
             room = objects.Thing(store=self.store, name=u"destination")
-            installOn(objects.Container(store=self.store, capacity=1000), room)
+            objects.Container.createFor(room, capacity=1000)
             objects.Exit.link(oldRoom, room, unicode(d, 'ascii'))
             oldRoom = room
 
@@ -592,7 +589,7 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
     def testOpenClose(self):
         container = objects.Thing(store=self.store, name=u"container")
-        installOn(objects.Container(store=self.store, capacity=1), container)
+        objects.Container.createFor(container, capacity=1)
         iimaginary.IContainer(self.location).add(container)
         self._test(
             "close container",

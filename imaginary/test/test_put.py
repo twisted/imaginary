@@ -1,10 +1,8 @@
 
 from twisted.trial import unittest
 
-from axiom.dependency import installOn
-
 from imaginary.test import commandutils
-from imaginary import iimaginary, objects
+from imaginary import objects
 
 class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def setUp(self):
@@ -12,8 +10,7 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.object = objects.Thing(store=self.store, name=u"foo")
         self.object.moveTo(self.player)
         self.container = objects.Thing(store=self.store, name=u"bar")
-        self.containerContainer = objects.Container(store=self.store, capacity=1)
-        installOn(self.containerContainer, self.container)
+        self.containerContainer = objects.Container.createFor(self.container, capacity=1)
         self.container.moveTo(self.location)
         return r
 
@@ -61,7 +58,7 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
     def testNestedContainment(self):
         another = objects.Thing(store=self.store, name=u"another")
-        installOn(objects.Container(store=self.store, capacity=1), another)
+        objects.Container.createFor(another, capacity=1)
         self.containerContainer.add(another)
 
         self._test(
@@ -74,11 +71,9 @@ class PutTestCase(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
     def testIndirectNestedContainment(self):
         innermost = objects.Thing(store=self.store, name=u"innermost")
-        innermostContainer = objects.Container(store=self.store, capacity=1)
-        installOn(innermostContainer, innermost)
+        innermostContainer = objects.Container.createFor(innermost, capacity=1)
         middle = objects.Thing(store=self.store, name=u"middle")
-        middleContainer = objects.Container(store=self.store, capacity=1)
-        installOn(middleContainer, middle)
+        middleContainer = objects.Container.createFor(middle, capacity=1)
         middleContainer.add(innermost)
         self.containerContainer.add(middle)
 

@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test -*-
+# -*- test-case-name: imaginary,examplegame -*-
 
 """
 Virtual simulation framework.

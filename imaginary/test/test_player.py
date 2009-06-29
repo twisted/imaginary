@@ -1,7 +1,11 @@
+
+"""
+Tests for L{imaginary.wiring.player}.
+"""
+
 from twisted.trial import unittest
 
 from axiom import store
-from axiom.dependency import installOn
 
 from imaginary import objects
 from imaginary.wiring import player
@@ -13,8 +17,7 @@ class PlayerTest(unittest.TestCase):
         self.store = store.Store()
 
         self.bob = objects.Thing(store=self.store, name=u"bob")
-        self.actor = objects.Actor(store=self.store)
-        installOn(self.actor, self.bob)
+        self.actor = objects.Actor.createFor(self.bob)
 
         self.player = player.Player(self.bob)
         self.player.useColors = False

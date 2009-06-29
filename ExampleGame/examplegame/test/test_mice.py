@@ -3,7 +3,6 @@ from twisted.trial import unittest
 from twisted.internet import task
 
 from axiom import store
-from axiom.dependency import installOn
 
 from imaginary import iimaginary, events, objects
 from imaginary.test import commandutils
@@ -16,12 +15,10 @@ class IntelligenceTestCase(unittest.TestCase):
         self.store = store.Store()
 
         self.location = objects.Thing(store=self.store, name=u"Place")
-        self.locationContainer = objects.Container(store=self.store, capacity=1000)
-        installOn(self.locationContainer, self.location)
+        self.locationContainer = objects.Container.createFor(self.location, capacity=1000)
 
         self.alice = objects.Thing(store=self.store, name=u"Alice")
-        self.actor = objects.Actor(store=self.store)
-        installOn(self.actor, self.alice)
+        self.actor = objects.Actor.createFor(self.alice)
 
         self.alice.moveTo(self.location)
 
@@ -59,8 +56,7 @@ class MouseTestCase(unittest.TestCase):
         self.store = store.Store()
 
         self.clock = objects.Thing(store=self.store, name=u"Clock")
-        self.clockContainer = objects.Container(store=self.store, capacity=10)
-        installOn(self.clockContainer, self.clock)
+        self.clockContainer = objects.Container.createFor(self.clock, capacity=10)
 
         self.mouse = mice.createMouse(store=self.store, name=u"Squeaker McSqueakenson")
         self.mouseActor = iimaginary.IActor(self.mouse)
@@ -68,8 +64,7 @@ class MouseTestCase(unittest.TestCase):
         self.mouse.moveTo(self.clock)
 
         self.player = objects.Thing(store=self.store, name=u"Mean Old Man")
-        self.playerActor = objects.Actor(store=self.store)
-        installOn(self.playerActor, self.player)
+        self.playerActor = objects.Actor.createFor(self.player)
         self.playerIntelligence = commandutils.MockIntelligence(
             store=self.store)
         self.playerActor.setEnduringIntelligence(self.playerIntelligence)
@@ -142,7 +137,7 @@ class MouseReactionTestCase(commandutils.CommandTestCaseMixin,
         intelligence._callLater = clock.callLater
 
         elsewhere = objects.Thing(store=self.store, name=u"Mouse Hole")
-        installOn(objects.Container(store=self.store, capacity=1000), elsewhere)
+        objects.Container.createFor(elsewhere, capacity=1000)
 
         objects.Exit.link(self.location, elsewhere, u"south")
 
