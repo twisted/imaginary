@@ -15,6 +15,8 @@ import imaginary.plugins
 from imaginary import (iimaginary, eimaginary, iterutils, events,
                        objects, text as T, language, pyparsing)
 from imaginary.world import ImaginaryWorld
+from imaginary.idea import (
+    CanSee, Proximity, Visibility, ProviderOf, Named, And, Traversability)
 
 ## Hacks because pyparsing doesn't have fantastic unicode support
 _quoteRemovingQuotedString = pyparsing.quotedString.copy()
@@ -44,9 +46,12 @@ class _ActionType(type):
 
 
     def parse(self, player, line):
-        for cls in self.actions:
+        """
+        Parse an action.
+        """
+        for eachActionType in self.actions:
             try:
-                match = cls.match(player, line)
+                match = eachActionType.match(player, line)
             except pyparsing.ParseException:
                 pass
             else:
@@ -56,85 +61,163 @@ class _ActionType(type):
                         if isinstance(v, pyparsing.ParseResults):
                             match[k] = v[0]
 
-                    return cls().runEventTransaction(player, line, match)
+                    return eachActionType().runEventTransaction(player, line, match)
         return defer.fail(eimaginary.NoSuchCommand(line))
 
 
 
 class Action(object):
+    """
+    An L{Action} represents an intention of a player to do something.
+    """
     __metaclass__ = _ActionType
-    infrastructure = True
-
-
-    def runEventTransaction(self, player, line, match):
-        """
-        Take a player, line, and dictionary of parse results and execute the
-        actual Action implementation.
-
-        @param player: A provider of C{self.actorInterface}
-        @param line: A unicode string containing the original input
-        @param match: A dictionary containing some parse results to pass
-        through to the C{run} method.
-
-        """
-        events.runEventTransaction(
-            player.store, self.run, player, line, **match)
-
-
-    def match(cls, player, line):
-        return cls.expr.parseString(line)
-    match = classmethod(match)
-
-
-    def run(self, player, line, **kw):
-        begin = time.time()
-        try:
-            return self._reallyRun(player, line, kw)
-        finally:
-            end = time.time()
-            log.msg(
-                interface=iaxiom.IStatEvent,
-                stat_actionDuration=end - begin,
-                stat_actionExecuted=1,
-                )
-
-
-    def _reallyRun(self, player, line, kw):
-        for (k, v) in kw.items():
-            try:
-                objs = self.resolve(player, k, v)
-            except NotImplementedError:
-                pass
-            else:
-                if len(objs) != 1:
-                    raise eimaginary.AmbiguousArgument(self, k, v, objs)
-                else:
-                    kw[k] = objs[0]
-        return self.do(player, line, **kw)
-
-
-    def resolve(self, player, name, value):
-        raise NotImplementedError("Don't know how to resolve %r (%r)" % (name, value))
-
-
-
-class NoTargetAction(Action):
-    """
-    @cvar actorInterface: Interface that the actor must provide.
-    """
     infrastructure = True
 
     actorInterface = iimaginary.IActor
 
-    def match(cls, player, line):
-        actor = cls.actorInterface(player, None)
-        if actor is not None:
-            return super(NoTargetAction, cls).match(player, line)
-        return None
-    match = classmethod(match)
+    def runEventTransaction(self, player, line, match):
+        """
+        Take a player, input, and dictionary of parse results, resolve those
+        parse results into implementations of appropriate interfaces in the
+        game world, and execute the actual Action implementation (contained in
+        the 'do' method) in an event transaction.
 
-    def run(self, player, line, **kw):
-        return super(NoTargetAction, self).run(self.actorInterface(player), line, **kw)
+        This is the top level of action invocation.
+
+        @param player: A L{Thing} representing the actor's body.
+
+        @param line: A unicode string containing the original input
+
+        @param match: A dictionary containing some parse results to pass
+            through to this L{Action}'s C{do} method as keyword arguments.
+
+        @raise eimaginary.AmbiguousArgument: if multiple valid targets are
+            found for an argument.
+        """
+        def thunk():
+            begin = time.time()
+            try:
+                actor = self.actorInterface(player)
+                for (k, v) in match.items():
+                    try:
+                        objs = self.resolve(player, k, v)
+                    except NotImplementedError:
+                        pass
+                    else:
+                        if len(objs) == 1:
+                            match[k] = objs[0]
+                        elif len(objs) == 0:
+                            self.cantFind(player, actor, k, v)
+                        else:
+                            raise eimaginary.AmbiguousArgument(self, k, v, objs)
+                return self.do(actor, line, **match)
+            finally:
+                end = time.time()
+                log.msg(interface=iaxiom.IStatEvent,
+                        stat_actionDuration=end - begin,
+                        stat_actionExecuted=1)
+        events.runEventTransaction(player.store, thunk)
+
+
+    def cantFind(self, player, actor, slot, name):
+        """
+        This hook is invoked when a target cannot be found.
+
+        This will delegate to a method like C{self.cantFind_<slot>(actor,
+        name)} if one exists, to determine the error message to show to the
+        actor.  It will then raise L{eimaginary.ActionFailure} to stop
+        processing of this action.
+
+        @param player: The L{Thing} doing the searching.
+
+        @type player: L{IThing}
+
+        @param actor: The L{IActor} doing the searching.
+
+        @type actor: L{IActor}
+
+        @param slot: The slot in question.
+
+        @type slot: C{str}
+
+        @param name: The name of the object being searched for.
+
+        @type name: C{unicode}
+
+        @raise eimaginary.ActionFailure: always.
+        """
+        func = getattr(self, "cantFind_"+slot, None)
+        if func:
+            msg = func(actor, name)
+        else:
+            msg = "Who's that?"
+        raise eimaginary.ActionFailure(
+            events.ThatDoesntWork(
+                actorMessage=msg,
+                actor=player))
+
+
+    @classmethod
+    def match(cls, player, line):
+        """
+        @return: a list of 2-tuples of all the results of parsing the given
+            C{line} using this L{Action} type's pyparsing C{expr} attribute, or
+            None if the expression does not match the given line.
+
+        @param line: a line of user input to be interpreted as an action.
+
+        @see: L{imaginary.pyparsing}
+        """
+        return cls.expr.parseString(line)
+
+
+    def do(self, player, line, **slots):
+        """
+        Subclasses override this method to actually perform the action.
+
+        This method is performed in an event transaction, by 'run'.
+
+        NB: The suggested implementation strategy for a 'do' method is to do
+        action-specific setup but then delegate the bulk of the actual logic to
+        a method on a target/tool interface.  The 'do' method's job is to
+        select the appropriate methods to invoke.
+
+        @param player: a provider of this L{Action}'s C{actorInterface}.
+
+        @param line: the input string that created this action.
+
+        @param slots: The results of calling C{self.resolve} on each parsing
+        result (described by a setResultsName in C{self.expr}).
+        """
+        raise NotImplementedError("'do' method not implemented")
+
+
+    def resolve(self, player, name, value):
+        """
+        Resolve a given parsed value to a valid action parameter by calling a
+        'resolve_<name>' method on this L{Action} with the given C{player} and
+        C{value}.
+
+        @param player: the L{Thing} attempting to perform this action.
+
+        @type player: L{Thing}
+
+        @param name: the name of the slot being filled.  For example, 'target'.
+
+        @type name: L{str}
+
+        @param value: a string representing the value that was parsed.  For
+            example, if the user typed 'get fish', this would be 'fish'.
+
+        @return: a value which will be passed as the 'name' parameter to this
+            L{Action}'s C{do} method.
+        """
+        resolver = getattr(self, 'resolve_%s' % (name,), None)
+        if resolver is None:
+            raise NotImplementedError(
+                "Don't know how to resolve %r (%r)" % (name, value))
+        return resolver(player, value)
+
 
 
 def targetString(name):
@@ -144,7 +227,7 @@ def targetString(name):
 
 
 
-class TargetAction(NoTargetAction):
+class TargetAction(Action):
     """
     Subclass L{TargetAction} to implement an action that acts on a target, like
     'take foo' or 'eat foo' where 'foo' is the target.
@@ -160,10 +243,9 @@ class TargetAction(NoTargetAction):
     def targetRadius(self, player):
         return 2
 
-    def resolve(self, player, k, v):
-        if k == "target":
-            return list(player.thing.search(self.targetRadius(player), self.targetInterface, v))
-        return super(TargetAction, self).resolve(player, k, v)
+    def resolve_target(self, player, targetName):
+        return _getIt(player, targetName,
+                      self.targetInterface, self.targetRadius(player))
 
 
 
@@ -183,21 +265,29 @@ class ToolAction(TargetAction):
     def toolRadius(self, player):
         return 2
 
-    def resolve(self, player, k, v):
-        if k == "tool":
-            return list(player.thing.search(
-                    self.toolRadius(player), self.toolInterface, v))
-        return super(ToolAction, self).resolve(player, k, v)
+    def resolve_tool(self, player, toolName):
+        return _getIt(player, toolName,
+                      self.toolInterface, self.toolRadius(player))
 
 
 
-class LookAround(NoTargetAction):
+def _getIt(player, thingName, iface, radius):
+    return list(player.search(radius, iface, thingName))
+
+
+
+class LookAround(Action):
     actionName = "look"
     expr = pyparsing.Literal("look") + pyparsing.StringEnd()
 
     def do(self, player, line):
+        ultimateLocation = player.thing.location
+        while ultimateLocation.location is not None:
+            ultimateLocation = ultimateLocation.location
         for visible in player.thing.findProviders(iimaginary.IVisible, 1):
-            if player.thing.location is visible.thing:
+            # XXX what if my location is furniture?  I want to see '( Foo,
+            # sitting in the Bar )', not '( Bar )'.
+            if visible.isViewOf(ultimateLocation):
                 concept = visible.visualize()
                 break
         else:
@@ -217,7 +307,35 @@ class LookAt(TargetAction):
 
     targetInterface = iimaginary.IVisible
 
-    def targetNotAvailable(self, player, exc):
+    def resolve_target(self, player, targetName):
+        """
+        Resolve the target to look at by looking for a named, visible object in
+        a proximity of 3 meters from the player.
+
+        @param player: The player doing the looking.
+
+        @type player: L{IThing}
+
+        @param targetName: The name of the object we are looking for.
+
+        @type targetName: C{unicode}
+
+        @return: A list of visible objects.
+
+        @rtype: C{list} of L{IVisible}
+
+        @raise eimaginary.ActionFailure: with an appropriate message if the
+            target cannot be resolved for an identifiable reason.  See
+            L{imaginary.objects.Thing.obtainOrReportWhyNot} for a description
+            of how such reasons may be identified.
+        """
+        return player.obtainOrReportWhyNot(
+            Named(targetName, CanSee(ProviderOf(iimaginary.IVisible)), player),
+            And(Proximity(3.0),
+                Visibility()))
+
+
+    def cantFind_target(self, player, name):
         return "You don't see that."
 
     def targetRadius(self, player):
@@ -238,7 +356,7 @@ class LookAt(TargetAction):
 
 
 
-class Illuminate(NoTargetAction):
+class Illuminate(Action):
     """
     Change the ambient light level at the location of the actor.  Since this is
     an administrative action that directly manipulates the environment, the
@@ -488,7 +606,7 @@ class Wear(TargetAction):
 
 
 
-class Equipment(NoTargetAction):
+class Equipment(Action):
     expr = pyparsing.Literal("equipment")
 
     actorInterface = iimaginary.IClothingWearer
@@ -528,9 +646,9 @@ class TakeFrom(ToolAction):
             pyparsing.White() +
             targetString("tool"))
 
-    def targetNotAvailable(self, player, exc):
+    def cantFind_target(self, player, targetName):
         return "Nothing like that around here."
-    toolNotAvailable = targetNotAvailable
+    cantFind_tool = cantFind_target
 
     def do(self, player, line, target, tool):
         # XXX Make sure target is in tool
@@ -547,7 +665,7 @@ class PutIn(ToolAction):
     toolInterface = iimaginary.IThing
     targetInterface = iimaginary.IContainer
 
-    def targetNotAvailable(self, player, exc):
+    def cantFind_target(self, player, targetName):
         return "That doesn't work."
 
     expr = (pyparsing.Literal("put") +
@@ -609,7 +727,7 @@ class Take(TargetAction):
             pyparsing.White() +
             targetString("target"))
 
-    def targetNotAvailable(self, player, exc):
+    def cantFind_target(self, player, targetName):
         return u"Nothing like that around here."
 
     def targetRadius(self, player):
@@ -641,7 +759,7 @@ class Drop(TargetAction):
             pyparsing.White() +
             targetString("target"))
 
-    def targetNotAvailable(self, player, exc):
+    def cantFind_target(self, player, targetName):
         return "Nothing like that around here."
 
     def targetRadius(self, player):
@@ -678,7 +796,7 @@ DIRECTION_LITERAL = reduce(
 
 
 
-class Dig(NoTargetAction):
+class Dig(Action):
     expr = (pyparsing.Literal("dig") +
             pyparsing.White() +
             DIRECTION_LITERAL +
@@ -707,7 +825,7 @@ class Dig(NoTargetAction):
 
 
 
-class Bury(NoTargetAction):
+class Bury(Action):
     expr = (pyparsing.Literal("bury") +
             pyparsing.White() +
             DIRECTION_LITERAL)
@@ -738,47 +856,56 @@ class Bury(NoTargetAction):
 
 
 
-class Go(NoTargetAction):
-    expr = (pyparsing.Optional(pyparsing.Literal("go") + pyparsing.White()) +
-            DIRECTION_LITERAL)
+class Go(Action):
+    expr = (
+        DIRECTION_LITERAL |
+        (pyparsing.Literal("go") + pyparsing.White() +
+         targetString("direction")) |
+        (pyparsing.Literal("enter") + pyparsing.White() +
+         targetString("direction")) |
+        (pyparsing.Literal("exit") + pyparsing.White() +
+         targetString("direction")))
+
+    actorInterface = iimaginary.IThing
+
+    def resolve_direction(self, player, directionName):
+        """
+        Identify a direction by having the player search for L{IExit}
+        providers that they can see and reach.
+        """
+        return player.obtainOrReportWhyNot(
+            Named(directionName, CanSee(ProviderOf(iimaginary.IExit)), player),
+            And(Proximity(3.0), And(Visibility(), Traversability())))
+
+
+    def cantFind_direction(self, actor, directionName):
+        """
+        Explain to the user that they can't go in a direction that they can't
+        locate.
+        """
+        return u"You can't go that way."
+
 
     def do(self, player, line, direction):
-        try:
-            exit = iimaginary.IContainer(player.thing.location).getExitNamed(direction)
-        except KeyError:
-            raise eimaginary.ActionFailure(events.ThatDoesntWork(
-                actor=player.thing,
-                actorMessage=u"You can't go that way."))
-
-        dest = exit.toLocation
-        location = player.thing.location
+        location = player.location
 
         evt = events.Success(
             location=location,
-            actor=player.thing,
-            otherMessage=(player.thing, " leaves ", direction, "."))
+            actor=player,
+            otherMessage=(player, " leaves ", direction.name, "."))
         evt.broadcast()
 
-        if exit.sibling is not None:
-            arriveDirection = exit.sibling.name
-        else:
-            arriveDirection = object.OPPOSITE_DIRECTIONS[exit.name]
-
         try:
-            player.thing.moveTo(
-                dest,
-                arrivalEventFactory=lambda player: events.MovementArrivalEvent(
-                    thing=player,
-                    origin=None,
-                    direction=arriveDirection))
+            direction.traverse(player)
         except eimaginary.DoesntFit:
             raise eimaginary.ActionFailure(events.ThatDoesntWork(
-                actor=player.thing,
-                actorMessage=language.ExpressString(u"There's no room for you there.")))
+                actor=player,
+                actorMessage=language.ExpressString(
+                        u"There's no room for you there.")))
 
-        # XXX A convention for programmatically invoked actions?
-        # None as the line?
-        LookAround().do(player, "look")
+        # This is subtly incorrect: see http://divmod.org/trac/ticket/2917
+        lookAroundActor = iimaginary.IActor(player)
+        LookAround().do(lookAroundActor, "look")
 
 
 
@@ -789,9 +916,11 @@ class Restore(TargetAction):
 
     targetInterface = iimaginary.IActor
 
-    def targetNotAvailable(self, player, exc):
-        for thing in player.search(self.targetRadius(player), iimaginary.IThing, exc.partValue):
-            return (language.Noun(thing).nounPhrase().plaintext(player), " cannot be restored.")
+    def cantFind_target(self, player, targetName):
+        for thing in player.thing.search(self.targetRadius(player),
+                                         iimaginary.IThing, targetName):
+            return (language.Noun(thing).nounPhrase().plaintext(player),
+                    " cannot be restored.")
         return "Who's that?"
 
     def targetRadius(self, player):
@@ -831,7 +960,6 @@ class Hit(TargetAction):
         return 3
 
     def do(self, player, line, target):
-        toBroadcast = []
         if target is player:
             raise eimaginary.ActionFailure(
                 events.ThatDoesntMakeSense(u"Hit yourself?  Stupid.",
@@ -866,7 +994,7 @@ class Hit(TargetAction):
 
 
 
-class Say(NoTargetAction):
+class Say(Action):
     expr = (((pyparsing.Literal("say") + pyparsing.White()) ^
              pyparsing.Literal("'")) +
             pyparsing.restOfLine.setResultsName("text"))
@@ -877,7 +1005,7 @@ class Say(NoTargetAction):
 
 
 
-class Emote(NoTargetAction):
+class Emote(Action):
     expr = (((pyparsing.Literal("emote") + pyparsing.White()) ^
              pyparsing.Literal(":")) +
             pyparsing.restOfLine.setResultsName("text"))
@@ -890,7 +1018,7 @@ class Emote(NoTargetAction):
 
 
 
-class Actions(NoTargetAction):
+class Actions(Action):
     expr = pyparsing.Literal("actions")
 
     def do(self, player, line):
@@ -903,7 +1031,7 @@ class Actions(NoTargetAction):
 
 
 
-class Search(NoTargetAction):
+class Search(Action):
     expr = (pyparsing.Literal("search") +
             targetString("name"))
 
@@ -920,7 +1048,7 @@ class Search(NoTargetAction):
 
 
 
-class Score(NoTargetAction):
+class Score(Action):
     expr = pyparsing.Literal("score")
 
     scoreFormat = (
@@ -951,7 +1079,7 @@ class ExpressWho(language.BaseExpress):
 
 
 
-class Who(NoTargetAction):
+class Who(Action):
     expr = pyparsing.Literal("who")
 
     def do(self, player, line):
@@ -1003,7 +1131,7 @@ class ExpressInventory(language.BaseExpress):
 
 
 
-class Inventory(NoTargetAction):
+class Inventory(Action):
     expr = pyparsing.Literal("inventory")
 
     def do(self, player, line):
@@ -1113,7 +1241,7 @@ class Set(TargetAction):
 
 
 
-class Help(NoTargetAction):
+class Help(Action):
     """
     A command for looking up help files.
 

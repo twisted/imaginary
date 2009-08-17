@@ -32,7 +32,7 @@ class WearIt(unittest.TestCase, commandutils.LanguageMixin):
     def testWearing(self):
         self.wearer.putOn(self.shirtGarment)
 
-        self.assertEquals(self.shirt.location, None)
+        self.assertEquals(self.shirt.location, self.dummy)
 
 
 
@@ -115,6 +115,26 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         self.assertIdentical(self.dukes.location, self.daisy)
 
 
+    def test_cantDropSomethingYouAreWearing(self):
+        """
+        If you're wearing an article of clothing, you should not be able to
+        drop it until you first take it off.  After taking it off, however, you
+        can move it around just fine.
+        """
+        wearer = iimaginary.IClothingWearer(self.daisy)
+        wearer.putOn(iimaginary.IClothing(self.undies))
+        af = self.assertRaises(ActionFailure, self.undies.moveTo,
+                               self.daisy.location)
+        self.assertEquals(
+            u''.join(af.event.plaintext(self.daisy)),
+            u"You can't move the pair of lacy underwear "
+            u"without removing it first.\n")
+
+        wearer.takeOff(iimaginary.IClothing(self.undies))
+        self.undies.moveTo(self.daisy.location)
+        self.assertEquals(self.daisy.location, self.undies.location)
+
+
     def testTakeOffUnderwearBeforePants(self):
         # TODO - underwear removal skill
         wearer = iimaginary.IClothingWearer(self.daisy)
@@ -174,10 +194,19 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
 class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
-    def testWearIt(self):
+
+    def createPants(self):
+        """
+        Create a pair of Daisy Dukes for the test player to wear.
+        """
         self._test("create pants named 'pair of daisy dukes'",
                    ["You create a pair of daisy dukes."],
                    ["Test Player creates a pair of daisy dukes."])
+
+
+
+    def testWearIt(self):
+        self.createPants()
         self._test("wear 'pair of daisy dukes'",
                    ["You put on the pair of daisy dukes."],
                    ["Test Player puts on a pair of daisy dukes."])
@@ -188,9 +217,7 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
         A garment can be removed with the I{take off} action or the
         I{remove} action.
         """
-        self._test("create pants named 'pair of daisy dukes'",
-                   ["You create a pair of daisy dukes."],
-                   ["Test Player creates a pair of daisy dukes."])
+        self.createPants()
         self._test("wear 'pair of daisy dukes'",
                    ["You put on the pair of daisy dukes."],
                    ["Test Player puts on a pair of daisy dukes."])
@@ -207,9 +234,7 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
     def testProperlyDressed(self):
-        self._test("create pants named 'pair of daisy dukes'",
-                   ["You create a pair of daisy dukes."],
-                   ["Test Player creates a pair of daisy dukes."])
+        self.createPants()
         self._test("create underwear named 'pair of lace panties'",
                    ["You create a pair of lace panties."],
                    ["Test Player creates a pair of lace panties."])
@@ -227,9 +252,7 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
     def testTooBulky(self):
-        self._test("create pants named 'pair of daisy dukes'",
-                   ["You create a pair of daisy dukes."],
-                   ["Test Player creates a pair of daisy dukes."])
+        self.createPants()
         self._test("create pants named 'pair of overalls'",
                    ["You create a pair of overalls."],
                    ["Test Player creates a pair of overalls."])
@@ -248,9 +271,7 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
     def testInaccessibleGarment(self):
-        self._test("create pants named 'pair of daisy dukes'",
-                   ["You create a pair of daisy dukes."],
-                   ["Test Player creates a pair of daisy dukes."])
+        self.createPants()
         self._test("create underwear named 'pair of lace panties'",
                    ["You create a pair of lace panties."],
                    ["Test Player creates a pair of lace panties."])
@@ -266,9 +287,7 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
     def testEquipment(self):
-        self._test("create pants named 'pair of daisy dukes'",
-                   ["You create a pair of daisy dukes."],
-                   ["Test Player creates a pair of daisy dukes."])
+        self.createPants()
         self._test("create underwear named 'pair of lace panties'",
                    ["You create a pair of lace panties."],
                    ["Test Player creates a pair of lace panties."])

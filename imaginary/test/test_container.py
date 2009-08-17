@@ -5,6 +5,7 @@ from twisted.trial import unittest
 from axiom import store
 
 from imaginary import eimaginary, objects
+from imaginary.test.commandutils import CommandTestCaseMixin, E
 
 class ContainerTestCase(unittest.TestCase):
     def setUp(self):
@@ -65,3 +66,57 @@ class ContainerTestCase(unittest.TestCase):
         self.assertRaises(eimaginary.Closed, self.container.remove, self.object)
         self.assertEquals(list(self.container.getContents()), [self.object])
         self.assertIdentical(self.object.location, self.containmentCore)
+
+
+
+class IngressAndEgressTestCase(CommandTestCaseMixin, unittest.TestCase):
+    """
+    I should be able to enter and exit containers that are sufficiently big.
+    """
+
+    def setUp(self):
+        """
+        Create a container, C{self.box} that is large enough to stand in.
+        """
+        CommandTestCaseMixin.setUp(self)
+        self.box = objects.Thing(store=self.store, name=u'box')
+        self.container = objects.Container.createFor(self.box, capacity=1000)
+        self.box.moveTo(self.location)
+
+
+    def test_enterBox(self):
+        """
+        I should be able to enter the box.
+        """
+        self.assertCommandOutput(
+            'enter box',
+            [E('[ Test Location ]'),
+             'Location for testing.',
+             'Observer Player and a box'],
+            ['Test Player leaves into the box.'])
+
+
+    def test_exitBox(self):
+        """
+        I should be able to exit the box.
+        """
+        self.player.moveTo(self.container)
+        self.assertCommandOutput(
+            'exit out',
+            [E('[ Test Location ]'),
+             'Location for testing.',
+             'Observer Player and a box'],
+            ['Test Player leaves out of the box.'])
+        self.assertEquals(self.player.location,
+                          self.location)
+
+
+    def test_enterWhileHoldingBox(self):
+        """
+        When I'm holding a container, I shouldn't be able to enter it.
+        """
+        self.container.thing.moveTo(self.player)
+        self.assertCommandOutput('enter box',
+                                 ["The box won't fit inside itself."],
+                                 [])
+

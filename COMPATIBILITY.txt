@@ -1,0 +1,6 @@
+Imaginary provides _no_ source-level compatibility from one release to the next.
+
+Efforts will be made to provide database level compatibility (i.e. data from
+one release can be loaded with the next).  However, although we will try to
+ensure that data will load, there is no guarantee that it will be meaningfully
+upgraded yet.

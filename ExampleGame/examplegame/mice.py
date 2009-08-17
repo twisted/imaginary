@@ -242,7 +242,7 @@ class HiraganaMouse(item.Item):
             character = random.choice(japanese.hiragana.keys())
         self._currentChallenge = character
         actor = self._actor()
-        action.Say().do(actor.thing, None, character)
+        action.Say().do(actor, None, character)
 
 
 

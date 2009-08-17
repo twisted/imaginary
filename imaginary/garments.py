@@ -11,6 +11,9 @@ from zope.interface import implements
 from axiom import item, attributes
 
 from imaginary import iimaginary, language, objects
+from imaginary.eimaginary import ActionFailure
+from imaginary.events import ThatDoesntWork
+from imaginary.idea import Link
 from imaginary.creation import createCreator
 from imaginary.enhancement import Enhancement
 
@@ -80,9 +83,17 @@ for gslot in GARMENT_SLOTS:
 
 
 class Garment(item.Item, Enhancement):
+    """
+    An enhancement for a L{Thing} representing its utility as an article of
+    clothing.
+    """
     implements(iimaginary.IClothing,
-               iimaginary.IDescriptionContributor)
-    powerupInterfaces = (iimaginary.IClothing, iimaginary.IDescriptionContributor)
+               iimaginary.IDescriptionContributor,
+               iimaginary.IMovementRestriction)
+
+    powerupInterfaces = (iimaginary.IClothing,
+                         iimaginary.IDescriptionContributor,
+                         iimaginary.IMovementRestriction)
 
     thing = attributes.reference()
 
@@ -111,6 +122,42 @@ class Garment(item.Item, Enhancement):
         somesuch.
         """
         return self.garmentDescription
+
+
+    def nowWornBy(self, wearer):
+        """
+        This garment is now worn by the given wearer.  As this garment is now
+        on top, set its C{wearLevel} to be higher than any other L{Garment}
+        related to the new C{wearer}.
+        """
+        self.wearer = wearer
+        self.wearLevel = wearer.store.query(
+            Garment,
+            Garment.wearer == wearer).getColumn("wearLevel").max(default=0) + 1
+
+
+    def noLongerWorn(self):
+        """
+        This garment is no longer being worn by anyone.
+        """
+        self.wearer = None
+        self.wearLevel = None
+
+
+    def movementImminent(self, movee, destination):
+        """
+        Something is trying to move.  Don't allow it if I'm currently worn.
+        """
+        if self.wearer is not None and movee is self.thing:
+            # XXX I don't actually know who is performing the action :-(.
+            raise ActionFailure(
+                ThatDoesntWork(
+                    actor=self.thing.location,
+                    actorMessage=[
+                        "You can't move ",
+                        language.Noun(self.thing).definiteNounPhrase(),
+                        " without removing it first."]))
+
 
 
 def _orderTopClothingByGlobalSlotList(tempClothes):
@@ -154,9 +201,14 @@ class Wearer(item.Item, Enhancement):
     person or mannequin.
     """
 
-    implements(iimaginary.IClothingWearer, iimaginary.IDescriptionContributor)
-    powerupInterfaces = (iimaginary.IClothingWearer, iimaginary.IDescriptionContributor,
-                         iimaginary.ILinkContributor)
+    _interfaces = (iimaginary.IClothingWearer,
+                   iimaginary.IDescriptionContributor,
+                   iimaginary.ILinkContributor,
+                   iimaginary.ILinkAnnotator)
+
+    implements(*_interfaces)
+
+    powerupInterfaces = _interfaces
 
 
     thing = attributes.reference()
@@ -172,27 +224,52 @@ class Wearer(item.Item, Enhancement):
 
 
     def putOn(self, newGarment):
+        """
+        Wear a new L{Garment} on this L{Wearer}, first moving it to this
+        L{Wearer}'s C{thing} if it is not already there.
+
+        @param newGarment: the article of clothing to wear.
+
+        @type newGarment: L{Garment}
+
+        @raise TooBulky: if the bulk of any of the slots occupied by
+            C{newGarment} is greater than the bulk of any other clothing
+            already in that slot.  (For example, if you tried to wear a T-shirt
+            over a heavy coat.)
+        """
         c = self.getGarmentDict()
         for garmentSlot in newGarment.garmentSlots:
             if garmentSlot in c:
-                # We don't want to be able to wear T-shirts over heavy coats;
-                # therefore, heavy coats have a high "bulk"
                 currentTopOfSlot = c[garmentSlot][-1]
                 if currentTopOfSlot.bulk >= newGarment.bulk:
                     raise TooBulky(currentTopOfSlot, newGarment)
 
-        newGarment.thing.moveTo(None)
-        newGarment.wearer = self
-        newGarment.wearLevel = self.store.query(Garment, Garment.wearer == self).getColumn("wearLevel").max(default=0) + 1
+        newGarment.thing.moveTo(self.thing)
+        newGarment.nowWornBy(self)
 
 
     def takeOff(self, garment):
+        """
+        Remove a garment which this player is wearing.
+
+        (Note: no error checking is currently performed to see if this garment
+        is actually already worn by this L{Wearer}.)
+
+        @param garment: the article of clothing to remove.
+
+        @type garment: L{Garment}
+
+        @raise InaccessibleGarment: if the garment is obscured by any other
+            clothing, and is therefore not in the top slot for any of the slots
+            it occupies.  For example, if you put on an undershirt, then a
+            turtleneck, you can't remove the undershirt without removing the
+            turtleneck first.
+        """
         gdict = self.getGarmentDict()
         for slot in garment.garmentSlots:
             if gdict[slot][-1] is not garment:
                 raise InaccessibleGarment(self, garment, gdict[slot][-1])
-        garment.thing.moveTo(garment.wearer.thing)
-        garment.wearer = garment.wearLevel = None
+        garment.noLongerWorn()
 
 
     # IDescriptionContributor
@@ -205,11 +282,45 @@ class Wearer(item.Item, Enhancement):
 
     # ILinkContributor
     def links(self):
-        d = {}
-        for t in self.store.query(objects.Thing, attributes.AND(Garment.thing == objects.Thing.storeID,
-                                                                Garment.wearer == self)):
-            d.setdefault(t.name, []).append(t)
-        return d
+        for garmentThing in self.store.query(objects.Thing,
+                                  attributes.AND(
+                Garment.thing == objects.Thing.storeID,
+                Garment.wearer == self)):
+            yield Link(self.thing.idea, garmentThing.idea)
+
+
+    def annotationsFor(self, link, idea):
+        """
+        Tell the containment system to disregard containment relationships for
+        which I will generate a link.
+        """
+        if list(link.of(iimaginary.IContainmentRelationship)):
+            if link.source.delegate is self.thing:
+                clothing = iimaginary.IClothing(link.target.delegate, None)
+                if clothing is not None:
+                    if clothing.wearer is self:
+                        yield _DisregardYourWearingIt()
+
+
+
+class _DisregardYourWearingIt(object):
+    """
+    This is an annotation, produced by L{Wearer} for containment relationships
+    between people (who are containers) and the clothing that they're wearing.
+    A hopefully temporary workaround for the fact that clothing is rendered in
+    its own way and therefor shouldn't show up in the list of a person's
+    contents.
+    """
+    implements(iimaginary.IElectromagneticMedium)
+
+    def opaqueTo(self, observer):
+        """
+        I am opaque to all observers; if I weren't, then clothing would show up
+        twice, and obscured clothing would show up as visible because it is
+        contained by the player.
+        """
+        return True
+
 
 
 

@@ -500,6 +500,49 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["Test Player arrives from the west."])
 
 
+    def test_goThroughOneWayExit(self):
+        """
+        Going through a one-way exit with a known direction will announce that
+        the player arrived from that direction; with an unknown direction it
+        will simply announce that they have arrived.
+        """
+        secretRoom = objects.Thing(store=self.store, name=u'Secret Room!')
+        objects.Container.createFor(secretRoom, capacity=1000)
+        myExit = objects.Exit(store=self.store, fromLocation=secretRoom,
+                              toLocation=self.location, name=u'north')
+        self.player.moveTo(secretRoom)
+        self._test(
+            "north",
+            [E("[ Test Location ]"),
+             "Location for testing.",
+             "Observer Player"],
+            ["Test Player arrives from the south."])
+        self.player.moveTo(secretRoom)
+        myExit.name = u'elsewhere'
+        self.assertCommandOutput(
+            "go elsewhere",
+            [E("[ Test Location ]"),
+             "Location for testing.",
+             "Observer Player"],
+            ["Test Player arrives."])
+
+
+    def test_goDoesntJumpOverExits(self):
+        """
+        You can't go through an exit without passing through exits which lead
+        to it.  Going through an exit named 'east' will only work if it is east
+        of your I{present} location, even if it is easily reachable from where
+        you stand.
+        """
+        northRoom = objects.Thing(store=self.store, name=u'Northerly')
+        eastRoom = objects.Thing(store=self.store, name=u'Easterly')
+        for room in northRoom, eastRoom:
+            objects.Container.createFor(room, capacity=1000)
+        objects.Exit.link(self.location, northRoom, u'north', distance=0.1)
+        objects.Exit.link(northRoom, eastRoom, u'east', distance=0.1)
+        self.assertCommandOutput("go east", [E("You can't go that way.")], [])
+
+
     def testDirectionalMovement(self):
         # A couple tweaks to state to make the test simpler
         self.observer.location = None

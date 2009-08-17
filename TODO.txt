@@ -1,0 +1,258 @@
+
+(This list of tasks is for the #2824 branch, it shouldn't be merged to trunk.)
+
+self-review:
+
+    (Since this is already a large branch, I am going to clean up the obvious
+    stuff before putting it into review for someone else)
+
+    * test coverage:
+
+        * there need to be direct tests for imaginary.idea.  This is obviously
+          the biggest issue.
+
+        * lifecycle testing (testing that if these are not identical on
+          subsequent method calls, bad stuff happens):
+            * Thing.idea
+            * Exit.exitIdea
+            * Containment._exitIdea
+            * Containment._entranceIdea
+
+        * direct tests for IContainmentRelationship and
+          ContainmentRelationship.
+
+-------------------------------------------------------------------------------
+
+I think everything below this line is probably for a separate branch, but I
+need to clean it up and file some additional tickets before deleting it.
+
+-------------------------------------------------------------------------------
+
+General high-level structural issues:
+
+    * the "sensory" system could address multiple issues.  It would be
+      worthwhile to have a rudiment of it, if only to remove duplication
+      between "findProviders" and "search" and the thing that computes the list
+      for ExpressSurroundings, so we can have a consistent way to construct
+      that thing.
+
+    * movement restrictions want to raise ActionFailure for pretty error
+      handling, but don't know who the actor is.  This should be dealt with in
+      more than one way:
+
+        * There should be an error-handling path which allows actions to fail
+          with feedback only to the actor.  "You can't do that because..."
+
+        * moveTo should receive more information, specifically the actor who
+          initiated the movement.  There should probably be a TON of extra
+          information, like the number of joules used in support of the
+          movement etc.
+
+        * moveTo should not be raising ActionFailure directly.  There should be
+          a conventional exception type to raise specifically for saying "not
+          movable", and its callers should catch it.
+
+    * Navigators and retrievers need to be reconciled.  Specifically, CanSee
+      and Visibility need to be smashed into the same object somehow.
+
+Some use-cases that should be implemented / tested:
+
+    * container travel:
+
+        * I should *not* be able to get out of a closed container that I'm in.
+
+        * Bugfix, sort of: If I'm inside a closed container, I should be able
+          to see and access the stuff around me.
+
+    * containment fixes
+
+        * the obtain() call used to pass to ExpressSurroundings is wrong; it's
+          asking "what can you, the location, see from here"; whereas it should
+          be asking "what can you, the player, see in this location".  If it
+          were to be really smart / correct, it would be passing an initial
+          path to obtain(), since we know the relationship between these two
+          things.  Dumb implementation of that could simply re-evaluate the
+          path up to that point and ignore all the links in it to validate that
+          it's a valid path.
+
+    * ranged actions
+
+        * 'get coolant rod with claw'
+
+        * 'shoot target'
+
+            * A shooting range.  There are two rooms: one with targets in it,
+              one with the player and their gun.
+
+                * 'look' and 'shoot' should work, although ideally 'go' should
+                  not: it should say something like "that's live fire over
+                  there!"
+
+            * the gun should be implicitly located, since it's the only valid
+              tool.
+
+    * I should not be able to see *or* reach objects that are around corners.
+
+    * I should be able to exit a darkened room, perhaps with some modifiers.
+      Some effects that some games might want, should these be default?:
+
+        * Stumbling around in the dark will occasionally send you in a random
+          direction.
+
+        * You can always exit in the direction of an exit where the target of
+          the exit is itself lit.
+
+        * Definitely some games will want this, some not: You are likely to be
+          eaten by a lurking grue.
+
+    * I shouldn't be able to see an event that transpires in a dark room.
+
+        * I should be able to pick up a shirt in a dark room if I have
+          something that lets only me see in the dark (night-vision goggles?)
+          but others should not be able to see that.
+
+Some restructuring:
+
+    * What paramters should findProviders and search take?  We're starting with
+      'distance' and 'interface'.  Let's enumerate some verbs:
+
+        * take: something you can physically reach without walking
+
+        * drop: something you are holding
+
+        * wear: something you are holding
+
+        * sit: something in the room, something you are *NOT* holding
+
+        * stand: something *which is your location*.  (something which is
+          holding you?)
+
+        * unwear/remove: something you are *wearing*?  something you're holding
+          would be good enough.
+
+        * look: something you can see
+
+            * we need a 'near look' and a 'far look'.  When the user types
+              'look' they only want to see items in their immediate vicinity,
+              but 'look around' or 'look north' or whatever should still allow
+              them to see things that are close enough.
+
+        * shoot: something you can see?  If there's something in a glass box,
+          you should be able to shoot it.
+
+        * eat: something you're holding
+
+        defaults:
+
+            * actor -> "you" (still not sure what this means)
+
+                a thought: the self-link of the Idea starting an obtain()
+                search should apply annotationsForIncoming, but it should not
+                apply annotationsForOutgoing.  Then the actor idea can always
+                apply an annotationsForOutgoing that says "this isn't you any
+                more"?  then you can have a (retriever?  sense?)
+
+            * target -> something you're holding
+
+            * tool -> something you're holding
+
+        None of these verbs really know anything about distance, except
+        possibly "shoot" - which really cares about the distance to the target
+        *in the hit-probability calculation*; i.e. it wants to know about the
+        path during the execution of the action, not during the location of the
+        target.
+
+    * Rather than an ad-hoc construction of a Navigator and Retriever in
+      findProviders() and search(), there should be a (pluggable, eventually:
+      this is how one would implement night-vision goggles) way to get objects
+      representing "sensory" inputs. (although "reachability" is a bit of a
+      stretch for a sense, it does make sense as 'touch'.)  Practically
+      speaking, that means the logic in the "CanSee" retriever ought to be in
+      Visibility somehow.  Options for implementing this:
+
+        * smash the Retriever and the Navigator into one object, and compose
+          them.  Then build each one (Visibility, Reachability, etc) by
+          wrapping around the other.  Named goes around the outside in
+          search().
+
+    * add a convenient API for getCandelas and friends to use.  getCandelas
+      needs to not take lighting into account.  If we have an reification of
+      'sensory' objects, then we can construct a custom one for this query.
+
+    * Make an "_Idealized" (or something) base class which implements an Item
+      with an 'idea' attribute so that we can manage it on L{Exit}, L{Thing}
+      and perhaps something else.
+
+    * The special-cased just-to-self path in Idea.obtain sucks, because it's
+      inconsistent.  There's no 'shouldKeepGoing' call for the link that can
+      prevent it from yielding.  If we move the responsibility for doing
+      lighting back into the navigator (where, really, it belongs: Visibility
+      is supposed to be a navigator, right?) this means the navigator can't
+      prevent you from accessing an actor aspect of yourself.
+
+        Other cases which will use this same system:
+
+            * Restraints.  Let's say there's a chair that you sit in which
+              restrains you.  It needs a proxy which can prevent you from
+              reaching your actor interface.  This is much like darkness,
+              except it's going to want to *not* restrict visual events or
+              'examine'.
+
+            * Suppression / Anti-Magic Field.  Restraints and darkness both
+              prevent a blanket "everything" with a few possible exceptions;
+              you might also want an effect which suspends only specific
+              actions / interfaces.
+
+            * Blindfold.
+
+        * The two systems that all of these seem to touch are 'vision' and
+          'reachability'.  So we need link types that say "you can't see beyond
+          this point" and "you can't reach beyond this point".  That's
+          "Visibility" and "Proximity", as implemented already, except
+          Visibility can't say "don't keep going" for darkness.  It has to have
+          a way to say "you can't see stuff that is immediately on the other
+          side of this link, but if you go through another link that *is*
+          visible, then you can see stuff".  i.e. the case where you can't see
+          yourself, or any of your inventory, but you *can* see another room.
+
+    * (test for) additional L{ILinkContributor} powerups being added, removed
+      (i.e. making sure that the 'idea' in question is the same).
+
+----
+
+Rules for lighting:
+
+If a room is dark, all objects in that room should have the darkness rule
+applied to them, regardless (?) of how they are discovered.
+
+Right now this is enforced entirely by the CanSee retriever and the
+_PossiblyDark link annotation.
+
+However, this is overkill.  The link annotation is not used at any point during
+traversal.  Only the final annotation in any given path is used, and even that
+annotation is discarded if there is an effective "null annotation"; a link to a
+location with no lighting.  The way this is detected is (I think) suspect,
+because it doesn't use the path (path.of can't detect links which ).
+
+So we could implement the same rules by not annotating anything, and applying
+proxies only at the final link, inspecting its location, rather than applying
+an elaborate series of proxies as we go.
+
+Problems with the current implementation of lighting:
+
+    * applyLighting needs to know the interface that's being queried for so
+      that it can return a _DarkLocationProxy.  There's no good way to
+      determine this right now, because the way we know what interface is being
+      asked for has to do with the Retriever, which (in theory?) could be
+      something arbitrary.  We could make 'interface' a required attribute of
+      the navigator.  That seems a bit weird, since one could (theoretically)
+      want to be able to retrieve things by arbitrary sets of rules, but maybe
+      that's not a useful use-case?
+
+    * Limitations: these can be deferred for a different branch since I think
+      they're mostly just a SMOP, but worth thinking about:
+
+        * the proxy you get for a darkened object ought to be pluggable, so
+          that descriptions can change depending on light level.  This could be
+          a useful dramatic tool.
+

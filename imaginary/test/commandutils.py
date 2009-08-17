@@ -26,6 +26,17 @@ class CommandTestCaseMixin:
     """
     A mixin for TestCase classes which provides support for testing Imaginary
     environments via command-line transcripts.
+
+    @ivar store: the L{store.Store} containing all the relevant game objects.
+
+    @ivar location: The location where the test is taking place.
+
+    @ivar world: The L{ImaginaryWorld} that created the player.
+
+    @ivar player: The L{Thing} representing the main player.
+
+    @ivar observer: The L{Thing} representing the observer who sees the main
+        player's actions.
     """
 
     def setUp(self):
