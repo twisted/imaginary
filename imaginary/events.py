@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_actions -*-
+# -*- test-case-name: imaginary.test.test_actions.TargetActionTests.test_resolveTargetCaseInsensitively -*-
 
 from zope.interface import implements
 
@@ -72,8 +72,7 @@ class Event(language.BaseExpress):
         """
         L = []
         for observer in (self.location.idea.obtain(
-                ProviderOf(iimaginary.IEventObserver),
-                Proximity(0.5))):
+                Proximity(0.5, ProviderOf(iimaginary.IEventObserver)))):
             sender = observer.prepare(self)
             if not callable(sender):
                 raise TypeError("Senders must be callable", sender)

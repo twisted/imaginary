@@ -16,7 +16,7 @@ from imaginary import (iimaginary, eimaginary, iterutils, events,
                        objects, text as T, language, pyparsing)
 from imaginary.world import ImaginaryWorld
 from imaginary.idea import (
-    CanSee, Proximity, Visibility, ProviderOf, Named, And, Traversability)
+    CanSee, Proximity, ProviderOf, Named, Traversability)
 
 ## Hacks because pyparsing doesn't have fantastic unicode support
 _quoteRemovingQuotedString = pyparsing.quotedString.copy()
@@ -330,9 +330,9 @@ class LookAt(TargetAction):
             of how such reasons may be identified.
         """
         return player.obtainOrReportWhyNot(
-            Named(targetName, CanSee(ProviderOf(iimaginary.IVisible)), player),
-            And(Proximity(3.0),
-                Visibility()))
+            Proximity(3.0, Named(targetName,
+                                 CanSee(ProviderOf(iimaginary.IVisible)),
+                                 player)))
 
 
     def cantFind_target(self, player, name):
@@ -874,8 +874,11 @@ class Go(Action):
         providers that they can see and reach.
         """
         return player.obtainOrReportWhyNot(
-            Named(directionName, CanSee(ProviderOf(iimaginary.IExit)), player),
-            And(Proximity(3.0), And(Visibility(), Traversability())))
+            Proximity(
+                3.0,
+                Traversability(
+                    Named(directionName,
+                          CanSee(ProviderOf(iimaginary.IExit)), player))))
 
 
     def cantFind_direction(self, actor, directionName):

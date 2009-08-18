@@ -89,8 +89,7 @@ class DarknessTestCase(unittest.TestCase):
         """
         self.assertEquals(
             list(self.observer.idea.obtain(
-                    idea.ProviderOf(iimaginary.IThing),
-                    idea.Proximity(3))),
+                    idea.Proximity(3, idea.ProviderOf(iimaginary.IThing)))),
             [self.observer, self.location, self.rock]
             )
 

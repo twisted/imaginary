@@ -486,26 +486,6 @@ class ILocationLinkAnnotator(Interface):
 
 
 
-class IPathNavigator(Interface):
-    """
-    An L{IPathNavigator} distinguishes between L{Path}s we should continue
-    traversing during a call to L{Idea.obtain}, and the ones we should not.
-    """
-
-    def shouldKeepGoing(path):
-        """
-        Inspect a L{Path}. True if it should be searched, False if not.
-        """
-
-
-    def objectionsTo(path, result):
-        """
-        @return: an iterator of IWhyNot, if you object to this result being
-        yielded.
-        """
-
-
-
 class IRetriever(Interface):
     """
     An L{IRetriever} examines a L{Path} and retrieves a desirable object from
@@ -519,6 +499,18 @@ class IRetriever(Interface):
         """
         Return the suitable object described by C{path}, or None if the path is
         unsuitable for this retriever's purposes.
+        """
+
+    def shouldKeepGoing(path):
+        """
+        Inspect a L{Path}. True if it should be searched, False if not.
+        """
+
+
+    def objectionsTo(path, result):
+        """
+        @return: an iterator of IWhyNot, if you object to this result being
+        yielded.
         """
 
 

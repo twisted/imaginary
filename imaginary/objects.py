@@ -26,8 +26,8 @@ from imaginary import iimaginary, eimaginary, text as T, events, language
 from imaginary.enhancement import Enhancement as _Enhancement
 
 from imaginary.idea import (
-    Idea, Link, And, Proximity, Reachable, Visibility, ProviderOf, Named,
-    AlsoKnownAs, CanSee, Vector)
+    Idea, Link, Proximity, Reachable, ProviderOf, Named, AlsoKnownAs, CanSee,
+    Vector, _Delegator)
 
 
 class Points(item.Item):
@@ -185,25 +185,24 @@ class Thing(item.Item):
         Temporary emulation of the old way of doing things so that I can
         surgically replace findProviders.
         """
-        return self.idea.obtain(CanSee(ProviderOf(interface)),
-                                And(Proximity(distance),
-                                    Visibility()))
+        return self.idea.obtain(
+            Proximity(distance, CanSee(ProviderOf(interface))))
 
 
-    def obtainOrReportWhyNot(self, retriever, navigator):
+    def obtainOrReportWhyNot(self, retriever):
         """
-        Invoke L{Idea.obtain} on C{self.idea} with the given C{retriever} and
-        C{navigator}; if no results are yielded, then investigate the reasons
-        why no results have been yielded, and raise an exception describing one
-        of them.
+        Invoke L{Idea.obtain} on C{self.idea} with the given C{retriever}.
+
+        If no results are yielded, then investigate the reasons why no results
+        have been yielded, and raise an exception describing one of them.
 
         Objections may be registered by:
 
             - an L{iimaginary.IWhyNot} annotation on any link traversed in the
               attempt to discover results, or,
 
-            - an L{iimaginary.IWhyNot} yielded by the given C{navigator}'s
-              L{iimaginary.INavigator.objectionsTo} method.
+            - an L{iimaginary.IWhyNot} yielded by the given C{retriever}'s
+              L{iimaginary.IRetriever.objectionsTo} method.
 
         @return: a list of objects returned by C{retriever.retrieve}
 
@@ -212,7 +211,7 @@ class Thing(item.Item):
         @raise eimaginary.ActionFailure: if no results are available, and an
             objection has been registered.
         """
-        obt = self.idea.obtain(retriever, navigator)
+        obt = self.idea.obtain(retriever)
         results = list(obt)
         if not results:
             reasons = list(obt.reasonsWhyNot)
@@ -241,10 +240,10 @@ class Thing(item.Item):
 
         @return: An iterable of L{iimaginary.IThing} providers which are found.
         """
-        nav = And(And(Proximity(distance), Reachable()), Visibility())
-        prov = ProviderOf(interface)
-        retr = Named(name, CanSee(prov), self)
-        return self.obtainOrReportWhyNot(retr, nav)
+        return self.obtainOrReportWhyNot(
+            Proximity(
+                distance,
+                Reachable(Named(name, CanSee(ProviderOf(interface)), self))))
 
 
     def moveTo(self, where, arrivalEventFactory=None):
@@ -665,23 +664,31 @@ class Containment(object):
         """
         return ExpressSurroundings(
             self.thing.idea.obtain(
-                _ContainedBy(CanSee(ProviderOf(iimaginary.IThing)), self),
-                Visibility()))
+                _ContainedBy(CanSee(ProviderOf(iimaginary.IThing)), self)))
 
 
 
-class _ContainedBy(structlike.record('retriever container')):
+class _ContainedBy(_Delegator):
     """
-    An L{IRetriever} which discovers only things present in a given container.
-    Currently used only for discovering the list of things to list in a
-    container's description.
+    An L{iimaginary.IRetriever} which discovers only things present in a given
+    container.  Currently used only for discovering the list of things to list
+    in a container's description.
 
     @ivar retriever: a retriever to delegate to.
 
-    @type retriever: L{IRetriever}
+    @type retriever: L{iimaginary.IRetriever}
+
+    @ivar container: the container to test containment by
+
+    @type container: L{IThing}
     """
 
     implements(iimaginary.IRetriever)
+
+    def __init__(self, retriever, container):
+        _Delegator.__init__(self, retriever)
+        self.container = container
+
 
     def retrieve(self, path):
         """
@@ -1017,7 +1024,7 @@ class LocationLighting(item.Item, _Enhancement):
         """
         sum = self.candelas
         for candle in self.thing.idea.obtain(
-            ProviderOf(iimaginary.ILightSource), Proximity(1)):
+            Proximity(1, ProviderOf(iimaginary.ILightSource))):
             sum += candle.candelas
         return sum
 
@@ -1111,7 +1118,8 @@ class _PossiblyDark(structlike.record("lighting")):
         
         """
         # XXX wrong, we need to examine this exactly the same way applyLighting
-        # does.  CanSee and Visibility *really* need to be the same object.
+        # does.  CanSee and Visibility *are* the same object now so it is
+        # possible to do.
         if self.lighting.getCandelas():
             return True
         litThing = list(path.eachTargetAs(iimaginary.IThing))[-1]
@@ -1142,8 +1150,7 @@ class _PossiblyDark(structlike.record("lighting")):
         elif (eventualTarget is self.lighting.thing and
               requestedInterface is iimaginary.IVisible):
             return _DarkLocationProxy(self.lighting.thing)
-        elif _eventuallyContains(self.lighting.thing,
-                                 litThing):
+        elif _eventuallyContains(self.lighting.thing, litThing):
             return None
         else:
             return eventualTarget
