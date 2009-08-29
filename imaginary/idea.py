@@ -6,8 +6,6 @@ events to locate the objects which can respond to them.  The top-level
 entry-point to this system is L{Idea.obtain}.
 """
 
-from itertools import chain
-
 from zope.interface import implements
 from epsilon.structlike import record
 
