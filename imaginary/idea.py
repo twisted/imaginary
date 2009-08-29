@@ -97,7 +97,17 @@ class Path(record('links')):
 
     def targetAs(self, interface):
         """
-        @return: the last link's target.
+        Retrieve the target of the last link of this path, its final
+        destination, as a given interface.
+
+        @param interface: the interface to retrieve.
+
+        @type interface: L{zope.interface.interfaces.IInterface}
+
+        @return: the last link's target, adapted to the given interface, or
+            C{None} if no appropriate adapter or component exists.
+
+        @rtype: C{interface} or C{NoneType}
         """
         return interface(self.links[-1].target.delegate, None)
 
@@ -497,6 +507,11 @@ class ProviderOf(record("interface")):
     """
     L{ProviderOf} is a retriever which will retrieve the facet which provides
     its C{interface}, if any exists at the terminus of the path.
+
+    @ivar interface: The interface which defines the type of values returned by
+        the C{retrieve} method.
+
+    @type interface: L{zope.interface.interfaces.IInterface}
     """
 
     implements(IRetriever)
@@ -513,6 +528,11 @@ class ProviderOf(record("interface")):
         """
         Retrieve the target of the path, as it provides the interface specified
         by this L{ProviderOf}.
+
+        @return: the target of the path, adapted to this retriever's interface,
+            as defined by L{Path.targetAs}.
+
+        @rtype: L{ProviderOf.interface}
         """
         return path.targetAs(self.interface)
 
