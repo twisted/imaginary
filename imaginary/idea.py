@@ -430,8 +430,6 @@ class Proximity(DelegatingRetriever):
     @type distance: L{float}
     """
 
-    implements(IRetriever)
-
     def __init__(self, distance, retriever):
         DelegatingRetriever.__init__(self, retriever)
         self.distance = distance
@@ -453,8 +451,6 @@ class Reachable(DelegatingRetriever):
     L{Reachable} is a navivator which will object to any path with an
     L{IObstruction} annotation on it.
     """
-
-    implements(IRetriever)
 
     def moreObjectionsTo(self, path, result):
         """
@@ -496,7 +492,6 @@ class Vector(record('distance direction')):
     implements(IDistance)
 
 
-# Application
 
 class ProviderOf(record("interface")):
     """
@@ -570,8 +565,6 @@ class Named(DelegatingRetriever):
     @type observer: L{Thing}
     """
 
-    implements(IRetriever)
-
     def __init__(self, name, retriever, observer):
         DelegatingRetriever.__init__(self, retriever)
         self.name = name
@@ -600,9 +593,14 @@ class CanSee(DelegatingRetriever):
     Wrap a L{ProviderOf}, yielding the results that it would yield, but
     applying lighting to the ultimate target based on the last L{IThing} the
     path.
-    """
 
-    implements(IRetriever)
+    @ivar retriever: The lowest-level retriever being wrapped.
+
+    @type retriever: L{ProviderOf} (Note: it might be a good idea to add an
+        'interface' attribute to L{IRetriever} so this no longer depends on a
+        more specific type than other L{DelegatingRetriever}s, to make the
+        order of composition more flexible.)
+    """
 
     def resultRetrieved(self, path, subResult):
         """
@@ -617,11 +615,7 @@ class CanSee(DelegatingRetriever):
         # you need to be able to look from a light room to a dark room, so only
         # apply the most "recent" lighting properties.
         return litlinks[-1].applyLighting(
-            litThing,
-            subResult,
-            # XXX this property is violating encapsulation a bit: see above in
-            # Named.interface.
-            self.retriever.interface)
+            litThing, subResult, self.retriever.interface)
 
 
     def shouldStillKeepGoing(self, path):
