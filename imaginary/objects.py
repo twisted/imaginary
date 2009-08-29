@@ -27,7 +27,7 @@ from imaginary.enhancement import Enhancement as _Enhancement
 
 from imaginary.idea import (
     Idea, Link, Proximity, Reachable, ProviderOf, Named, AlsoKnownAs, CanSee,
-    Vector, _Delegator)
+    Vector, DelegatingRetriever)
 
 
 class Points(item.Item):
@@ -668,7 +668,7 @@ class Containment(object):
 
 
 
-class _ContainedBy(_Delegator):
+class _ContainedBy(DelegatingRetriever):
     """
     An L{iimaginary.IRetriever} which discovers only things present in a given
     container.  Currently used only for discovering the list of things to list
@@ -686,19 +686,16 @@ class _ContainedBy(_Delegator):
     implements(iimaginary.IRetriever)
 
     def __init__(self, retriever, container):
-        _Delegator.__init__(self, retriever)
+        DelegatingRetriever.__init__(self, retriever)
         self.container = container
 
 
-    def retrieve(self, path):
+    def resultRetrieved(self, path, result):
         """
         If this L{_ContainedBy}'s container contains the last L{IThing} target
         of the given path, return the result of this L{_ContainedBy}'s
         retriever retrieving from the given C{path}, otherwise C{None}.
         """
-        result = self.retriever.retrieve(path)
-        if result is None:
-            return None
         containments = list(path.of(iimaginary.IContainmentRelationship))
         if containments:
             if containments[-1].containedBy is self.container:

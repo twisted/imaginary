@@ -709,10 +709,8 @@ class IElectromagneticMedium(Interface):
     as a link annotation.
     """
 
-    def opaqueTo(observer):
+    def isOpaque():
         """
-        Will this propagate radiation in C{observer}'s visible spectrum?
+        Will this propagate radiation the visible spectrum?
         """
-
-
 

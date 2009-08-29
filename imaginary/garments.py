@@ -313,11 +313,11 @@ class _DisregardYourWearingIt(object):
     """
     implements(iimaginary.IElectromagneticMedium)
 
-    def opaqueTo(self, observer):
+    def isOpaque(self):
         """
-        I am opaque to all observers; if I weren't, then clothing would show up
-        twice, and obscured clothing would show up as visible because it is
-        contained by the player.
+        I am opaque, so that clothing will show up only once (in your "wearing"
+        list, rather than there and in your "contained" list), and obscured
+        clothing won't show up at all.
         """
         return True
 

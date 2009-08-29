@@ -337,9 +337,15 @@ class ObtainResult(record("idea retriever")):
 
 
 
-class _Delegator(object):
+class DelegatingRetriever(object):
     """
     A delegating retriever, so that retrievers can be easily composed.
+
+    See the various methods marked for overriding.
+
+    @ivar retriever: A retriever to delegate most operations to.
+
+    @type retriever: L{IRetriever}
     """
 
     implements(IRetriever)
@@ -351,73 +357,89 @@ class _Delegator(object):
         self.retriever = retriever
 
 
-    def _moreObjectionsTo(self, path, result):
+    def moreObjectionsTo(self, path, result):
         """
-        
+        Override in subclasses to yield objections to add to this
+        L{DelegatingRetriever}'s C{retriever}'s C{objectionsTo}.
+
+        By default, offer no additional objections.
         """
         return []
 
 
     def objectionsTo(self, path, result):
         """
-        Delegate to _moreObjectionsTo.
+        Concatenate C{self.moreObjectionsTo} with C{self.moreObjectionsTo}.
         """
         for objection in self.retriever.objectionsTo(path, result):
             yield objection
-        for objection in self._moreObjectionsTo(path, result):
+        for objection in self.moreObjectionsTo(path, result):
             yield objection
 
 
-    def _shouldStillKeepGoing(self, path):
+    def shouldStillKeepGoing(self, path):
         """
-        
+        Override in subclasses to halt traversal via a C{False} return value for
+        C{shouldKeepGoing} if this L{DelegatingRetriever}'s C{retriever}'s
+        C{shouldKeepGoing} returns C{True}.
+
+        By default, return C{True} to keep going.
         """
         return True
 
 
     def shouldKeepGoing(self, path):
         """
-        
+        If this L{DelegatingRetriever}'s C{retriever}'s C{shouldKeepGoing}
+        returns C{False} for the given path, return C{False} and stop
+        traversing.  Otherwise, delegate to C{shouldStillKeepGoing}.
         """
         return (self.retriever.shouldKeepGoing(path) and
-                self._shouldStillKeepGoing(path))
+                self.shouldStillKeepGoing(path))
 
 
-    def _reallyRetrieve(self, path, subResult):
+    def resultRetrieved(self, path, retrievedResult):
         """
-        
+        A result was retrieved.  Post-process it if desired.
+
+        Override this in subclasses to modify (non-None) results returned from
+        this L{DelegatingRetriever}'s C{retriever}'s C{retrieve} method.
+
+        By default, simply return the result retrieved.
         """
-        return subResult
+        return retrievedResult
 
 
     def retrieve(self, path):
         """
-        
+        Delegate to this L{DelegatingRetriever}'s C{retriever}'s C{retrieve}
+        method, then post-process it with C{resultRetrieved}.
         """
         subResult = self.retriever.retrieve(path)
         if subResult is None:
             return None
-        return self._reallyRetrieve(path, subResult)
+        return self.resultRetrieved(path, subResult)
 
 
 
-class Proximity(_Delegator):
+class Proximity(DelegatingRetriever):
     """
     L{Proximity} is a retriever which will continue traversing any path which
     is shorter than its proscribed distance, but not any longer.
+
+    @ivar distance: the distance, in meters, to query for.
+
+    @type distance: L{float}
     """
 
     implements(IRetriever)
 
     def __init__(self, distance, retriever):
-        """
-        
-        """
-        _Delegator.__init__(self, retriever)
+        DelegatingRetriever.__init__(self, retriever)
         self.distance = distance
 
 
-    def _shouldStillKeepGoing(self, path):
+    def shouldStillKeepGoing(self, path):
         """
         Implement L{IRetriever.shouldKeepGoing} to stop for paths whose sum of
         L{IDistance} annotations is greater than L{Proximity.distance}.
@@ -428,7 +450,7 @@ class Proximity(_Delegator):
 
 
 
-class Reachable(_Delegator):
+class Reachable(DelegatingRetriever):
     """
     L{Reachable} is a navivator which will object to any path with an
     L{IObstruction} annotation on it.
@@ -436,7 +458,7 @@ class Reachable(_Delegator):
 
     implements(IRetriever)
 
-    def _moreObjectionsTo(self, path, result):
+    def moreObjectionsTo(self, path, result):
         """
         Yield an objection from each L{IObstruction.whyNot} method annotating
         the given path.
@@ -447,14 +469,14 @@ class Reachable(_Delegator):
 
 
 
-class Traversability(_Delegator):
+class Traversability(DelegatingRetriever):
     """
     A path is only traversible if it terminates in *one* exit.  Once you've
     gotten to an exit, you have to stop, because the player needs to go through
     that exit to get to the next one.
     """
 
-    def _shouldStillKeepGoing(self, path):
+    def shouldStillKeepGoing(self, path):
         """
         Stop at the first exit that you find.
         """
@@ -462,26 +484,6 @@ class Traversability(_Delegator):
             if index > 0:
                 return False
         return True
-
-
-
-class Opacity(record("opaque")):
-    """
-    A link annotation that implements L{IElectromagneticMedium} to return a
-    simple observer-independent flag.
-
-    Note: a better implementation would take into account wavelengths of
-    ambient light, and the observer's vision.
-    """
-
-    implements(IElectromagneticMedium)
-
-    def opaqueTo(self, observer):
-        """
-        Is this medium opaque to the given observer?  Actually, ignore the
-        observer and always return this L{Opacity}'s C{opaque} flag.
-        """
-        return self.opaque
 
 
 
@@ -521,15 +523,17 @@ class ProviderOf(record("interface")):
         """
         return path.targetAs(self.interface)
 
+
     def objectionsTo(self, path, result):
         """
-        
+        Implement L{IRetriever.objectionsTo} to yield no objections.
         """
         return []
 
+
     def shouldKeepGoing(self, path):
         """
-        
+        Implement L{IRetriever.shouldKeepGoing} to always return C{True}.
         """
         return True
 
@@ -555,24 +559,28 @@ class AlsoKnownAs(record('name')):
 
 
 
-class Named(_Delegator):
+class Named(DelegatingRetriever):
     """
     A retriever which wraps another retriever, but yields only results known to
     a particular observer by a particular name.
+
+    @ivar name: the name to search for.
+
+    @ivar observer: the observer who should identify the target by the name
+        this L{Named} is searching for.
+
+    @type observer: L{Thing}
     """
 
     implements(IRetriever)
 
     def __init__(self, name, retriever, observer):
-        """
-        
-        """
-        _Delegator.__init__(self, retriever)
+        DelegatingRetriever.__init__(self, retriever)
         self.name = name
         self.observer = observer
 
 
-    def _reallyRetrieve(self, path, subResult):
+    def resultRetrieved(self, path, subResult):
         """
         Invoke C{retrieve} on the L{IRetriever} which we wrap, but only return
         it if the L{INameable} target of the given path is known as this
@@ -589,7 +597,7 @@ class Named(_Delegator):
 
 
 
-class CanSee(_Delegator):
+class CanSee(DelegatingRetriever):
     """
     Wrap a L{ProviderOf}, yielding the results that it would yield, but
     applying lighting to the ultimate target based on the last L{IThing} the
@@ -598,18 +606,10 @@ class CanSee(_Delegator):
 
     implements(IRetriever)
 
-    def __init__(self, retriever, observer=None):
+    def resultRetrieved(self, path, subResult):
         """
-        
-        """
-        _Delegator.__init__(self, retriever)
-        self.observer = observer
-
-
-    def _reallyRetrieve(self, path, subResult):
-        """
-        Implement L{IRetriever.retrieve} to apply the last L{ILitLink}'s
-        lighting to the ultimate resulting object.
+        Post-process retrieved results by determining if lighting applies to
+        them.
         """
         litlinks = list(path.of(ILitLink))
         if not litlinks:
@@ -626,21 +626,19 @@ class CanSee(_Delegator):
             self.retriever.interface)
 
 
-    def _shouldStillKeepGoing(self, path):
+    def shouldStillKeepGoing(self, path):
         """
-        Implement L{IRetriever.shouldKeepGoing} to not keep going on links that
-        are opaque to the observer.
+        Don't keep going through links that are opaque to the observer.
         """
         for opacity in path.of(IElectromagneticMedium):
-            if opacity.opaqueTo(self.observer):
+            if opacity.isOpaque():
                 return False
         return True
 
 
-    def _moreObjectionsTo(self, path, result):
+    def moreObjectionsTo(self, path, result):
         """
-        Implement L{IRetriever.objectionsTo} to object to paths which have
-        L{ILitLink} annotations which are not lit.
+        Object to paths which have L{ILitLink} annotations which are not lit.
         """
         for lighting in path.of(ILitLink):
             if not lighting.isItLit(path, result):
