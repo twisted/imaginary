@@ -1112,7 +1112,12 @@ class _PossiblyDark(structlike.record("lighting")):
 
     def isItLit(self, path, result):
         """
-        
+        Determine if the given result, viewed via the given path, appears to be
+        lit.
+
+        @return: L{True} if the result should be lit, L{False} if it is dark.
+
+        @rtype: C{bool}
         """
         # XXX wrong, we need to examine this exactly the same way applyLighting
         # does.  CanSee and Visibility *are* the same object now so it is
@@ -1130,7 +1135,9 @@ class _PossiblyDark(structlike.record("lighting")):
 
     def whyNotLit(self):
         """
-        
+        Return an L{iimaginary.IWhyNot} provider explaining why the target of
+        this link is not lit.  (Return 'self', since L{_PossiblyDark} is an
+        L{iimaginary.IWhyNot} provider itself.)
         """
         return self
 

@@ -341,7 +341,10 @@ class IExit(Interface):
 
 class IObstruction(Interface):
     """
-    
+    An L{IObstruction} is a link annotation indicating that there is a physical
+    obstruction preventing solid objects from reaching between the two ends of
+    the link.  For example, a closed door might annotate its link to its
+    destination with an L{IObstruction}.
     """
 
     def whyNot():
