@@ -460,7 +460,8 @@ class IConcept(Interface):
 
 class ILinkAnnotator(Interface):
     """
-    
+    An L{ILinkAnnotator} provides annotations for links from one
+    L{imaginary.idea.Idea} to another.
     """
 
     def annotationsFor(link, idea):
@@ -474,7 +475,10 @@ class ILinkAnnotator(Interface):
 
 class ILocationLinkAnnotator(Interface):
     """
-    
+    L{ILocationLinkAnnotator} is a powerup interface to allow powerups for a
+    L{Thing} to act as L{ILinkAnnotator}s for every L{Thing} contained within
+    it.  This allows area-effect link annotators to be implemented simply,
+    without needing to monitor movement.
     """
 
     def annotationsFor(link, idea):
