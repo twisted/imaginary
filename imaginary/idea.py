@@ -66,31 +66,13 @@ class Path(record('links')):
                 yield annotation
 
 
-    def _eachSubPath(self):
-        """
-        For a L{Path} containing N links, yield N paths.  For example, if you
-        have a L{Path} like::
-
-            (a->b) (b->c) (c->d)
-
-        this will yield the paths::
-
-            (a->b)
-            (a->b) (b->c)
-            (a->b) (b->c) (c->d)
-        """
-        for x in range(len(self.links)):
-            op = Path(self.links[:x+1])
-            yield op
-
-
     def eachTargetAs(self, interface):
         """
         @return: an iterable of all non-None results of each L{Link.targetAs}
             method in this L{Path}'s C{links} attribute.
         """
-        for path in self._eachSubPath():
-            provider = path.targetAs(interface)
+        for link in self.links:
+            provider = interface(link.target.delegate, None)
             if provider is not None:
                 yield provider
 
