@@ -171,7 +171,7 @@ class Idea(record("delegate linkers annotators")):
     Each L{imaginary.thing.Thing} has a corresponding L{Idea} to represent it
     in the simulation.  The physical simulation defines only a few types of
     links: objects have links to their containers, containers have links to
-    their contents, rooms have links to their exits, exits have links to thier
+    their contents, rooms have links to their exits, exits have links to their
     destinations.  Any L{imaginary.thing.Thing} can have a powerup applied to
     it which adds to the list of linkers or annotators for its L{Idea},
     however, which allows users to create arbitrary objects.
@@ -182,13 +182,13 @@ class Idea(record("delegate linkers annotators")):
     graffiti that you could look at, but would not be a physical object, in the
     sense that you couldn't pick it up, weigh it, push it, etc.  Such an object
     could be implemented as a powerup for both
-    L{imaginary.iimaginary.IDescriptionContributor} (to some short flavor test
-    to the room) and L{imaginary.iimaginary.IVisible} which would be an
-    acceptable target of 'look'.  The L{imaginary.iimaginary.IVisible}
-    implementation could even be an in-memory object, not stored in the
-    database at all; and there could be different implementations for different
-    observers, depending on their level of knowledge about the in-world
-    graffiti.
+    L{imaginary.iimaginary.IDescriptionContributor}, which would impart some
+    short flavor text to the room, and L{imaginary.iimaginary.IVisible}, which
+    would be an acceptable target of 'look'.  The
+    L{imaginary.iimaginary.IVisible} implementation could even be an in-memory
+    object, not stored in the database at all; and there could be different
+    implementations for different observers, depending on their level of
+    knowledge about the in-world graffiti.
 
     @ivar delegate: this object is the object which may be adaptable to a set
         of interfaces.  This L{Idea} delegates all adaptation to its delegate.
