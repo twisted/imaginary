@@ -383,15 +383,96 @@ class TextServerTestCase(unittest.TestCase):
         self.assertEquals(lines, [expected])
 
 
-    def testBackspace(self):
+    def _backspaceTest(self, character, width):
+        """
+        Verify that a character is erased properly by a backspace.
+
+        @param character: The character to receive, echo, and then have
+            deleted.
+        @type character: C{unicode}
+
+        @param width: How many columns the given character is expected to be
+            when rendered.  This is how many backspaces are expected to be
+            required to erase it.
+        @type width: C{int}
+        """
         lines = []
         self.protocol.lineReceived = lines.append
 
-        bytes = 'abc\bd'
-        for byte in bytes:
-            self.protocol.keystrokeReceived(byte, None)
-        self.protocol.keystrokeReceived(self.terminal.BACKSPACE, None)
-        self.protocol.keystrokeReceived('e', None)
-        self.protocol.keystrokeReceived('\n', None)
+        # The terminal emulator we use doesn't know enough unicode for this
+        # test to work out right.  So we'll fake it ourselves here.
+        written = []
+        self.terminal.write = written.append
 
-        self.assertEquals(lines, [u'abe'])
+        self.protocol.keystrokeReceived('a', None)
+        self.protocol.keystrokeReceived(character.encode('utf-8'), None)
+        self.protocol.keystrokeReceived(self.terminal.BACKSPACE, None)
+
+        self.assertEquals(
+            ''.join(written),
+            'a' + character.encode('utf-8') +
+            '\b' * width + ' ' * width + '\b' * width)
+
+
+    def test_eraseNarrowWithBackspace(self):
+        """
+        If a backspace keystroke is received when the cursor is positioned
+        directly after a character with an I{east asian width} of I{narrow},
+        the character is removed from the input buffer and the character is
+        erased from the client display with a C{'\b \b'} sequence.
+        """
+        self._backspaceTest(u'x', 1)
+
+
+    def test_eraseWideWithBackspace(self):
+        """
+        If a backspace keystroke is received when the cursor is positioned
+        directly after a character with an I{east asian width} of I{wide}, the
+        character is removed from the input buffer and the character is
+        erased from the client display with a C{'\b\b  \b\b'} sequence.
+        """
+        self._backspaceTest(u'\u1100', 2)
+
+
+    def test_eraseFullwidthWithBackspace(self):
+        """
+        If a backspace keystroke is received when the cursor is positioned
+        directly after a character with an I{east asian width} of
+        I{fullwidth}, character is removed from the input buffer and the
+        character is erased from the client display with a C{'\b\b \b\b'}
+        sequence.
+        """
+        self._backspaceTest(u'\u0242', 2)
+
+
+    def test_eraseHalfwidthWithBackspace(self):
+        """
+        If a backspace keystroke is received when the cursor is positioned
+        directly after a character with an I{east asian width} of
+        I{halfwidth}, character is removed from the input buffer and the
+        character is erased from the client display with a C{'\b \b'}
+        sequence.
+        """
+        self._backspaceTest(u'\u20a9', 1)
+
+
+    def test_eraseNeutralWithBackspace(self):
+        """
+        If a backspace keystroke is received when the cursor is positioned
+        directly after a character with an I{east asian width} of
+        I{neutral}, character is removed from the input buffer and the
+        character is erased from the client display with a C{'\b \b'}
+        sequence.
+        """
+        self._backspaceTest(u'\xa0', 1)
+
+
+    def test_eraseAmbiguousWithBackspace(self):
+        """
+        If a backspace keystroke is received when the cursor is positioned
+        directly after a character with an I{east asian width} of
+        I{neutral}, character is removed from the input buffer and the
+        character is erased from the client display with a C{'\b \b'}
+        sequence.
+        """
+        self._backspaceTest(u'\xa1', 1)

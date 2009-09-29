@@ -23,13 +23,19 @@ from imaginary.world import ImaginaryWorld
 from imaginary.wiring.player import Player
 
 
-_widths = {'W': 2, 'Na': 1}
+_widths = {'W': 2, 'N': 1, 'F': 2, 'H': 1, 'Na': 1, 'A': 1}
 def width(ch):
     """
-    Return the width in EMs of the given single-length unicode string.
+    Compute the display width of the given character.
 
-    XXX TODO: Currently only supports Narrow and Wide (ie, no support for
-    half-width, full-width, neutral, or ambiguous).
+    Useful for cursor-repositioning tasks, however this is not entirely
+    reliable since different terminal emulators have different behavior in
+    this area.
+
+    @see: U{http://unicode.org/reports/tr11/}
+
+    @return: The width in 1/2 ems of the given single-length unicode string.
+    @rtype: C{int}
     """
     widthSpecifier = unicodedata.east_asian_width(ch)
     try:
