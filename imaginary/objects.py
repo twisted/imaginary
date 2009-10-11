@@ -70,7 +70,51 @@ class Points(item.Item):
 
 class Thing(item.Item):
     """
-    A L{Thing} is a physical body in the game world.
+    A L{Thing} is a physically located object in the game world.
+
+    While a game object in Imaginary is composed of many different Python
+    objects, the L{Thing} is the central that most game objects will share.
+    It's central for several reasons.
+
+    First, a L{Thing} is connected to the point-of-interest simulation that
+    makes up the environment of an Imaginary game.  A L{Thing} has a location,
+    and a L{Container} can list the L{Thing}s located within it, which is how
+    you can see the objects in your surroundings or a container.
+
+    Each L{Thing} has an associated L{Idea}, which provides the graph that can
+    be traversed to find other L{Thing}s to be the target for actions or
+    events.
+
+    A L{Thing} also the object which serves as the persistent nexus of powerups
+    that define behavior.  An L{_Enhancement} is a powerup for a L{Thing}.
+    L{Thing}s can be powered up for a number of different interfaces:
+
+        - L{iimaginary.IMovementRestriction}, for preventing the L{Thing} for
+          moving around,
+
+        - L{iimaginary.ILinkContributor}, which can provide links from the
+          L{Thing}'s L{Idea} to other L{Idea}s,
+
+        - L{iimaginary.ILinkAnnotator}, which can provide annotations on links
+          incoming or outgoing to the L{Thing}'s L{Idea},
+
+        - L{iimaginary.ILocationLinkAnnotator}, which can provide annotations on
+          links to or from any L{Thing}'s L{Idea} which is ultimately located
+          within the powered-up L{Thing}.
+
+        - L{iimaginary.IDescriptionContributor}, which provide components of
+          the L{Thing}'s description when viewed with the L{Look}.
+
+        - and finally, any interface used as a target for an action or event.
+
+    The way this all fits together are as follows: if you wanted to make a
+    shirt, for example, you would make a L{Thing}, give it an appropriate name
+    and description, make a new L{Enhancement} class which implements
+    L{IMovementRestriction} to prevent the shirt from moving around unless it
+    is correctly in the un-worn state, and then power up that L{Enhancement} on
+    the L{Thing}.  This particular example is implemented in
+    L{imaginary.garments}, but almost any game-logic implementation will follow
+    this general pattern.
     """
 
     implements(iimaginary.IThing, iimaginary.IVisible, iimaginary.INameable,
