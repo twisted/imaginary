@@ -1,3 +1,16 @@
+0.0.5 (2009-11-25):
+  - Remove the dead imaginary.objects.Thing.locate method
+  - Introduce an interface intended to be provided by administrative actors
+    and require it for the "illuminate" command.
+  - Remove the custom SSH server and instead plug in to the Mantissa SSH
+    application server.
+  - Remove all uses of "axiom.dependency.installOn".
+  - Fix a bug which caused newly created avatars to not be announced when
+    they arrived at the starting location.
+  - When presenting an ambiguity error to an actor, enumerate the possible
+    resolutions.
+  - Fix certain terminal handling issues with east asian characters.
+
 0.0.4 (2008-08-12):
 
   - A "plain" Thing type has now been added and is available to the

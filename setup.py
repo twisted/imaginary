@@ -12,13 +12,15 @@ distobj = autosetup(
     platforms=["any"],
     description=imaginary.__doc__,
     classifiers=[
+        "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
         "Intended Audience :: Education",
+        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
-        "Development Status :: 2 - Pre-Alpha",
         "Topic :: Games/Entertainment",
         "Topic :: Games/Entertainment :: Multi-User Dungeons (MUD)",
         "Topic :: Games/Entertainment :: Puzzle Games",
         "Topic :: Games/Entertainment :: Real Time Strategy",
         "Topic :: Games/Entertainment :: Role-Playing",
-        "Topic :: Games/Entertainment :: Simulation"])
+        "Topic :: Games/Entertainment :: Simulation",
+        "Topic :: Terminals"])
