@@ -72,17 +72,18 @@ class DarknessTestCase(unittest.TestCase):
         self.assertEquals(len(found), 3)
 
 
-    def testNonVisibilityAffected(self):
+    def test_nonVisibilityAffected(self):
         """
         L{LocationLightning} blocks out non-IVisible stuff from
-        L{findProviders} by default.
+        L{Thing.findProviders} by default.
         """
         self.assertEquals(
             list(self.observer.findProviders(iimaginary.IThing, 3)),
             [])
         # XXX need another test: not blocked out from ...
 
-    def testNonVisibilityUnaffected(self):
+
+    def test_nonVisibilityUnaffected(self):
         """
         L{LocationLightning} should not block out non-IVisible stuff from a
         plain L{Idea.obtain} query.
