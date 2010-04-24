@@ -28,15 +28,15 @@ class PathTests(TestCase):
         """
         A L{Path} instance can be rendered into a string by C{repr}.
         """
-        bottle = Idea(AlsoKnownAs("bottle"))
+        key = Idea(AlsoKnownAs("key"))
         table = Idea(AlsoKnownAs("table"))
         hall = Idea(AlsoKnownAs("hall"))
-        path = Path([Link(hall, table), Link(table, bottle)])
+        path = Path([Link(hall, table), Link(table, key)])
         self.assertEquals(
             repr(path),
             "Path(\n"
             "\t'hall' => 'table' []\n"
-            "\t'table' => 'bottle' [])")
+            "\t'table' => 'key' [])")
 
 
     def test_unnamedDelegate(self):
@@ -44,15 +44,15 @@ class PathTests(TestCase):
         The I{repr} of a L{Path} containing delegates without names includes the
         I{repr} of the delegates.
         """
-        bottle = Idea(Reprable("bottle"))
+        key = Idea(Reprable("key"))
         table = Idea(Reprable("table"))
         hall = Idea(Reprable("hall"))
-        path = Path([Link(hall, table), Link(table, bottle)])
+        path = Path([Link(hall, table), Link(table, key)])
         self.assertEquals(
             repr(path),
             "Path(\n"
             "\thall => table []\n"
-            "\ttable => bottle [])")
+            "\ttable => key [])")
 
 
 
@@ -70,10 +70,23 @@ class TooHigh(object):
         return ExpressString("the table is too high")
 
 
-class Reachable(DelegatingRetriever):
+class ArmsReach(DelegatingRetriever):
+    """
+    Restrict retrievable to things within arm's reach.
+
+        alas for poor Alice! when she got to the door, she found he had
+        forgotten the little golden key, and when she went back to the table for
+        it, she found she could not possibly reach it:
+    """
     def moreObjectionsTo(self, path, result):
+        """
+        Object to finding the key.
+        """
+        # This isn't a very good implementation of ArmsReach.  It doesn't
+        # actually check distances or paths or anything.  It just knows the
+        # key is on the table, and Alice is too short.
         named = path.targetAs(INameable)
-        if named.knownTo(None, "bottle"):
+        if named.knownTo(None, "key"):
             return [TooHigh()]
         return []
 
@@ -82,25 +95,29 @@ class IdeaTests(TestCase):
     """
     Tests for L{imaginary.idea.Idea}.
     """
-    def test_something(self):
-        bottle = Idea(AlsoKnownAs("bottle"))
+    def test_objections(self):
+        """
+        The L{IRetriver} passed to L{Idea.obtain} can object to certain results.
+        This excludes them from the result returned by L{Idea.obtain}.
+        """
+        key = Idea(AlsoKnownAs("key"))
         table = Idea(AlsoKnownAs("table"))
         hall = Idea(AlsoKnownAs("hall"))
         alice = Idea(AlsoKnownAs("alice"))
 
         alice.linkers.append(OneLink(Link(alice, hall)))
         hall.linkers.append(OneLink(Link(hall, table)))
-        table.linkers.append(OneLink(Link(table, bottle)))
+        table.linkers.append(OneLink(Link(table, key)))
 
         # XXX The last argument is the observer, and is supposed to be an
         # IThing.
-        retriever = Named("bottle", ProviderOf(INameable), alice)
+        retriever = Named("key", ProviderOf(INameable), alice)
 
-        # Sanity check.  Alice should be able to reach the bottle if we don't
+        # Sanity check.  Alice should be able to reach the key if we don't
         # restrict things based on her height.
-        self.assertEquals(list(alice.obtain(retriever)), [bottle.delegate])
+        self.assertEquals(list(alice.obtain(retriever)), [key.delegate])
 
         # But when we consider how short she is, she should not be able to reach
         # it.
-        results = alice.obtain(Reachable(retriever))
+        results = alice.obtain(ArmsReach(retriever))
         self.assertEquals(list(results), [])
