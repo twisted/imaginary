@@ -125,8 +125,9 @@ class Path(record('links')):
             src = link.source.delegate
             s += "\n\t"
             s += repr(getattr(src, 'name', src))
-            s += "=>"
+            s += " => "
             s += repr(getattr(dlgt, 'name', dlgt))
+            s += " "
             s += repr(link.annotations)
         s += ')'
         return s
@@ -496,6 +497,7 @@ class ProviderOf(record("interface")):
         Initialize a L{ProviderOf} retriever, starting with an empty list of
         reasons why it hasn't found anything.
         """
+        # XXX Delete this method
         super(ProviderOf, self).__init__(*args, **kw)
 
 
