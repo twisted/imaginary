@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_illumination -*-
+# -*- test-case-name: imaginary -*-
 
 """
 This module implements a highly abstract graph-traversal system for actions and
@@ -20,11 +20,9 @@ class Link(record("source target")):
     A L{Link} is a connection between two L{Idea}s in a L{Path}.
 
     @ivar source: the idea that this L{Link} originated from.
-
     @type source: L{Idea}
 
     @ivar target: the idea that this L{Link} refers to.
-
     @type target: L{Idea}
     """
 
@@ -83,12 +81,10 @@ class Path(record('links')):
         destination, as a given interface.
 
         @param interface: the interface to retrieve.
-
         @type interface: L{zope.interface.interfaces.IInterface}
 
         @return: the last link's target, adapted to the given interface, or
             C{None} if no appropriate adapter or component exists.
-
         @rtype: C{interface} or C{NoneType}
         """
         return interface(self.links[-1].target.delegate, None)
@@ -251,7 +247,6 @@ class Idea(record("delegate linkers annotators")):
             discovered during traversal of the L{Idea} graph.  If any
             invocation of L{IRetriever.retrieve} on this parameter should
             succeed, that will be yielded as a result from this method.
-
         @type retriever: L{IRetriever}
 
         @return: a generator which yields the results of C{retriever.retrieve}
@@ -301,15 +296,12 @@ class ObtainResult(record("idea retriever")):
         were no results.  For example, if the room where the player attempted
         to obtain targets is dark, this may contain an L{IWhyNot} provider.
         However, until this iterator has been exhausted, it will be C{None}.
-
     @type reasonsWhyNot: C{set} of L{IWhyNot}, or C{NoneType}
 
     @ivar idea: the L{Idea} that L{Idea.obtain} was invoked on.
-
     @type idea: L{Idea}
 
     @ivar retriever: The L{IRetriever} that L{Idea.obtain} was invoked with.
-
     @type retriever: L{IRetriever}
     """
 
@@ -334,7 +326,6 @@ class DelegatingRetriever(object):
     See the various methods marked for overriding.
 
     @ivar retriever: A retriever to delegate most operations to.
-
     @type retriever: L{IRetriever}
     """
 
@@ -492,7 +483,6 @@ class ProviderOf(record("interface")):
 
     @ivar interface: The interface which defines the type of values returned by
         the C{retrieve} method.
-
     @type interface: L{zope.interface.interfaces.IInterface}
     """
 
@@ -563,7 +553,6 @@ class Named(DelegatingRetriever):
 
     @ivar observer: the observer who should identify the target by the name
         this L{Named} is searching for.
-
     @type observer: L{Thing}
     """
 
@@ -638,6 +627,3 @@ class CanSee(DelegatingRetriever):
             if not lighting.isItLit(path, result):
                 tmwn = lighting.whyNotLit()
                 yield tmwn
-
-
-
