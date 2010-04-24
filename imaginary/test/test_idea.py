@@ -10,9 +10,12 @@ from twisted.trial.unittest import TestCase
 
 from epsilon.structlike import record
 
-from imaginary.iimaginary import IWhyNot, INameable, ILinkContributor
+from imaginary.iimaginary import (
+    IWhyNot, INameable, ILinkContributor, IObstruction, ILinkAnnotator)
 from imaginary.language import ExpressString
-from imaginary.idea import Idea, Link, Path, AlsoKnownAs, ProviderOf, Named, DelegatingRetriever
+from imaginary.idea import (
+    Idea, Link, Path, AlsoKnownAs, ProviderOf, Named, DelegatingRetriever,
+    Reachable)
 
 
 class Reprable(record('repr')):
@@ -121,3 +124,65 @@ class IdeaTests(TestCase):
         # it.
         results = alice.obtain(ArmsReach(retriever))
         self.assertEquals(list(results), [])
+
+
+class Closed(object):
+    implements(IObstruction)
+
+    def whyNot(self):
+        return ExpressString("the door is closed")
+
+
+
+class ClosedAnnotation(object):
+    implements(ILinkAnnotator)
+
+
+    def annotationsFor(self, link, idea):
+        return [Closed()]
+
+
+
+class ReachableTests(TestCase):
+    """
+    Tests for L{imaginary.idea.Reachable}.
+    """
+    def setUp(self):
+        garden = Idea(AlsoKnownAs("garden"))
+        door = Idea(AlsoKnownAs("door"))
+        hall = Idea(AlsoKnownAs("hall"))
+        alice = Idea(AlsoKnownAs("alice"))
+
+        alice.linkers.append(OneLink(Link(alice, hall)))
+        hall.linkers.append(OneLink(Link(hall, door)))
+        door.linkers.append(OneLink(Link(door, garden)))
+
+        self.alice = alice
+        self.hall = hall
+        self.door = door
+        self.garden = garden
+
+        # XXX The last argument is the observer, and is supposed to be an
+        # IThing.
+        self.retriever = Reachable(Named("garden", ProviderOf(INameable), alice))
+
+
+    def test_anyObstruction(self):
+        """
+        If there are any obstructions in the path traversed by the retriever
+        wrapped by L{Reachable}, L{Reachable} objects to them and they are not
+        returned by L{Idea.obtain}.
+        """
+        # Make the door closed..  Now Alice cannot reach the garden.
+        self.door.annotators.append(ClosedAnnotation())
+        self.assertEquals(list(self.alice.obtain(self.retriever)), [])
+
+
+    def test_noObstruction(self):
+        """
+        If there are no obstructions in the path traversed by the retriever
+        wrapped by L{Reachable}, all results are returned by L{Idea.obtain}.
+        """
+        self.assertEquals(
+            list(self.alice.obtain(self.retriever)),
+            [self.garden.delegate])
