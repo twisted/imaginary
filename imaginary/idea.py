@@ -492,15 +492,6 @@ class ProviderOf(record("interface")):
 
     implements(IRetriever)
 
-    def __init__(self, *args, **kw):
-        """
-        Initialize a L{ProviderOf} retriever, starting with an empty list of
-        reasons why it hasn't found anything.
-        """
-        # XXX Delete this method
-        super(ProviderOf, self).__init__(*args, **kw)
-
-
     def retrieve(self, path):
         """
         Retrieve the target of the path, as it provides the interface specified
