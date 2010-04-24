@@ -4,6 +4,9 @@
 This module implements a highly abstract graph-traversal system for actions and
 events to locate the objects which can respond to them.  The top-level
 entry-point to this system is L{Idea.obtain}.
+
+It also implements several basic retrievers related to visibility and physical
+reachability.
 """
 
 from zope.interface import implements
