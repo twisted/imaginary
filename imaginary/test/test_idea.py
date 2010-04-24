@@ -11,11 +11,12 @@ from twisted.trial.unittest import TestCase
 from epsilon.structlike import record
 
 from imaginary.iimaginary import (
-    IWhyNot, INameable, ILinkContributor, IObstruction, ILinkAnnotator)
+    IWhyNot, INameable, ILinkContributor, IObstruction, ILinkAnnotator,
+    IElectromagneticMedium)
 from imaginary.language import ExpressString
 from imaginary.idea import (
     Idea, Link, Path, AlsoKnownAs, ProviderOf, Named, DelegatingRetriever,
-    Reachable)
+    Reachable, CanSee)
 
 
 class Reprable(record('repr')):
@@ -94,7 +95,35 @@ class ArmsReach(DelegatingRetriever):
         return []
 
 
-class IdeaTests(TestCase):
+class WonderlandSetupMixin:
+    """
+    A test case mixin which sets up a graph based on a scene from Alice in
+    Wonderland.
+    """
+    def setUp(self):
+        garden = Idea(AlsoKnownAs("garden"))
+        door = Idea(AlsoKnownAs("door"))
+        hall = Idea(AlsoKnownAs("hall"))
+        alice = Idea(AlsoKnownAs("alice"))
+        key = Idea(AlsoKnownAs("key"))
+        table = Idea(AlsoKnownAs("table"))
+
+        alice.linkers.append(OneLink(Link(alice, hall)))
+        hall.linkers.append(OneLink(Link(hall, door)))
+        hall.linkers.append(OneLink(Link(hall, table)))
+        table.linkers.append(OneLink(Link(table, key)))
+        door.linkers.append(OneLink(Link(door, garden)))
+
+        self.alice = alice
+        self.hall = hall
+        self.door = door
+        self.garden = garden
+        self.table = table
+        self.key = key
+
+
+
+class IdeaTests(WonderlandSetupMixin, TestCase):
     """
     Tests for L{imaginary.idea.Idea}.
     """
@@ -103,26 +132,18 @@ class IdeaTests(TestCase):
         The L{IRetriver} passed to L{Idea.obtain} can object to certain results.
         This excludes them from the result returned by L{Idea.obtain}.
         """
-        key = Idea(AlsoKnownAs("key"))
-        table = Idea(AlsoKnownAs("table"))
-        hall = Idea(AlsoKnownAs("hall"))
-        alice = Idea(AlsoKnownAs("alice"))
-
-        alice.linkers.append(OneLink(Link(alice, hall)))
-        hall.linkers.append(OneLink(Link(hall, table)))
-        table.linkers.append(OneLink(Link(table, key)))
-
         # XXX The last argument is the observer, and is supposed to be an
         # IThing.
-        retriever = Named("key", ProviderOf(INameable), alice)
+        retriever = Named("key", ProviderOf(INameable), self.alice)
 
         # Sanity check.  Alice should be able to reach the key if we don't
         # restrict things based on her height.
-        self.assertEquals(list(alice.obtain(retriever)), [key.delegate])
+        self.assertEquals(
+            list(self.alice.obtain(retriever)), [self.key.delegate])
 
         # But when we consider how short she is, she should not be able to reach
         # it.
-        results = alice.obtain(ArmsReach(retriever))
+        results = self.alice.obtain(ArmsReach(retriever))
         self.assertEquals(list(results), [])
 
 
@@ -134,37 +155,24 @@ class Closed(object):
 
 
 
-class ClosedAnnotation(object):
+class ConstantAnnotation(record('annotation')):
     implements(ILinkAnnotator)
 
-
     def annotationsFor(self, link, idea):
-        return [Closed()]
+        return [self.annotation]
 
 
 
-class ReachableTests(TestCase):
+class ReachableTests(WonderlandSetupMixin, TestCase):
     """
     Tests for L{imaginary.idea.Reachable}.
     """
     def setUp(self):
-        garden = Idea(AlsoKnownAs("garden"))
-        door = Idea(AlsoKnownAs("door"))
-        hall = Idea(AlsoKnownAs("hall"))
-        alice = Idea(AlsoKnownAs("alice"))
-
-        alice.linkers.append(OneLink(Link(alice, hall)))
-        hall.linkers.append(OneLink(Link(hall, door)))
-        door.linkers.append(OneLink(Link(door, garden)))
-
-        self.alice = alice
-        self.hall = hall
-        self.door = door
-        self.garden = garden
-
+        WonderlandSetupMixin.setUp(self)
         # XXX The last argument is the observer, and is supposed to be an
         # IThing.
-        self.retriever = Reachable(Named("garden", ProviderOf(INameable), alice))
+        self.retriever = Reachable(
+            Named("garden", ProviderOf(INameable), self.alice))
 
 
     def test_anyObstruction(self):
@@ -174,7 +182,7 @@ class ReachableTests(TestCase):
         returned by L{Idea.obtain}.
         """
         # Make the door closed..  Now Alice cannot reach the garden.
-        self.door.annotators.append(ClosedAnnotation())
+        self.door.annotators.append(ConstantAnnotation(Closed()))
         self.assertEquals(list(self.alice.obtain(self.retriever)), [])
 
 
@@ -186,3 +194,48 @@ class ReachableTests(TestCase):
         self.assertEquals(
             list(self.alice.obtain(self.retriever)),
             [self.garden.delegate])
+
+
+class Wood(object):
+    implements(IElectromagneticMedium)
+
+    def isOpaque(self):
+        return True
+
+
+
+class Glass(object):
+    implements(IElectromagneticMedium)
+
+    def isOpaque(self):
+        return False
+
+
+class CanSeeTests(WonderlandSetupMixin, TestCase):
+    """
+    Tests for L{imaginary.idea.CanSee}.
+    """
+    def setUp(self):
+        WonderlandSetupMixin.setUp(self)
+        self.retriever = CanSee(
+            Named("garden", ProviderOf(INameable), self.alice))
+
+
+    def test_throughTransparent(self):
+        """
+        L{Idea.obtain} continues past an L{IElectromagneticMedium} which returns
+        C{False} from its C{isOpaque} method.
+        """
+        self.door.annotators.append(ConstantAnnotation(Glass()))
+        self.assertEquals(
+            list(self.alice.obtain(self.retriever)), [self.garden.delegate])
+
+
+    def test_notThroughOpaque(self):
+        """
+        L{Idea.obtain} does not continue past an L{IElectromagneticMedium} which
+        returns C{True} from its C{isOpaque} method.
+        """
+        # Make the door opaque.  Now Alice cannot see the garden.
+        self.door.annotators.append(ConstantAnnotation(Wood()))
+        self.assertEquals(list(self.alice.obtain(self.retriever)), [])

@@ -31,8 +31,7 @@ class WearIt(unittest.TestCase, commandutils.LanguageMixin):
 
     def testWearing(self):
         self.wearer.putOn(self.shirtGarment)
-
-        self.assertEquals(self.shirt.location, self.dummy)
+        self.assertIdentical(self.shirt.location, None)
 
 
 
