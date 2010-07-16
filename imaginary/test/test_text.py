@@ -439,10 +439,10 @@ class TextServerTestCase(unittest.TestCase):
         If a backspace keystroke is received when the cursor is positioned
         directly after a character with an I{east asian width} of
         I{fullwidth}, character is removed from the input buffer and the
-        character is erased from the client display with a C{'\b\b \b\b'}
+        character is erased from the client display with a C{'\b\b  \b\b'}
         sequence.
         """
-        self._backspaceTest(u'\u0242', 2)
+        self._backspaceTest(u'\u3000', 2)
 
 
     def test_eraseHalfwidthWithBackspace(self):
