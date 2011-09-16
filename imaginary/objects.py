@@ -73,8 +73,8 @@ class Thing(item.Item):
     A L{Thing} is a physically located object in the game world.
 
     While a game object in Imaginary is composed of many different Python
-    objects, the L{Thing} is the central that most game objects will share.
-    It's central for several reasons.
+    objects, the L{Thing} is the central object that most game objects will
+    share.  It's central for several reasons.
 
     First, a L{Thing} is connected to the point-of-interest simulation that
     makes up the environment of an Imaginary game.  A L{Thing} has a location,
@@ -85,29 +85,29 @@ class Thing(item.Item):
     be traversed to find other L{Thing}s to be the target for actions or
     events.
 
-    A L{Thing} also the object which serves as the persistent nexus of powerups
-    that define behavior.  An L{_Enhancement} is a powerup for a L{Thing}.
-    L{Thing}s can be powered up for a number of different interfaces:
+    A L{Thing} is also the object which serves as the persistent nexus of
+    powerups that define behavior.  An L{_Enhancement} is a powerup for a
+    L{Thing}.  L{Thing}s can be powered up for a number of different interfaces:
 
-        - L{iimaginary.IMovementRestriction}, for preventing the L{Thing} for
+        - L{iimaginary.IMovementRestriction}, for preventing the L{Thing} from
           moving around,
 
         - L{iimaginary.ILinkContributor}, which can provide links from the
           L{Thing}'s L{Idea} to other L{Idea}s,
 
         - L{iimaginary.ILinkAnnotator}, which can provide annotations on links
-          incoming or outgoing to the L{Thing}'s L{Idea},
+          incoming to or outgoing from the L{Thing}'s L{Idea},
 
         - L{iimaginary.ILocationLinkAnnotator}, which can provide annotations on
           links to or from any L{Thing}'s L{Idea} which is ultimately located
           within the powered-up L{Thing}.
 
         - L{iimaginary.IDescriptionContributor}, which provide components of
-          the L{Thing}'s description when viewed with the L{Look}.
+          the L{Thing}'s description when viewed with the L{Look} action.
 
         - and finally, any interface used as a target for an action or event.
 
-    The way this all fits together are as follows: if you wanted to make a
+    The way this all fits together is as follows: if you wanted to make a
     shirt, for example, you would make a L{Thing}, give it an appropriate name
     and description, make a new L{Enhancement} class which implements
     L{IMovementRestriction} to prevent the shirt from moving around unless it
@@ -492,6 +492,7 @@ class Exit(item.Item):
                 direction=arriveDirection))
 
 
+    # XXX This really needs to be renamed now that links are a thing.
     @classmethod
     def link(cls, a, b, forwardName, backwardName=None, distance=1.0):
         """
@@ -1029,7 +1030,7 @@ class LocationLighting(item.Item, _Enhancement):
     location's description and behavior to depend on its lighting.  While
     L{LocationLighting} includes its own ambient lighting number, it is not
     really a light source, it's just a location which is I{affected by} light
-    sources; for that, you should use L{LightSource}.
+    sources; for lighting, you should use L{LightSource}.
 
     By default, in Imaginary, rooms are considered by to be lit to an
     acceptable level that actors can see and interact with both the room and
