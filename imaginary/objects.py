@@ -193,6 +193,7 @@ class Thing(item.Item):
         """
         loc = self
         while loc is not None:
+            # TODO Test the loc is None case
             if loc is not None:
                 for pup in loc.powerupsFor(iimaginary.ILocationLinkAnnotator):
                     yield pup
