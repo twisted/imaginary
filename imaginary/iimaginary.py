@@ -639,7 +639,7 @@ class IClothing(IThingPowerUp):
         """)
 
 
-    def nowWornBy(self, wearer):
+    def nowWornBy(wearer):
         """
         This article of clothing is now being worn by C{wearer}.
 
@@ -649,7 +649,7 @@ class IClothing(IThingPowerUp):
         """
 
 
-    def noLongerWorn(self):
+    def noLongerWorn():
         """
         This article of clothing is no longer being worn.
         """
