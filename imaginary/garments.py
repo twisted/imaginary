@@ -205,7 +205,7 @@ class Wearer(item.Item, Enhancement):
     _interfaces = (iimaginary.IClothingWearer,
                    iimaginary.IDescriptionContributor,
                    iimaginary.ILinkContributor,
-                   # iimaginary.ILinkAnnotator,
+                   iimaginary.ILinkAnnotator,
                    )
 
     implements(*_interfaces)
@@ -246,7 +246,7 @@ class Wearer(item.Item, Enhancement):
                 if currentTopOfSlot.bulk >= newGarment.bulk:
                     raise TooBulky(currentTopOfSlot, newGarment)
 
-        newGarment.thing.moveTo(None)
+        newGarment.thing.moveTo(self.thing)
         newGarment.nowWornBy(self)
 
 
@@ -272,7 +272,6 @@ class Wearer(item.Item, Enhancement):
             if gdict[slot][-1] is not garment:
                 raise InaccessibleGarment(self, garment, gdict[slot][-1])
         garment.noLongerWorn()
-        garment.thing.moveTo(self.thing)
 
 
     # IDescriptionContributor
@@ -290,6 +289,40 @@ class Wearer(item.Item, Enhancement):
                 Garment.thing == objects.Thing.storeID,
                 Garment.wearer == self)):
             yield Link(self.thing.idea, garmentThing.idea)
+
+
+    # ILinkAnnotator
+    def annotationsFor(self, link, idea):
+        """
+        Tell the containment system to disregard containment relationships for
+        which I will generate a link.
+        """
+        if list(link.of(iimaginary.IContainmentRelationship)):
+            if link.source.delegate is self.thing:
+                clothing = iimaginary.IClothing(link.target.delegate, None)
+                if clothing is not None:
+                    if clothing.wearer is self:
+                        yield _DisregardYourWearingIt()
+
+
+
+class _DisregardYourWearingIt(object):
+    """
+    This is an annotation, produced by L{Wearer} for containment relationships
+    between people (who are containers) and the clothing that they're wearing.
+    A hopefully temporary workaround for the fact that clothing is rendered in
+    its own way and therefor shouldn't show up in the list of a person's
+    contents.
+    """
+    implements(iimaginary.IElectromagneticMedium)
+
+    def isOpaque(self):
+        """
+        I am opaque, so that clothing will show up only once (in your "wearing"
+        list, rather than there and in your "contained" list), and obscured
+        clothing won't show up at all.
+        """
+        return True
 
 
 
