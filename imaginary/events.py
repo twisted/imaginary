@@ -1,10 +1,11 @@
-# -*- test-case-name: imaginary.test -*-
+# -*- test-case-name: imaginary.test.test_actions.TargetActionTests.test_resolveTargetCaseInsensitively -*-
 
 from zope.interface import implements
 
 from twisted.python import context
 
 from imaginary import iimaginary, language, eimaginary
+from imaginary.idea import Proximity, ProviderOf
 
 
 class Event(language.BaseExpress):
@@ -35,8 +36,13 @@ class Event(language.BaseExpress):
 
 
     def conceptFor(self, observer):
-        # This can't be a dict because then the ordering when actor is target
-        # or target is tool or etc is non-deterministic.
+        """
+        Retrieve the appropriate L{IConcept} provider for a given observer.  If
+        the observer is this L{Event}'s C{actor}, it will return the
+        C{actorMessage} for this event, and so on for the tool and the target.
+        If it doesn't match a L{Thing} known to this event, it will return
+        C{otherMessage}.
+        """
         if observer is self.actor:
             msg = self.actorMessage
         elif observer is self.target:
@@ -65,13 +71,12 @@ class Event(language.BaseExpress):
             L{Event}'s location when this method, L{Event.reify}, was called.
         """
         L = []
-        for ob in iimaginary.IContainer(self.location).getContents():
-            observer = iimaginary.IEventObserver(ob, None)
-            if observer:
-                sender = observer.prepare(self)
-                if not callable(sender):
-                    raise TypeError("Senders must be callable", sender)
-                L.append(sender)
+        for observer in (self.location.idea.obtain(
+                Proximity(0.5, ProviderOf(iimaginary.IEventObserver)))):
+            sender = observer.prepare(self)
+            if not callable(sender):
+                raise TypeError("Senders must be callable", sender)
+            L.append(sender)
         return lambda: map(apply, L)
 
 
@@ -163,7 +168,7 @@ def runEventTransaction(store, func, *args, **kwargs):
             raise
     try:
         result = store.transact(runHelper)
-    except eimaginary.ActionFailure, e:
+    except eimaginary.ActionFailure:
         broadcaster.broadcastRevertEvents()
         return None
     else:

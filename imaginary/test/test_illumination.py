@@ -1,8 +1,13 @@
+
+from zope.interface import implements
+
 from twisted.trial import unittest
 
-from axiom import store
+from axiom import store, item, attributes
 
-from imaginary import iimaginary, objects
+from imaginary.enhancement import Enhancement
+from imaginary import iimaginary, objects, idea
+from imaginary.language import ExpressString
 from imaginary.manipulation import Manipulator
 
 from imaginary.test import commandutils
@@ -67,14 +72,27 @@ class DarknessTestCase(unittest.TestCase):
         self.assertEquals(len(found), 3)
 
 
-    def testNonVisibilityUnaffected(self):
+    def test_nonVisibilityAffected(self):
         """
-        Test that the LocationLightning thingy doesn't block out non-IVisible
-        stuff.
+        L{LocationLightning} blocks out non-IVisible stuff from
+        L{Thing.findProviders} by default.
         """
         self.assertEquals(
             list(self.observer.findProviders(iimaginary.IThing, 3)),
-            [self.observer, self.location, self.rock])
+            [])
+        # XXX need another test: not blocked out from ...
+
+
+    def test_nonVisibilityUnaffected(self):
+        """
+        L{LocationLightning} should not block out non-IVisible stuff from a
+        plain L{Idea.obtain} query.
+        """
+        self.assertEquals(
+            list(self.observer.idea.obtain(
+                    idea.Proximity(3, idea.ProviderOf(iimaginary.IThing)))),
+            [self.observer, self.location, self.rock]
+            )
 
 
     def testLightSourceInLocation(self):
@@ -104,7 +122,7 @@ class DarknessTestCase(unittest.TestCase):
 
         self.assertEquals(
             list(self.observer.findProviders(iimaginary.IVisible, 1)),
-            [self.observer, self.location, torch, self.rock])
+            [self.observer, torch, self.location, self.rock])
 
 
     def testOccultedLightSource(self):
@@ -216,3 +234,137 @@ class DarknessCommandTestCase(commandutils.CommandTestCaseMixin, unittest.TestCa
         self.assertEquals(self.store.findUnique(
                 objects.LocationLighting,
                 objects.LocationLighting.thing == self.location).candelas, 100)
+
+
+class ActionsInDarkRoomTestCase(commandutils.CommandTestCaseMixin,
+                                unittest.TestCase):
+    """
+    Darkness interferes with other commands.
+    """
+
+    def setUp(self):
+        """
+        There's a room which is dark, where the player is trying to do things.
+        """
+        commandutils.CommandTestCaseMixin.setUp(self)
+        self.lighting = objects.LocationLighting.createFor(
+            self.location, candelas=0)
+
+
+    def test_actionWithTargetInDarkRoom(self):
+        """
+        By default, actions which require objects in a darkened room should
+        fail, because it's too dark.
+        """
+        self.assertCommandOutput(
+            "create pants named 'pair of pants'",
+            ["You create a pair of pants."],
+            ["Test Player creates a pair of pants."])
+
+        # The action is going to try to locate its target.  During the graph
+        # traversal it shouldn't find _any_ pants.  Whether or not we find any
+        # pants, we want the message to note that it's too dark.  The reason is
+        # actually a property of a link (or perhaps a set of links: i.e. the
+        # me->me link, the me->chair link, the chair->room link) so the
+        # retriever is going to need to keep a list of those (Refusals) as it
+        # retrieves each one.
+        #
+        # resolve calls search
+        # search calls findProviders
+        # findProviders constructs a thingy, calls obtain()
+
+        self.test_actionWithNoTargetInDarkRoom()
+
+
+    def test_actionWithTargetInAdjacentDarkRoom(self):
+        """
+        If a player is standing I{next} to a dark room, they should not be able
+        to locate targets in the dark room, but the reporting in this case
+        should be normal, not the "It's too dark to see" that would result if
+        they were in the dark room themselves.
+        """
+        self.otherRoom = objects.Thing(store=self.store, name=u'Elsewhere')
+        objects.Container.createFor(self.otherRoom, capacity=1000)
+        objects.Exit.link(self.location, self.otherRoom, u'west')
+        self.player.moveTo(self.otherRoom)
+        self.observer.moveTo(self.otherRoom)
+        self.assertCommandOutput(
+            "wear pants",
+            [commandutils.E(u"Who's that?")],
+            [])
+
+
+    def test_actionWithNoTargetInDarkRoom(self):
+        """
+        By default, actions which require objects in a darkened room should
+        fail because it's too dark, even if there is actually no target to be
+        picked up.
+        """
+        self._test(
+            "wear pants",
+            ["It's too dark to see."], # to dark to see... the pants?  any pants?
+            [])
+
+
+    def test_examiningNonThing(self):
+        """
+        When examining an L{IVisible} which is not also an L{IThing}, it should
+        be dark.
+        """
+        t = objects.Thing(name=u"magic stone", store=self.store)
+        t.powerUp(MagicStone(thing=t, store=self.store))
+        t.moveTo(self.location)
+
+        self.assertCommandOutput(
+            "look at rune",
+            ["It's too dark to see."],
+            [])
+        self.lighting.candelas = 100
+        self.assertCommandOutput(
+            "look at rune",
+            ["A totally mystical rune."],
+            [])
+
+
+
+class Rune(object):
+    """
+    This is an example provider of L{iimaginary.IVisible} which is not an
+    L{iimaginary.IThing}.
+    """
+
+    implements(iimaginary.IVisible, iimaginary.INameable)
+
+    def visualize(self):
+        """
+        Return an L{ExpressString} with a sample string that can be tested
+        against.
+        """
+        return ExpressString("A totally mystical rune.")
+
+
+    def knownTo(self, observer, asName):
+        """
+        Implement L{iimaginary.INameable.knownTo} to respond to the word 'rune'
+        and nothing else, so that this object may be found by
+        L{imaginary.idea.Idea.obtain}.
+        """
+        return (asName == "rune")
+
+
+
+class MagicStone(item.Item, Enhancement):
+    """
+    This is a magic stone that has a rune on it which you can examine.
+    """
+
+    implements(iimaginary.ILinkContributor)
+    powerupInterfaces = [iimaginary.ILinkContributor]
+    thing = attributes.reference()
+
+    def links(self):
+        """
+        Implement L{ILinkContributor} to yield a single link to a L{Rune}.
+        """
+        runeIdea = idea.Idea(Rune())
+        yield idea.Link(self.thing.idea, runeIdea)

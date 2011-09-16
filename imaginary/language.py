@@ -136,6 +136,17 @@ class DescriptionConcept(structlike.record('name description exits others',
     Concepts will be ordered by the C{preferredOrder} class attribute.
     Concepts not named in this list will appear last in an unpredictable
     order.
+
+    @ivar name: The name of the thing being described.
+
+    @ivar description: A basic description of the thing being described, the
+        first thing to show up.
+
+    @ivar exits: An iterable of L{IExit}, to be listed as exits in the
+        description.
+
+    @ivar others: An iterable of L{IDescriptionContributor} that will
+        supplement the description.
     """
     implements(iimaginary.IConcept)
 
@@ -167,6 +178,7 @@ class DescriptionConcept(structlike.record('name description exits others',
             description = (T.fg.green, self.description, u'\n')
 
         descriptionConcepts = []
+
         for pup in self.others:
             descriptionConcepts.append(pup.conceptualize())
 

@@ -56,25 +56,14 @@ class PlayerTest(unittest.TestCase):
         When the player refers to something ambiguously, the error message
         should enumerate the objects in question.
         """
-        def newThing(color):
+        for color in [u'red', u'green', u'blue']:
             it = objects.Thing(store=self.store, name=u'%s thing' % (color,))
             it.moveTo(self.room)
 
-        for color in [u'red', u'green']:
-            newThing(color)
-
-        self.player.parse(u"take thing")
+        self.player.parse("take thing")
 
         self.assertEquals(self.transport.value(),
-                          '> take thing\n'
-                          'Could you be more specific?  When you said "thing", '
-                          'did you mean a green thing or a red thing?\r\n')
-
-        self.transport.clear()
-        newThing(u'blue')
-        self.player.parse(u"take thing")
-        self.assertEquals(self.transport.value(),
-                          '> take thing\n'
-                          'Could you be more specific?  When you said "thing", '
-                          'did you mean a blue thing, a green thing, or a red '
-                          'thing?\r\n')
+                          "> take thing\n"
+                          "Could you be more specific?  When you said 'thing', "
+                          "did you mean: a red thing, a green thing, "
+                          "or a blue thing?\r\n")

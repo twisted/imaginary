@@ -45,28 +45,14 @@ class Player(object):
         def ebAmbiguity(err):
             err.trap(eimaginary.AmbiguousArgument)
             exc = err.value
-            if len(exc.objects) == 0:
-                func = getattr(err.value.action, err.value.part + "NotAvailable", None)
-                if func:
-                    msg = func(self.actor, exc)
-                else:
-                    msg = "Who's that?"
-            else:
-                msg = ('Could you be more specific?  When you said "' +
-                       exc.partValue + '", did you mean ')
-                formatted = [
-                    ''.join(iimaginary.IConcept(
-                            potentialTarget).vt102(self.player))
-                    for potentialTarget in exc.objects]
-                formatted.sort()
-                for astring in formatted[:-1]:
-                    msg += astring
-                    if len(formatted) > 2:
-                        msg += ","
-                    msg += " "
-                msg += "or "
-                msg += formatted[-1]
-                msg += "?"
+            msg = "Could you be more specific?  When you said '" + exc.partValue + "', did you mean: "
+            format = lambda potentialTarget: ''.join(iimaginary.IConcept(potentialTarget).vt102(self.player))
+            for obj in exc.objects[:-1]:
+                msg += format(obj)
+                msg += ", "
+            msg += "or "
+            msg += format(exc.objects[-1])
+            msg += "?"
             self.send((msg, "\r\n"))
 
         def ebUnexpected(err):

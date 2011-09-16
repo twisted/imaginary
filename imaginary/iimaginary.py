@@ -40,14 +40,16 @@ class ILinkContributor(Interface):
     A powerup interface which can add more connections between objects in the
     world graph.
 
-    All ILinkContributors which are powered up on a particular Thing will be
-    given a chance to add to the L{IThing.link} method's return value.
+    All L{ILinkContributors} which are powered up on a particular
+    L{imaginary.objects.Thing} will be appended to that
+    L{imaginary.objects.Thing}'s value.
     """
 
     def links():
         """
-        Return a C{dict} mapping names of connections to C{IThings}.
+        @return: an iterable of L{imaginary.idea.Link}s.
         """
+
 
 
 class IDescriptionContributor(Interface):
@@ -64,12 +66,82 @@ class IDescriptionContributor(Interface):
         """
 
 
+class INameable(Interface):
+    """
+    A provider of L{INameable} is an object which can be identified by an
+    imaginary actor by a name.
+    """
+
+    def knownTo(observer, name):
+        """
+        Is this L{INameable} known to the given C{observer} by the given
+        C{name}?
+
+        @param name: the name to test for
+
+        @type name: L{unicode}
+
+        @param observer: the thing which is observing this namable.
+
+        @type observer: L{IThing}
+
+        @rtype: L{bool}
+
+        @return: L{True} if C{name} identifies this L{INameable}, L{False}
+            otherwise.
+        """
+
+
+class ILitLink(Interface):
+    """
+    This interface is an annotation interface for L{imaginary.idea.Link}
+    objects, for indicating that the link can apply lighting.
+    """
+
+    def applyLighting(litThing, eventualTarget, requestedInterface):
+        """
+        Apply a transformation to an object that an
+        L{imaginary.idea.Idea.obtain} is requesting, based on the light level
+        of this link and its surroundings.
+
+        @param litThing: The L{IThing} to apply lighting to.
+
+        @type litThing: L{IThing}
+
+        @param eventualTarget: The eventual, ultimate target of the path in
+            question.
+
+        @type eventualTarget: C{requestedInterface}
+
+        @param requestedInterface: The interface requested by the query that
+            resulted in this path; this is the interface which
+            C{eventualTarget} should implement.
+
+        @type requestedInterface: L{Interface}
+
+        @return: C{eventualTarget}, or, if this L{ILitLink} knows how to deal
+            with lighting specifically for C{requestedInterface}, a modified
+            version thereof which still implements C{requestedInterface}.  If
+            insufficient lighting results in the player being unable to access
+            the desired object at all, C{None} will be returned.
+
+        @rtype: C{NoneType}, or C{requestedInterface}
+        """
+
+
+
 
 class IThing(Interface):
     """
     A thing in the world.  It has a location and and might be relocateable.
     """
     location = Attribute("An IThing which contains this IThing")
+
+    proper = Attribute(
+        "A boolean indicating the definiteness of this thing's pronoun.")
+
+    name = Attribute(
+        "A unicode string, the name of this Thing.")
 
 
     def moveTo(where, arrivalEventFactory=None):
@@ -78,14 +150,13 @@ class IThing(Interface):
 
         @type where: L{IThing} provider.
         @param where: The new location to be moved to.
-        
+
         @type arrivalEventFactory: A callable which takes a single
         argument, the thing being moved, and returns an event.
         @param arrivalEventFactory: Will be called to produce the
         event to be broadcast to the new location upon arrival of this
         thing. If not specified (or None), no event will be broadcast.
         """
-
 
     def findProviders(interface, distance):
         """
@@ -95,19 +166,31 @@ class IThing(Interface):
         """
 
 
-    def proxiedThing(thing, interface, distance):
-        """
-        Given an L{IThing} provider, return a provider of L{interface} as it is
-        accessible from C{self}.  Any necessary proxies will be applied.
-        """
 
+class IMovementRestriction(Interface):
+    """
+    A L{MovementRestriction} is a powerup that can respond to a L{Thing}'s
+    movement before it occurs, and thereby restrict it.
 
-    def knownAs(name):
+    Powerups of this type are consulted on L{Thing} before movement is allowed
+    to complete.
+    """
+
+    def movementImminent(movee, destination):
         """
-        Return a boolean indicating whether this thing might reasonably be
-        called C{name}.
+        An object is about to move.  Implementations can raise an exception if
+        they wish to to prevent it.
 
-        @type name: C{unicode}
+        @param movee: the object that is moving.
+
+        @type movee: L{Thing}
+
+        @param destination: The L{Thing} of the container that C{movee} will be
+            moving to.
+
+        @type destination: L{IThing}
+
+        @raise Exception: if the movement is to be prevented.
         """
 
 
@@ -116,6 +199,7 @@ class IActor(Interface):
     hitpoints = Attribute("L{Points} instance representing hit points")
     experience = Attribute("C{int} representing experience")
     level = Attribute("C{int} representing player's level")
+    thing = Attribute("L{IThing} which represents the actor's physical body.")
 
     def send(event):
         """Describe something to the actor.
@@ -224,22 +308,68 @@ class ITransactionalEventBroadcaster(Interface):
 
 
 
+class IExit(Interface):
+    """
+    An interface representing one direction that a player may move in.  While
+    L{IExit} only represents one half of a passageway, it is not necessarily
+    one-way; in most cases, a parallel exit will exist on the other side.
+    (However, it I{may} be one-way; there is no guarantee that you will be able
+    to traverse it backwards, or even indeed that it will take you somewhere at
+    all!)
+    """
+
+    name = Attribute(
+        """
+        The name of this exit.  This must be something adaptable to
+        L{IConcept}, to display to players.
+        """)
+
+    def traverse(thing):
+        """
+        Attempt to move the given L{IThing} through this L{IExit} to the other
+        side.  (Note that this may not necessarily result in actual movement,
+        if the exit does something tricky like disorienting you or hurting
+        you.)
+
+        @param thing: Something which is passing through this exit.
+
+        @type thing: L{IThing}
+        """
+
+
+
+
+class IObstruction(Interface):
+    """
+    An L{IObstruction} is a link annotation indicating that there is a physical
+    obstruction preventing solid objects from reaching between the two ends of
+    the link.  For example, a closed door might annotate its link to its
+    destination with an L{IObstruction}.
+    """
+
+    def whyNot():
+        """
+        @return: a reason why this is obstructed.
+
+        @rtype: L{IWhyNot}
+        """
+
+
+
 class IContainer(Interface):
     """
     An object which can contain other objects.
     """
-    capacity = Attribute("""
-    The maximum weight this container is capable of holding.
-    """)
+    capacity = Attribute(
+        """
+        The maximum weight this container is capable of holding.
+        """)
 
-#     lid = Attribute("""
-#     A reference to an L{IThing} which serves as this containers lid, or
-#     C{None} if there is no lid.
-#     """)
+    closed = Attribute(
+        """
+        A boolean indicating whether this container is closed.
+        """)
 
-    closed = Attribute("""
-    A boolean indicating whether this container is closed.
-    """)
 
     def add(object):
         """
@@ -331,63 +461,84 @@ class IConcept(Interface):
 
 
 
-class IProxy(Interface):
+class ILinkAnnotator(Interface):
     """
-        | > look
-        | [ Nuclear Reactor Core ]
-        | High-energy particles are wizzing around here at a fantastic rate.  You can
-        | feel the molecules in your body splitting apart as neutrons bombard the
-        | nuclei of their constituent atoms.  In a few moments you will be dead.
-        | There is a radiation suit on the floor.
-        | > take radiation suit
-        | You take the radiation suit.
-        | Your internal organs hurt a lot.
-        | > wear radiation suit
-        | You wear the radiation suit.
-        | You start to feel better.
-
-    That is to say, a factory for objects which take the place of elements in
-    the result of L{IThing.findProviders} for the purpose of altering their
-    behavior in some manner due to a particular property of the path in the
-    game object graph through which the original element would have been found.
-
-    Another example to consider is that of a pair of sunglasses worn by a
-    player: these might power up that player for IProxy so as to be able to
-    proxy IVisible in such a way as to reduce glaring light.
+    An L{ILinkAnnotator} provides annotations for links from one
+    L{imaginary.idea.Idea} to another.
     """
-    # XXX: Perhaps add 'distance' here, so Fog can be implemented as an
-    # IVisibility proxy which reduces the distance a observer can see.
-    def proxy(iface, facet):
+
+    def annotationsFor(link, idea):
         """
-        Proxy C{facet} which provides C{iface}.
-
-        @param facet: A candidate for inclusion in the set of objects returned
-        by findProviders.
-
-        @return: Either a provider of C{iface} or C{None}. If C{None} is
-        returned, then the object will not be returned from findProviders.
+        Produce an iterator of annotations to be applied to a link whose source
+        or target is the L{Idea} that this L{ILinkAnnotator} has been applied
+        to.
         """
 
 
 
-class ILocationProxy(Interface):
+class ILocationLinkAnnotator(Interface):
     """
-    Similar to L{IProxy}, except the pathway between the observer and the
-    target is not considered: instead, all targets are wrapped by all
-    ILocationProxy providers on their location.
+    L{ILocationLinkAnnotator} is a powerup interface to allow powerups for a
+    L{Thing} to act as L{ILinkAnnotator}s for every L{Thing} contained within
+    it.  This allows area-effect link annotators to be implemented simply,
+    without needing to monitor movement.
     """
 
-    def proxy(iface, facet):
+    def annotationsFor(link, idea):
         """
-        Proxy C{facet} which provides C{iface}.
-
-        @param facet: A candidate B{contained by the location on which this is
-        a powerup} for inclusion in the set of objects returned by
-        findProviders.
-
-        @return: Either a provider of C{iface} or C{None}. If C{None} is
-        returned, then the object will not be returned from findProviders.
+        Produce an iterator of annotations to be applied to a link whose source
+        or target is an L{Idea} of a L{Thing} contained in the L{Thing} that
+        this L{ILocationLinkAnnotator} has been applied to.
         """
+
+
+
+class IRetriever(Interface):
+    """
+    An L{IRetriever} examines a L{Path} and retrieves a desirable object from
+    it to yield from L{Idea.obtain}, if the L{Path} is suitable.
+
+    Every L{IRetriever} has a different definition of suitability; you should
+    examine some of their implementations for more detail.
+    """
+
+    def retrieve(path):
+        """
+        Return the suitable object described by C{path}, or None if the path is
+        unsuitable for this retriever's purposes.
+        """
+
+    def shouldKeepGoing(path):
+        """
+        Inspect a L{Path}. True if it should be searched, False if not.
+        """
+
+
+    def objectionsTo(path, result):
+        """
+        @return: an iterator of IWhyNot, if you object to this result being
+        yielded.
+        """
+
+
+
+class IContainmentRelationship(Interface):
+    """
+    Indicate the containment of one idea within another, via a link.
+
+    This is an annotation interface, used to annotate L{iimaginary.idea.Link}s
+    to specify that the relationship between linked objects is one of
+    containment.  In other words, the presence of an
+    L{IContainmentRelationship} annotation on a L{iimaginary.idea.Link}
+    indicates that the target of that link is contained by the source of that
+    link.
+    """
+
+    containedBy = Attribute(
+        """
+        A reference to the L{IContainer} which contains the target of the link
+        that this L{IContainmentRelationship} annotates.
+        """)
 
 
 
@@ -395,11 +546,21 @@ class IVisible(Interface):
     """
     A thing which can be seen.
     """
+
     def visualize():
         """
         Return an IConcept which represents the visible aspects of this
         visible thing.
         """
+
+
+    def isViewOf(thing):
+        """
+        Is this L{IVisible} a view of a given L{Thing}?
+
+        @rtype: L{bool}
+        """
+
 
 
 
@@ -478,6 +639,36 @@ class IClothing(IThingPowerUp):
         """)
 
 
+    def nowWornBy(wearer):
+        """
+        This article of clothing is now being worn by C{wearer}.
+
+        @param wearer: The wearer of the clothing.
+
+        @type wearer: L{IClothingWearer}
+        """
+
+
+    def noLongerWorn():
+        """
+        This article of clothing is no longer being worn.
+        """
+
+
+
+class ISittable(Interface):
+    """
+    Something you can sit on.
+    """
+
+    def seat(sitterThing):
+        """
+        @param sitterThing: The person sitting down on this sittable surface.
+
+        @type sitterThing: L{imaginary.objects.Thing}
+        """
+
+
 
 class IDescriptor(IThingPowerUp):
     """
@@ -494,4 +685,39 @@ class IDescriptor(IThingPowerUp):
         """
 
 
+class IWhyNot(Interface):
+    """
+    This interface is an idea link annotation interface, designed to be applied
+    by L{ILinkAnnotator}s, that indicates a reason why a given path cannot
+    yield a provider.  This is respected by L{imaginary.idea.ProviderOf}.
+    """
+
+    def tellMeWhyNot():
+        """
+        Return something adaptable to L{IConcept}, that explains why this link
+        is unsuitable for producing results.  For example, the string "It's too
+        dark in here."
+        """
+
+
+
+class IDistance(Interface):
+    """
+    A link annotation that provides a distance.
+    """
+
+    distance = Attribute("floating point, distance in meters")
+
+
+
+class IElectromagneticMedium(Interface):
+    """
+    A medium through which electromagnetic radiation may or may not pass; used
+    as a link annotation.
+    """
+
+    def isOpaque():
+        """
+        Will this propagate radiation the visible spectrum?
+        """
 

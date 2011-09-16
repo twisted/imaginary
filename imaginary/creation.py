@@ -16,7 +16,7 @@ from imaginary import language
 from imaginary.iimaginary import IThingType
 from imaginary.eimaginary import ActionFailure, DoesntFit
 
-from imaginary.action import NoTargetAction, insufficientSpace
+from imaginary.action import Action, insufficientSpace
 from imaginary.action import targetString
 
 from imaginary.pyparsing import Literal, White, Optional, restOfLine
@@ -109,7 +109,7 @@ def creationSuccess(player, creation):
         otherMessage=language.Sentence([player, " creates ", phrase, "."]))
 
 
-class Create(NoTargetAction):
+class Create(Action):
     """
     An action which can create items by looking at the L{IThingType} plugin
     registry.
@@ -163,7 +163,7 @@ def listThingTypes():
 
 
 
-class ListThingTypes(NoTargetAction):
+class ListThingTypes(Action):
     """
     An action which tells the invoker what thing types exist to be created with
     the L{Create} command.

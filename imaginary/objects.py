@@ -1,4 +1,12 @@
-# -*- test-case-name: imaginary.test.test_objects -*-
+# -*- test-case-name: imaginary.test.test_objects,imaginary.test.test_actions -*-
+
+"""
+This module contains the core, basic objects in Imaginary.
+
+L{imaginary.objects} contains the physical simulation (L{Thing}), objects
+associated with scoring (L{Points}), and the basic actor interface which allows
+the user to perform simple actions (L{Actor}).
+"""
 
 from __future__ import division
 
@@ -9,6 +17,7 @@ from zope.interface import implements
 from twisted.python import reflect, components
 
 from epsilon import structlike
+from epsilon.remember import remembered
 
 from axiom import item, attributes
 
@@ -16,17 +25,9 @@ from imaginary import iimaginary, eimaginary, text as T, events, language
 
 from imaginary.enhancement import Enhancement as _Enhancement
 
-def merge(d1, *dn):
-    """
-    da = {a: [1, 2]}
-    db = {b: [3]}
-    dc = {b: [5], c: [2, 4]}
-    merge(da, db, dc)
-    da == {a: [1, 2], b: [3, 5], c: [2, 4]}
-    """
-    for d in dn:
-        for (k, v) in d.iteritems():
-            d1.setdefault(k, []).extend(v)
+from imaginary.idea import (
+    Idea, Link, Proximity, Reachable, ProviderOf, Named, AlsoKnownAs, CanSee,
+    Vector, DelegatingRetriever)
 
 
 class Points(item.Item):
@@ -66,8 +67,58 @@ class Points(item.Item):
         return self.current
 
 
+
 class Thing(item.Item):
-    implements(iimaginary.IThing, iimaginary.IVisible)
+    """
+    A L{Thing} is a physically located object in the game world.
+
+    While a game object in Imaginary is composed of many different Python
+    objects, the L{Thing} is the central object that most game objects will
+    share.  It's central for several reasons.
+
+    First, a L{Thing} is connected to the point-of-interest simulation that
+    makes up the environment of an Imaginary game.  A L{Thing} has a location,
+    and a L{Container} can list the L{Thing}s located within it, which is how
+    you can see the objects in your surroundings or a container.
+
+    Each L{Thing} has an associated L{Idea}, which provides the graph that can
+    be traversed to find other L{Thing}s to be the target for actions or
+    events.
+
+    A L{Thing} is also the object which serves as the persistent nexus of
+    powerups that define behavior.  An L{_Enhancement} is a powerup for a
+    L{Thing}.  L{Thing}s can be powered up for a number of different interfaces:
+
+        - L{iimaginary.IMovementRestriction}, for preventing the L{Thing} from
+          moving around,
+
+        - L{iimaginary.ILinkContributor}, which can provide links from the
+          L{Thing}'s L{Idea} to other L{Idea}s,
+
+        - L{iimaginary.ILinkAnnotator}, which can provide annotations on links
+          incoming to or outgoing from the L{Thing}'s L{Idea},
+
+        - L{iimaginary.ILocationLinkAnnotator}, which can provide annotations on
+          links to or from any L{Thing}'s L{Idea} which is ultimately located
+          within the powered-up L{Thing}.
+
+        - L{iimaginary.IDescriptionContributor}, which provide components of
+          the L{Thing}'s description when viewed with the L{Look} action.
+
+        - and finally, any interface used as a target for an action or event.
+
+    The way this all fits together is as follows: if you wanted to make a
+    shirt, for example, you would make a L{Thing}, give it an appropriate name
+    and description, make a new L{Enhancement} class which implements
+    L{IMovementRestriction} to prevent the shirt from moving around unless it
+    is correctly in the un-worn state, and then power up that L{Enhancement} on
+    the L{Thing}.  This particular example is implemented in
+    L{imaginary.garments}, but almost any game-logic implementation will follow
+    this general pattern.
+    """
+
+    implements(iimaginary.IThing, iimaginary.IVisible, iimaginary.INameable,
+               iimaginary.ILinkAnnotator, iimaginary.ILinkContributor)
 
     weight = attributes.integer(doc="""
     Units of weight of this object.
@@ -106,117 +157,114 @@ class Thing(item.Item):
 
 
     def links(self):
-        d = {self.name.lower(): [self]}
-        if self.location is not None:
-            merge(d, {self.location.name: [self.location]})
+        """
+        Implement L{ILinkContributor.links()} by offering a link to this
+        L{Thing}'s C{location} (if it has one).
+        """
+        # since my link contribution is to go up (out), put this last, since
+        # containment (i.e. going down (in)) is a powerup.  we want to explore
+        # contained items first.
         for pup in self.powerupsFor(iimaginary.ILinkContributor):
-            merge(d, pup.links())
-        return d
+            for link in pup.links():
+                # wooo composition
+                yield link
+        if self.location is not None:
+            l = Link(self.idea, self.location.idea)
+            # XXX this incorrectly identifies any container with an object in
+            # it as 'here', since it doesn't distinguish the observer; however,
+            # cycle detection will prevent these links from being considered in
+            # any case I can think of.  However, 'here' is ambiguous in the
+            # case where you are present inside a container, and that should
+            # probably be dealt with.
+            l.annotate([AlsoKnownAs('here')])
+            yield l
 
 
-    thing = property(lambda self: self)
+    def allAnnotators(self):
+        """
+        A generator which yields all L{iimaginary.ILinkAnnotator} providers
+        that should affect this L{Thing}'s L{Idea}.  This includes:
 
-    _ProviderStackElement = structlike.record('distance stability target proxies')
+            - all L{iimaginary.ILocationLinkAnnotator} powerups on all
+              L{Thing}s which contain this L{Thing} (the container it's in, the
+              room its container is in, etc)
+
+            - all L{iimaginary.ILinkAnnotator} powerups on this L{Thing}.
+        """
+        loc = self
+        while loc is not None:
+            # TODO Test the loc is None case
+            if loc is not None:
+                for pup in loc.powerupsFor(iimaginary.ILocationLinkAnnotator):
+                    yield pup
+            loc = loc.location
+        for pup in self.powerupsFor(iimaginary.ILinkAnnotator):
+            yield pup
+
+
+    def annotationsFor(self, link, idea):
+        """
+        Implement L{ILinkAnnotator.annotationsFor} to consult each
+        L{ILinkAnnotator} for this L{Thing}, as defined by
+        L{Thing.allAnnotators}, and yield each annotation for the given L{Link}
+        and L{Idea}.
+        """
+        for annotator in self.allAnnotators():
+            for annotation in annotator.annotationsFor(link, idea):
+                yield annotation
+
+
+    @remembered
+    def idea(self):
+        """
+        An L{Idea} which represents this L{Thing}.
+        """
+        idea = Idea(self)
+        idea.linkers.append(self)
+        idea.annotators.append(self)
+        return idea
+
 
     def findProviders(self, interface, distance):
-
-        # Dictionary keyed on Thing instances used to ensure any particular
-        # Thing is yielded at most once.
-        seen = {}
-
-        # Dictionary keyed on Thing instances used to ensure any particular
-        # Thing only has its links inspected at most once.
-        visited = {self: True}
-
-        # Load proxies that are installed directly on this Thing as well as
-        # location proxies on this Thing's location: if self is adaptable to
-        # interface, use them as arguments to _applyProxies and yield a proxied
-        # and adapted facet of self.
-        facet = interface(self, None)
-        initialProxies = list(self.powerupsFor(iimaginary.IProxy))
-        locationProxies = set()
-        if self.location is not None:
-            locationProxies.update(set(self.location.powerupsFor(iimaginary.ILocationProxy)))
-        if facet is not None:
-            seen[self] = True
-            proxiedFacet = self._applyProxies(locationProxies, initialProxies, facet, interface)
-            if proxiedFacet is not None:
-                yield proxiedFacet
-
-        # Toss in for the _ProviderStackElement list/stack.  Ensures ordering
-        # in the descendTo list remains consistent with a breadth-first
-        # traversal of links (there is probably a better way to do this).
-        stabilityHelper = 1
-
-        # Set up a stack of Things to ask for links to visit - start with just
-        # ourself and the proxies we have found already.
-        descendTo = [self._ProviderStackElement(distance, 0, self, initialProxies)]
-
-        while descendTo:
-            element = descendTo.pop()
-            distance, target, proxies = (element.distance, element.target,
-                                         element.proxies)
-            links = target.links().items()
-            links.sort()
-            for (linkName, linkedThings) in links:
-                for linkedThing in linkedThings:
-                    if distance:
-                        if linkedThing not in visited:
-                            # A Thing which was linked and has not yet been
-                            # visited.  Create a new list of proxies from the
-                            # current list and any which it has and push this
-                            # state onto the stack.  Also extend the total list
-                            # of location proxies with any location proxies it
-                            # has.
-                            visited[linkedThing] = True
-                            stabilityHelper += 1
-                            locationProxies.update(set(linkedThing.powerupsFor(iimaginary.ILocationProxy)))
-                            proxies = proxies + list(
-                                linkedThing.powerupsFor(iimaginary.IProxy))
-                            descendTo.append(self._ProviderStackElement(
-                                distance - 1, stabilityHelper,
-                                linkedThing, proxies))
-
-                    # If the linked Thing hasn't been yielded before and is
-                    # adaptable to the desired interface, wrap it in the
-                    # appropriate proxies and yield it.
-                    facet = interface(linkedThing, None)
-                    if facet is not None and linkedThing not in seen:
-                        seen[linkedThing] = True
-                        proxiedFacet = self._applyProxies(locationProxies, proxies, facet, interface)
-                        if proxiedFacet is not None:
-                            yield proxiedFacet
-
-            # Re-order anything we've appended so that we visit it in the right
-            # order.
-            descendTo.sort()
+        """
+        Temporary emulation of the old way of doing things so that I can
+        surgically replace findProviders.
+        """
+        return self.idea.obtain(
+            Proximity(distance, CanSee(ProviderOf(interface))))
 
 
-    def _applyProxies(self, locationProxies, proxies, obj, interface):
-        # Extremely pathetic algorithm - loop over all location proxies we have
-        # seen and apply any which belong to the location of the target object.
-        # This could do with some serious optimization.
-        for proxy in locationProxies:
-            if iimaginary.IContainer(proxy.thing).contains(obj.thing) or proxy.thing is obj.thing:
-                obj = proxy.proxy(obj, interface)
-                if obj is None:
-                    return None
+    def obtainOrReportWhyNot(self, retriever):
+        """
+        Invoke L{Idea.obtain} on C{self.idea} with the given C{retriever}.
 
-        # Loop over the other proxies and simply apply them in turn, giving up
-        # as soon as one eliminates the object entirely.
-        for proxy in proxies:
-            obj = proxy.proxy(obj, interface)
-            if obj is None:
-                return None
+        If no results are yielded, then investigate the reasons why no results
+        have been yielded, and raise an exception describing one of them.
 
-        return obj
+        Objections may be registered by:
 
+            - an L{iimaginary.IWhyNot} annotation on any link traversed in the
+              attempt to discover results, or,
 
-    def proxiedThing(self, thing, interface, distance):
-        for prospectiveFacet in self.findProviders(interface, distance):
-            if prospectiveFacet.thing is thing:
-                return prospectiveFacet
-        raise eimaginary.ThingNotFound(thing)
+            - an L{iimaginary.IWhyNot} yielded by the given C{retriever}'s
+              L{iimaginary.IRetriever.objectionsTo} method.
+
+        @return: a list of objects returned by C{retriever.retrieve}
+
+        @rtype: C{list}
+
+        @raise eimaginary.ActionFailure: if no results are available, and an
+            objection has been registered.
+        """
+        obt = self.idea.obtain(retriever)
+        results = list(obt)
+        if not results:
+            reasons = list(obt.reasonsWhyNot)
+            if reasons:
+                raise eimaginary.ActionFailure(events.ThatDoesntWork(
+                        actor=self,
+                        actorMessage=reasons[0].tellMeWhyNot()))
+        return results
 
 
     def search(self, distance, interface, name):
@@ -224,59 +272,59 @@ class Thing(item.Item):
         Retrieve game objects answering to the given name which provide the
         given interface and are within the given distance.
 
-        @type distance: C{int}
         @param distance: How many steps to traverse (note: this is wrong, it
-        will become a real distance-y thing with real game-meaning someday).
+            will become a real distance-y thing with real game-meaning
+            someday).
+        @type distance: C{float}
 
         @param interface: The interface which objects within the required range
-        must be adaptable to in order to be returned.
+            must be adaptable to in order to be returned.
 
-        @type name: C{str}
         @param name: The name of the stuff.
+        @type name: C{str}
 
         @return: An iterable of L{iimaginary.IThing} providers which are found.
         """
-        # TODO - Move this into the action system.  It is about finding things
-        # using strings, which isn't what the action system is all about, but
-        # the action system is where we do that sort of thing now. -exarkun
-        extras = []
-
-        container = iimaginary.IContainer(self.location, None)
-        if container is not None:
-            potentialExit = container.getExitNamed(name, None)
-            if potentialExit is not None:
-                try:
-                    potentialThing = self.proxiedThing(
-                        potentialExit.toLocation, interface, distance)
-                except eimaginary.ThingNotFound:
-                    pass
-                else:
-                    yield potentialThing
-
-        if name == "me" or name == "self":
-            facet = interface(self, None)
-            if facet is not None:
-                extras.append(self)
-
-        if name == "here" and self.location is not None:
-            facet = interface(self.location, None)
-            if facet is not None:
-                extras.append(self.location)
-
-        for res in self.findProviders(interface, distance):
-            if res.thing in extras:
-                yield res
-            elif res.thing.knownAs(name):
-                yield res
+        return self.obtainOrReportWhyNot(
+            Proximity(
+                distance,
+                Reachable(Named(name, CanSee(ProviderOf(interface)), self))))
 
 
     def moveTo(self, where, arrivalEventFactory=None):
         """
-        @see: L{iimaginary.IThing.moveTo}.
+        Implement L{iimaginary.IThing.moveTo} to change the C{location} of this
+        L{Thing} to a new L{Thing}, broadcasting an L{events.DepartureEvent} to
+        note this object's departure from its current C{location}.
+
+        Before moving it, invoke each L{IMovementRestriction} powerup on this
+        L{Thing} to allow them to prevent this movement.
         """
-        if where is self.location:
+        whereContainer = iimaginary.IContainer(where, None)
+        if (whereContainer is
+            iimaginary.IContainer(self.location, None)):
+            # Early out if I'm being moved to the same location that I was
+            # already in.
             return
+        if whereContainer is None:
+            whereThing = None
+        else:
+            whereThing = whereContainer.thing
+        if whereThing is not None and whereThing.location is self:
+            # XXX should be checked against _all_ locations of whereThing, not
+            # just the proximate one.
+
+            # XXX actor= here is wrong, who knows who is moving this thing.
+            raise eimaginary.ActionFailure(events.ThatDoesntWork(
+                    actor=self,
+                    actorMessage=[
+                        language.Noun(where.thing).definiteNounPhrase()
+                        .capitalizeConcept(),
+                        " won't fit inside itself."]))
+
         oldLocation = self.location
+        for restriction in self.powerupsFor(iimaginary.IMovementRestriction):
+            restriction.movementImminent(self, where)
         if oldLocation is not None:
             events.DepartureEvent(oldLocation, self).broadcast()
         if where is not None:
@@ -290,20 +338,33 @@ class Thing(item.Item):
             iimaginary.IContainer(oldLocation).remove(self)
 
 
-    def knownAs(self, name):
+    def knownTo(self, observer, name):
         """
-        Return C{True} if C{name} might refer to this L{Thing}, C{False} otherwise.
+        Implement L{INameable.knownTo} to compare the name to L{Thing.name} as
+        well as few constant values based on the relationship of the observer
+        to this L{Thing}, such as 'me', 'self', and 'here'.
 
-        XXX - See #2604.
+        @param observer: an L{IThing} provider.
         """
-        name = name.lower()
+
         mine = self.name.lower()
-        return name == mine or name in mine.split()
+        name = name.lower()
+        if name == mine or name in mine.split():
+            return True
+        if observer == self:
+            if name in ('me', 'self'):
+                return True
+        return False
 
 
     # IVisible
     def visualize(self):
-        container = iimaginary.IContainer(self.thing, None)
+        """
+        Implement L{IVisible.visualize} to return a
+        L{language.DescriptionConcept} that describes this L{Thing}, including
+        all its L{iimaginary.IDescriptionContributor} powerups.
+        """
+        container = iimaginary.IContainer(self, None)
         if container is not None:
             exits = list(container.getExits())
         else:
@@ -313,8 +374,41 @@ class Thing(item.Item):
             self.name,
             self.description,
             exits,
+            # Maybe we should listify this or something; see
+            # http://divmod.org/trac/ticket/2905
             self.powerupsFor(iimaginary.IDescriptionContributor))
-components.registerAdapter(lambda thing: language.Noun(thing).nounPhrase(), Thing, iimaginary.IConcept)
+
+
+    def isViewOf(self, thing):
+        """
+        Implement L{IVisible.isViewOf} to return C{True} if its argument is
+        C{self}.  In other words, this L{Thing} is only a view of itself.
+        """
+        return (thing is self)
+
+components.registerAdapter(lambda thing: language.Noun(thing).nounPhrase(),
+                           Thing,
+                           iimaginary.IConcept)
+
+
+def _eventuallyContains(containerThing, containeeThing):
+    """
+    Does a container, or any containers within it (or any containers within any
+    of those, etc etc) contain some object?
+
+    @param containeeThing: The L{Thing} which may be contained.
+
+    @param containerThing: The L{Thing} which may have a L{Container} that
+    contains C{containeeThing}.
+
+    @return: L{True} if the containee is contained by the container.
+    """
+    while containeeThing is not None:
+        if containeeThing is containerThing:
+            return True
+        containeeThing = containeeThing.location
+    return False
+
 
 
 
@@ -323,18 +417,41 @@ OPPOSITE_DIRECTIONS = {
     u"west": u"east",
     u"northwest": u"southeast",
     u"northeast": u"southwest"}
-for (k, v) in OPPOSITE_DIRECTIONS.items():
-    OPPOSITE_DIRECTIONS[v] = k
+
+
+def _populateOpposite():
+    """
+    Populate L{OPPOSITE_DIRECTIONS} with inverse directions.
+
+    (Without leaking any loop locals into the global scope, thank you very
+    much.)
+    """
+    for (k, v) in OPPOSITE_DIRECTIONS.items():
+        OPPOSITE_DIRECTIONS[v] = k
+
+_populateOpposite()
+
 
 
 class Exit(item.Item):
-    fromLocation = attributes.reference(doc="""
-    Where this exit leads from.
-    """, allowNone=False, whenDeleted=attributes.reference.CASCADE, reftype=Thing)
+    """
+    An L{Exit} is an oriented pathway between two L{Thing}s which each
+    represent a room.
+    """
 
-    toLocation = attributes.reference(doc="""
-    Where this exit leads to.
-    """, allowNone=False, whenDeleted=attributes.reference.CASCADE, reftype=Thing)
+    implements(iimaginary.INameable, iimaginary.IExit)
+
+    fromLocation = attributes.reference(
+        doc="""
+        Where this exit leads from.
+        """, allowNone=False,
+        whenDeleted=attributes.reference.CASCADE, reftype=Thing)
+
+    toLocation = attributes.reference(
+        doc="""
+        Where this exit leads to.
+        """, allowNone=False,
+        whenDeleted=attributes.reference.CASCADE, reftype=Thing)
 
     name = attributes.text(doc="""
     What this exit is called/which direction it is in.
@@ -344,15 +461,70 @@ class Exit(item.Item):
     The reverse exit object, if one exists.
     """)
 
+    distance = attributes.ieee754_double(
+        doc="""
+        How far, in meters, does a user have to travel to traverse this exit?
+        """, allowNone=False, default=1.0)
 
-    def link(cls, a, b, forwardName, backwardName=None):
+    def knownTo(self, observer, name):
+        """
+        Implement L{iimaginary.INameable.knownTo} to identify this L{Exit} as
+        its C{name} attribute.
+        """
+        return name == self.name
+
+
+    def traverse(self, thing):
+        """
+        Implement L{iimaginary.IExit} to move the given L{Thing} to this
+        L{Exit}'s C{toLocation}.
+        """
+        if self.sibling is not None:
+            arriveDirection = self.sibling.name
+        else:
+            arriveDirection = OPPOSITE_DIRECTIONS.get(self.name)
+
+        thing.moveTo(
+            self.toLocation,
+            arrivalEventFactory=lambda player: events.MovementArrivalEvent(
+                thing=thing,
+                origin=None,
+                direction=arriveDirection))
+
+
+    # XXX This really needs to be renamed now that links are a thing.
+    @classmethod
+    def link(cls, a, b, forwardName, backwardName=None, distance=1.0):
+        """
+        Create two L{Exit}s connecting two rooms.
+
+        @param a: The first room.
+
+        @type a: L{Thing}
+
+        @param b: The second room.
+
+        @type b: L{Thing}
+
+        @param forwardName: The name of the link going from C{a} to C{b}.  For
+            example, u'east'.
+
+        @type forwardName: L{unicode}
+
+        @param backwardName: the name of the link going from C{b} to C{a}.  For
+            example, u'west'.  If not provided or L{None}, this will be
+            computed based on L{OPPOSITE_DIRECTIONS}.
+
+        @type backwardName: L{unicode}
+        """
         if backwardName is None:
             backwardName = OPPOSITE_DIRECTIONS[forwardName]
-        me = cls(store=a.store, fromLocation=a, toLocation=b, name=forwardName)
-        him = cls(store=b.store, fromLocation=b, toLocation=a, name=backwardName)
-        me.sibling = him
-        him.sibling = me
-    link = classmethod(link)
+        forward = cls(store=a.store, fromLocation=a, toLocation=b,
+                 name=forwardName, distance=distance)
+        backward = cls(store=b.store, fromLocation=b, toLocation=a,
+                  name=backwardName, distance=distance)
+        forward.sibling = backward
+        backward.sibling = forward
 
 
     def destroy(self):
@@ -361,28 +533,78 @@ class Exit(item.Item):
         self.deleteFromStore()
 
 
-    # NOTHING
+    @remembered
+    def exitIdea(self):
+        """
+        This property is the L{Idea} representing this L{Exit}; this is a
+        fairly simple L{Idea} that will link only to the L{Exit.toLocation}
+        pointed to by this L{Exit}, with a distance annotation indicating the
+        distance traversed to go through this L{Exit}.
+        """
+        x = Idea(self)
+        x.linkers.append(self)
+        return x
+
+
+    def links(self):
+        """
+        Generate a link to the location that this exit points at.
+
+        @return: an iterator which yields a single L{Link}, annotated with a
+            L{Vector} that indicates a distance of 1.0 (a temporary measure,
+            since L{Exit}s don't have distances yet) and a direction of this
+            exit's C{name}.
+        """
+        l = Link(self.exitIdea, self.toLocation.idea)
+        l.annotate([Vector(self.distance, self.name),
+                    # We annotate this link with ourselves because the 'Named'
+                    # retriever will use the last link in the path to determine
+                    # if an object has any aliases.  We want this direction
+                    # name to be an alias for the room itself as well as the
+                    # exit, so we want to annotate the link with an INameable.
+                    # This also has an effect of annotating the link with an
+                    # IExit, and possibly one day an IItem as well (if such a
+                    # thing ever comes to exist), so perhaps we eventually want
+                    # a wrapper which elides all references here except
+                    # INameable since that's what we want.  proxyForInterface
+                    # perhaps?  However, for the moment, the extra annotations
+                    # do no harm, so we'll leave them there.
+                    self])
+        yield l
+
+
     def conceptualize(self):
-        return language.ExpressList([u'the exit to ', language.Noun(self.toLocation).nounPhrase()])
-components.registerAdapter(lambda exit: exit.conceptualize(), Exit, iimaginary.IConcept)
+        return language.ExpressList(
+            [u'the exit to ', language.Noun(self.toLocation).nounPhrase()])
+
+components.registerAdapter(lambda exit: exit.conceptualize(),
+                           Exit, iimaginary.IConcept)
+
+
+
+class ContainmentRelationship(structlike.record("containedBy")):
+    """
+    Implementation of L{iimaginary.IContainmentRelationship}.  The interface
+    specifies no methods or attributes.  See its documentation for more
+    information.
+    """
+    implements(iimaginary.IContainmentRelationship)
 
 
 
 class Containment(object):
-    """Functionality for containment to be used as a mixin in Powerups.
+    """
+    Functionality for containment to be used as a mixin in Powerups.
     """
 
     implements(iimaginary.IContainer, iimaginary.IDescriptionContributor,
                iimaginary.ILinkContributor)
-    powerupInterfaces = (iimaginary.IContainer, iimaginary.ILinkContributor,
+    powerupInterfaces = (iimaginary.IContainer,
+                         iimaginary.ILinkContributor,
                          iimaginary.IDescriptionContributor)
 
     # Units of weight which can be contained
     capacity = None
-
-    # Reference to another object which serves as this container's lid.
-    # If None, this container cannot be opened or closed.
-    # lid = None
 
     # Boolean indicating whether the container is currently closed or open.
     closed = False
@@ -443,18 +665,164 @@ class Containment(object):
 
     # ILinkContributor
     def links(self):
-        d = {}
+        """
+        Implement L{ILinkContributor} to contribute L{Link}s to all contents of
+        this container, as well as all of its exits, and its entrance from its
+        location.
+        """
         if not self.closed:
             for ob in self.getContents():
-                merge(d, ob.links())
+                content = Link(self.thing.idea, ob.idea)
+                content.annotate([ContainmentRelationship(self)])
+                yield content
+        yield Link(self.thing.idea, self._entranceIdea)
+        yield Link(self.thing.idea, self._exitIdea)
         for exit in self.getExits():
-            merge(d, {exit.name: [exit.toLocation]})
-        return d
+            yield Link(self.thing.idea, exit.exitIdea)
+
+
+    @remembered
+    def _entranceIdea(self):
+        """
+        Return an L{Idea} that reflects the implicit entrance from this
+        container's location to the interior of the container.
+        """
+        return Idea(delegate=_ContainerEntrance(self))
+
+
+    @remembered
+    def _exitIdea(self):
+        """
+        Return an L{Idea} that reflects the implicit exit from this container
+        to its location.
+        """
+        return Idea(delegate=_ContainerExit(self))
 
 
     # IDescriptionContributor
     def conceptualize(self):
-        return ExpressSurroundings(self.getContents())
+        """
+        Implement L{IDescriptionContributor} to enumerate the contents of this
+        containment.
+
+        @return: an L{ExpressSurroundings} with an iterable of all visible
+        contents of this container.
+        """
+        return ExpressSurroundings(
+            self.thing.idea.obtain(
+                _ContainedBy(CanSee(ProviderOf(iimaginary.IThing)), self)))
+
+
+
+class _ContainedBy(DelegatingRetriever):
+    """
+    An L{iimaginary.IRetriever} which discovers only things present in a given
+    container.  Currently used only for discovering the list of things to list
+    in a container's description.
+
+    @ivar retriever: a retriever to delegate to.
+
+    @type retriever: L{iimaginary.IRetriever}
+
+    @ivar container: the container to test containment by
+
+    @type container: L{IThing}
+    """
+
+    implements(iimaginary.IRetriever)
+
+    def __init__(self, retriever, container):
+        DelegatingRetriever.__init__(self, retriever)
+        self.container = container
+
+
+    def resultRetrieved(self, path, result):
+        """
+        If this L{_ContainedBy}'s container contains the last L{IThing} target
+        of the given path, return the result of this L{_ContainedBy}'s
+        retriever retrieving from the given C{path}, otherwise C{None}.
+        """
+        containments = list(path.of(iimaginary.IContainmentRelationship))
+        if containments:
+            if containments[-1].containedBy is self.container:
+                return result
+
+
+
+class _ContainerEntrance(structlike.record('container')):
+    """
+    A L{_ContainerEntrance} is the implicit entrance to a container from its
+    location.  If a container is open, and big enough, it can be entered.
+
+    @ivar container: the container that this L{_ContainerEntrance} points to.
+
+    @type container: L{Containment}
+    """
+
+    implements(iimaginary.IExit, iimaginary.INameable)
+
+    @property
+    def name(self):
+        """
+        Implement L{iimaginary.IExit.name} to return a descriptive name for the
+        inward exit of this specific container.
+        """
+        return 'into ', language.Noun(self.container.thing).definiteNounPhrase()
+
+
+    def traverse(self, thing):
+        """
+        Implement L{iimaginary.IExit.traverse} to move the thing in transit to
+        the container specified.
+        """
+        thing.moveTo(self.container)
+
+
+    def knownTo(self, observer, name):
+        """
+        Delegate L{iimaginary.INameable.knownTo} to this
+        L{_ContainerEntrance}'s container's thing.
+        """
+        return self.container.thing.knownTo(observer, name)
+
+
+
+class _ContainerExit(structlike.record('container')):
+    """
+    A L{_ContainerExit} is the exit from a container, or specifically, a
+    L{Containment}; an exit by which actors may move to the container's
+    container.
+
+    @ivar container: the container that this L{_ContainerExit} points out from.
+
+    @type container: L{Containment}
+    """
+
+    implements(iimaginary.IExit, iimaginary.INameable)
+
+    @property
+    def name(self):
+        """
+        Implement L{iimaginary.IExit.name} to return a descriptive name for the
+        outward exit of this specific container.
+        """
+        return 'out of ', language.Noun(self.container.thing).definiteNounPhrase()
+
+
+    def traverse(self, thing):
+        """
+        Implement L{iimaginary.IExit.traverse} to move the thing in transit to
+        the container specified.
+        """
+        thing.moveTo(self.container.thing.location)
+
+
+    def knownTo(self, observer, name):
+        """
+        This L{_ContainerExit} is known to observers inside it as 'out'
+        (i.e. 'go out', 'look out'), but otherwise it has no known description.
+        """
+        return (observer.location == self.container.thing) and (name == 'out')
 
 
 
@@ -467,19 +835,24 @@ class ExpressSurroundings(language.ItemizedList):
 
 
 class Container(item.Item, Containment, _Enhancement):
-    """A generic powerup that implements containment."""
+    """
+    A generic L{_Enhancement} that implements containment.
+    """
 
-    capacity = attributes.integer(doc="""
-    Units of weight which can be contained.
-    """, allowNone=False, default=1)
+    capacity = attributes.integer(
+        doc="""
+        Units of weight which can be contained.
+        """, allowNone=False, default=1)
 
-    closed = attributes.boolean(doc="""
-    Indicates whether the container is currently closed or open.
-    """, allowNone=False, default=False)
+    closed = attributes.boolean(
+        doc="""
+        Indicates whether the container is currently closed or open.
+        """, allowNone=False, default=False)
 
-    thing = attributes.reference(doc="""
-    The object this container powers up.
-    """)
+    thing = attributes.reference(
+        doc="""
+        The object this container powers up.
+        """)
 
 
 
@@ -488,14 +861,17 @@ class ExpressCondition(language.BaseExpress):
 
     def vt102(self, observer):
         return [
-            [T.bold, T.fg.yellow, language.Noun(self.original.thing).shortName().plaintext(observer)],
+            [T.bold, T.fg.yellow, language.Noun(
+                    self.original.thing).shortName().plaintext(observer)],
             u" is ",
             [T.bold, T.fg.red, self.original._condition(), u"."]]
 
 
 class Actable(object):
     implements(iimaginary.IActor, iimaginary.IEventObserver)
-    powerupInterfaces = (iimaginary.IActor, iimaginary.IEventObserver, iimaginary.IDescriptionContributor)
+
+    powerupInterfaces = (iimaginary.IActor, iimaginary.IEventObserver,
+                         iimaginary.IDescriptionContributor)
 
     # Yay, experience!
     experience = 0
@@ -512,8 +888,6 @@ class Actable(object):
         'fine',
         'chipper',
         'great')
-
-
 
 
     # IDescriptionContributor
@@ -651,62 +1025,182 @@ class Actor(item.Item, Actable, _Enhancement):
 
 
 class LocationLighting(item.Item, _Enhancement):
-    implements(iimaginary.ILocationProxy)
-    powerupInterfaces = (iimaginary.ILocationProxy,)
+    """
+    A L{LocationLighting} is an enhancement for a location which allows the
+    location's description and behavior to depend on its lighting.  While
+    L{LocationLighting} includes its own ambient lighting number, it is not
+    really a light source, it's just a location which is I{affected by} light
+    sources; for lighting, you should use L{LightSource}.
 
-    candelas = attributes.integer(doc="""
-    The luminous intensity in candelas.
+    By default, in Imaginary, rooms are considered by to be lit to an
+    acceptable level that actors can see and interact with both the room and
+    everything in it without worrying about light.  By contrast, any room that
+    can be dark needs to have a L{LocationLighting} installed.  A room affected
+    by a L{LocationLighting} which is lit will behave like a normal room, but a
+    room affected by a L{LocationLighting} with no available light sources will
+    prevent players from performing actions which require targets that need to
+    be seen, and seeing the room's description.
+    """
 
-    See U{http://en.wikipedia.org/wiki/Candela}.
-    """, default=100, allowNone=False)
+    implements(iimaginary.ILocationLinkAnnotator)
+    powerupInterfaces = (iimaginary.ILocationLinkAnnotator,)
 
-    thing = attributes.reference()
+    candelas = attributes.integer(
+        doc="""
+        The ambient luminous intensity in candelas.
 
+        See U{http://en.wikipedia.org/wiki/Candela}.
+        """, default=100, allowNone=False)
+
+    thing = attributes.reference(
+        doc="""
+        The location being affected by lighting.
+        """,
+        reftype=Thing,
+        allowNone=False,
+        whenDeleted=attributes.reference.CASCADE)
 
     def getCandelas(self):
         """
         Sum the candelas of all light sources within a limited distance from
         the location this is installed on and return the result.
         """
-        sum = 0
-        for candle in self.thing.findProviders(iimaginary.ILightSource, 1):
+        sum = self.candelas
+        for candle in self.thing.idea.obtain(
+            Proximity(1, ProviderOf(iimaginary.ILightSource))):
             sum += candle.candelas
         return sum
 
 
-    def proxy(self, facet, interface):
-        if interface is iimaginary.IVisible:
-            if self.getCandelas():
-                return facet
-            elif facet.thing is self.thing:
-                return _DarkLocationProxy(self.thing)
-            else:
-                return None
-        return facet
+    def annotationsFor(self, link, idea):
+        """
+        Yield a L{_PossiblyDark} annotation for all links pointing to objects
+        located in the C{thing} attribute of this L{LocationLighting}.
+        """
+        if link.target is idea:
+            yield _PossiblyDark(self)
 
 
 
 class _DarkLocationProxy(structlike.record('thing')):
+    """
+    An L{IVisible} implementation for darkened locations.
+    """
+
     implements(iimaginary.IVisible)
 
     def visualize(self):
+        """
+        Return a L{DescriptionConcept} that tells the player they can't see.
+        """
         return language.DescriptionConcept(
             u"Blackness",
             u"You cannot see anything because it is very dark.")
 
 
+    def isViewOf(self, thing):
+        """
+        Implement L{IVisible.isViewOf} to delegate to this
+        L{_DarkLocationProxy}'s L{Thing}'s L{IVisible.isViewOf}.
+
+        In other words, this L{_DarkLocationProxy} C{isViewOf} its C{thing}.
+        """
+        return self.thing.isViewOf(thing)
+
+
 
 class LightSource(item.Item, _Enhancement):
+    """
+    A simple implementation of L{ILightSource} which provides a fixed number of
+    candelas of luminous intensity, assumed to be emitted uniformly in all
+    directions.
+    """
+
     implements(iimaginary.ILightSource)
     powerupInterfaces = (iimaginary.ILightSource,)
 
-    candelas = attributes.integer(doc="""
-    The luminous intensity in candelas.
+    candelas = attributes.integer(
+        doc="""
+        The luminous intensity in candelas.
 
-    See U{http://en.wikipedia.org/wiki/Candela}.
-    """, default=1, allowNone=False)
+        See U{http://en.wikipedia.org/wiki/Candela}.
+        """, default=1, allowNone=False)
 
-    thing = attributes.reference()
+    thing = attributes.reference(
+        doc="""
+        The physical body emitting the light.
+        """,
+        reftype=Thing,
+        allowNone=False,
+        whenDeleted=attributes.reference.CASCADE)
 
 
 
+class _PossiblyDark(structlike.record("lighting")):
+    """
+    A L{_PossiblyDark} is a link annotation which specifies that the target of
+    the link may be affected by lighting.
+
+    @ivar lighting: the lighting for a particular location.
+
+    @type lighting: L{LocationLighting}
+    """
+
+    implements(iimaginary.IWhyNot, iimaginary.ILitLink)
+
+    def tellMeWhyNot(self):
+        """
+        Return a helpful message explaining why something may not be accessible
+        due to poor lighting.
+        """
+        return "It's too dark to see."
+
+
+    def isItLit(self, path, result):
+        """
+        Determine if the given result, viewed via the given path, appears to be
+        lit.
+
+        @return: L{True} if the result should be lit, L{False} if it is dark.
+
+        @rtype: C{bool}
+        """
+        # XXX wrong, we need to examine this exactly the same way applyLighting
+        # does.  CanSee and Visibility *are* the same object now so it is
+        # possible to do.
+        if self.lighting.getCandelas():
+            return True
+        litThing = list(path.eachTargetAs(iimaginary.IThing))[-1]
+        if _eventuallyContains(self.lighting.thing, litThing):
+            val = litThing is self.lighting.thing
+            #print 'checking if', litThing, 'is lit:', val
+            return val
+        else:
+            return True
+
+
+    def whyNotLit(self):
+        """
+        Return an L{iimaginary.IWhyNot} provider explaining why the target of
+        this link is not lit.  (Return 'self', since L{_PossiblyDark} is an
+        L{iimaginary.IWhyNot} provider itself.)
+        """
+        return self
+
+
+    def applyLighting(self, litThing, eventualTarget, requestedInterface):
+        """
+        Implement L{iimaginary.ILitLink.applyLighting} to return a
+        L{_DarkLocationProxy} for the room lit by this
+        L{_PossiblyDark.lighting}, C{None} for any items in that room, or
+        C{eventualTarget} if the target is in a different place.
+        """
+        if self.lighting.getCandelas():
+            return eventualTarget
+        elif (eventualTarget is self.lighting.thing and
+              requestedInterface is iimaginary.IVisible):
+            return _DarkLocationProxy(self.lighting.thing)
+        elif _eventuallyContains(self.lighting.thing, litThing):
+            return None
+        else:
+            return eventualTarget
