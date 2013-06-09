@@ -1034,6 +1034,21 @@ class Actions(Action):
 
 
 
+class Commands(Action):
+    """
+    The I{commands} action provides a pointer to inexperienced players that
+    they should be thinking in terms of I{actions} instead.
+
+    This has no world side-effects; it just provides some user-interface
+    information to the player.
+    """
+    expr = pyparsing.Literal("commands")
+
+    def do(self, player, line):
+        player.send("Try 'actions' instead.")
+
+
+
 class Search(Action):
     expr = (pyparsing.Literal("search") +
             targetString("name"))

@@ -101,7 +101,11 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
              "barbaz",
              "barbaz"])
 
-    def testActions(self):
+
+    def test_actions(self):
+        """
+        The I{actions} action lists all of the actions a character can take.
+        """
         cmds = dict.fromkeys([
                 getattr(cls, 'actionName', cls.__name__.lower())
                 for cls
@@ -110,6 +114,18 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self._test(
             "actions",
             [' '.join(cmds)])
+
+
+    def test_commands(self):
+        """
+        The I{commands} action is a stub to help those unfamiliar with
+        Imaginary's action system find their way to the I{actions} command
+        instead.
+        """
+        self._test(
+            "commands",
+            ["Try 'actions' instead."])
+
 
     def testGet(self):
         # Try to get something that does not exist
