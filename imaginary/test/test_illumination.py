@@ -164,7 +164,7 @@ class DarknessCommandTestCase(commandutils.CommandTestCaseMixin, unittest.TestCa
             "look",
             [commandutils.E("[ Test Location ]"),
              "Location for testing.",
-             "Observer Player"])
+             "Here, you see Observer Player."])
 
 
     def test_changeIlluminationLevel(self):

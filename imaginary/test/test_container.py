@@ -92,7 +92,7 @@ class IngressAndEgressTestCase(CommandTestCaseMixin, unittest.TestCase):
             'enter box',
             [E('[ Test Location ]'),
              'Location for testing.',
-             'Observer Player and a box'],
+             'Here, you see Observer Player and a box.'],
             ['Test Player leaves into the box.'])
 
 
@@ -105,7 +105,7 @@ class IngressAndEgressTestCase(CommandTestCaseMixin, unittest.TestCase):
             'exit out',
             [E('[ Test Location ]'),
              'Location for testing.',
-             'Observer Player and a box'],
+             'Here, you see Observer Player and a box.'],
             ['Test Player leaves out of the box.'])
         self.assertEquals(self.player.location,
                           self.location)

@@ -191,13 +191,13 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "look",
             [E("[ Test Location ]"),
              "Location for testing.",
-             "Observer Player"])
+             "Here, you see Observer Player."])
 
         self._test(
             "look here",
             [E("[ Test Location ]"),
              "Location for testing.",
-             "Observer Player"])
+             "Here, you see Observer Player."])
 
         objects.Exit.link(self.location, self.location, u"north")
         self._test(
@@ -205,7 +205,7 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             [E("[ Test Location ]"),
              E("( north south )"),
              "Location for testing.",
-             "Observer Player"])
+             "Here, you see Observer Player."])
 
         self._test(
             "look me",
@@ -284,7 +284,7 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "search here",
             [E("[ Test Location ]"),
              "Location for testing.",
-             "Observer Player",
+             "Here, you see Observer Player.",
              ""])
 
         self._test(
@@ -496,7 +496,7 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             [E("[ Test Location ]"),
              E("( west )"),
              "Location for testing.",
-             "Observer Player"],
+             "Here, you see Observer Player."],
             ["Test Player arrives from the west."])
 
 
@@ -515,7 +515,7 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "north",
             [E("[ Test Location ]"),
              "Location for testing.",
-             "Observer Player"],
+             "Here, you see Observer Player."],
             ["Test Player arrives from the south."])
         self.player.moveTo(secretRoom)
         myExit.name = u'elsewhere'
@@ -523,7 +523,7 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "go elsewhere",
             [E("[ Test Location ]"),
              "Location for testing.",
-             "Observer Player"],
+             "Here, you see Observer Player."],
             ["Test Player arrives."])
 
 
