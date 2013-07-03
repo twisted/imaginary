@@ -6,8 +6,9 @@ Textual formatting for game objects.
 
 """
 import types
+from string import Formatter
 
-from zope.interface import implements
+from zope.interface import implements, implementer
 
 from twisted.python.components import registerAdapter
 
@@ -115,8 +116,9 @@ class Noun(object):
 def flattenWithoutColors(vt102):
     return T.flatten(vt102, useColors=False)
 
+
+@implementer(iimaginary.IConcept)
 class BaseExpress(object):
-    implements(iimaginary.IConcept)
 
     def __init__(self, original):
         self.original = original
@@ -310,3 +312,37 @@ def itemizedStringList(desc):
         yield u'and '
         yield desc[-1]
 
+
+
+class ConceptTemplate(object):
+    """
+    A L{ConceptTemplate} wraps a text template which may intersperse literal
+    strings with markers for substitution.
+
+    Substitution markers follow U{the syntax for str.format<http://docs.python.org/2/library/string.html#format-string-syntax>}.
+
+    Values for field names are supplied to the L{expand} method.
+    """
+    def __init__(self, templateText):
+        self.templateText = templateText
+
+
+    def expand(self, values):
+        parts = Formatter().parse(self.templateText)
+        for (literalText, fieldName, formatSpec, conversion) in parts:
+            if literalText:
+                yield ExpressString(literalText)
+            if fieldName:
+                target = values[fieldName.lower()]
+                if formatSpec:
+                    yield getattr(self, '_expand_' + formatSpec.upper())(target)
+                else:
+                    yield target
+
+
+    def _expand_NAME(self, target):
+        return target.name
+
+
+    def _expand_PRONOUN(self, target):
+        return Noun(target).heShe()
