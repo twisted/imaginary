@@ -14,8 +14,9 @@ class IntelligenceTestCase(unittest.TestCase):
     def setUp(self):
         self.store = store.Store()
 
-        self.location = objects.Thing(store=self.store, name=u"Place")
-        self.locationContainer = objects.Container.createFor(self.location, capacity=1000)
+        self.locationContainer = commandutils.createLocation(
+            self.store, u"Place", None)
+        self.location = self.locationContainer.thing
 
         self.alice = objects.Thing(store=self.store, name=u"Alice")
         self.actor = objects.Actor.createFor(self.alice)
@@ -136,8 +137,8 @@ class MouseReactionTestCase(commandutils.CommandTestCaseMixin,
         intelligence = iimaginary.IActor(mouse).getIntelligence()
         intelligence._callLater = clock.callLater
 
-        elsewhere = objects.Thing(store=self.store, name=u"Mouse Hole")
-        objects.Container.createFor(elsewhere, capacity=1000)
+        elsewhere = commandutils.createLocation(
+            self.store, u"Mouse Hole", None).thing
 
         objects.Exit.link(self.location, elsewhere, u"south")
 
@@ -147,7 +148,7 @@ class MouseReactionTestCase(commandutils.CommandTestCaseMixin,
             "south",
             [commandutils.E("[ Mouse Hole ]"),
              commandutils.E("( north )"),
-             commandutils.E("a squeaker")],
+             commandutils.E("Here, you see a squeaker.")],
             ['Test Player leaves south.'])
 
         clock.advance(0)
