@@ -708,9 +708,7 @@ class Containment(object):
         @return: an L{ExpressSurroundings} with an iterable of all visible
         contents of this container.
         """
-        return ExpressSurroundings(
-            self.thing.idea.obtain(
-                _ContainedBy(CanSee(ProviderOf(iimaginary.IThing)), self)))
+        return ExpressContents(self)
 
 
 
@@ -838,6 +836,14 @@ class Container(item.Item, Containment, _Enhancement):
     """
     A generic L{_Enhancement} that implements containment.
     """
+    contentsTemplate = attributes.text(
+        doc="""
+        Define how the contents of this container are presented to observers.
+        Certain substrings will be given special treatment.
+
+        @see: L{imaginary.language.ConceptTemplate}
+        """,
+        allowNone=True, default=None)
 
     capacity = attributes.integer(
         doc="""
@@ -853,6 +859,70 @@ class Container(item.Item, Containment, _Enhancement):
         doc="""
         The object this container powers up.
         """)
+
+
+
+class ExpressContents(language.Sentence):
+    """
+    A concept representing the things contained by another thing - excluding
+    the observer of the concept.
+    """
+    _CONDITION = CanSee(ProviderOf(iimaginary.IThing))
+
+    def _contentConcepts(self, observer):
+        """
+        Get concepts for the contents of the thing wrapped by this concept.
+
+        @param observer: The L{objects.Thing} which will observe these
+            concepts.
+
+        @return: A L{list} of the contents of C{self.original}, excluding
+            C{observer}.
+        """
+        container = self.original
+        idea = container.thing.idea
+        return [
+            concept
+            for concept
+            in idea.obtain(_ContainedBy(self._CONDITION, container))
+            if concept is not observer]
+
+
+    @property
+    def template(self):
+        """
+        This is the template string which is used to construct the overall
+        concept, indicating what the container is and what its contents are.
+        """
+        template = self.original.contentsTemplate
+        if template is None:
+            template = u"{subject:pronoun} contains {contents}."
+        return template
+
+
+    def expand(self, template, observer):
+        """
+        Expand the given template using the wrapped container's L{Thing} as the
+        subject.
+
+        C{u"contents"} is also available for substitution with the contents of
+        the container.
+
+        @return: An iterator of concepts derived from the given template.
+        """
+        return language.ConceptTemplate(template).expand(dict(
+                subject=self.original.thing,
+                contents=language.ItemizedList(self._contentConcepts(observer))))
+
+
+    def concepts(self, observer):
+        """
+        Return a L{list} of L{IConcept} providers which express the contents of
+        the wrapped container.
+        """
+        if self._contentConcepts(observer):
+            return list(self.expand(self.template, observer))
+        return u""
 
 
 

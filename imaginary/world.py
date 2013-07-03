@@ -7,7 +7,6 @@
 from axiom.item import Item
 from axiom.attributes import inmemory, reference
 
-from imaginary.iimaginary import IContainer
 from imaginary.objects import Thing, Container, Actor
 from imaginary.events import MovementArrivalEvent
 
@@ -48,7 +47,9 @@ class ImaginaryWorld(Item):
 
         character = Thing(store=self.store, weight=100,
                           name=name, proper=True, **kw)
-        Container.createFor(character, capacity=10)
+        Container.createFor(
+            character, capacity=10,
+            contentsTemplate=u"{subject:pronoun} is carrying {contents}.")
         Actor.createFor(character)
 
         # Unfortunately, world -> garments -> creation -> action ->
