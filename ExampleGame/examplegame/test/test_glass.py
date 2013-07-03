@@ -50,7 +50,7 @@ class GlassBoxTests(CommandTestCaseMixin, TestCase):
             "look at box",
             [E("[ box ]"),
              "The system under test.",
-             "a ball"])
+             "It contains a ball."])
 
 
     def test_take(self):

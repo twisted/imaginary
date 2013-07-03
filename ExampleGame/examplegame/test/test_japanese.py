@@ -414,8 +414,9 @@ class HiraganaMouseCommandTestCase(commandutils.CommandTestCaseMixin, unittest.T
         """
         clock = task.Clock()
 
-        closet = objects.Thing(store=self.store, name=u"Closet")
-        closetContainer = objects.Container.createFor(closet, capacity=500)
+        closetContainer = commandutils.createLocation(
+            self.store, u"Closet", None)
+        closet = closetContainer.thing
 
         mouse = mice.createHiraganaMouse(
             store=self.store,
@@ -432,7 +433,7 @@ class HiraganaMouseCommandTestCase(commandutils.CommandTestCaseMixin, unittest.T
             "north",
             [commandutils.E("[ Closet ]"),
              commandutils.E("( south )"),
-             commandutils.E(self.mouseName)],
+             commandutils.E(u"Here, you see " + self.mouseName + u".")],
             ["Test Player leaves north."])
 
         clock.advance(mousehood.challengeInterval)
