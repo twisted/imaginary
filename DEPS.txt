@@ -1,4 +1,4 @@
-Python 2.4
-Twisted 2.5
+Python 2.7
+Twisted 13.1
 Epsilon SVN-Trunk
 Axiom SVN-Trunk

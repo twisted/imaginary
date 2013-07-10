@@ -333,7 +333,7 @@ class UTF8TerminalBuffer(helper.TerminalBuffer):
             self._scrollDown()
         # The following conditional has been changed from the original.
         if (b > '\x7f' or b in string.printable) and b not in '\r\n':
-            ch = (b, self._currentCharacterAttributes())
+            ch = (b, self._currentFormattingState())
             if self.modes.get(insults.modes.IRM):
                 self.lines[self.y][self.x:self.x] = [ch]
                 self.lines[self.y].pop()
