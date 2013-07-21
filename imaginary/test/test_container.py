@@ -85,6 +85,21 @@ class ExpressContentsTests(unittest.TestCase):
         self.observer = objects.Thing(store=self.store, name=u"observer")
 
 
+    def addContents(self, names):
+        """
+        Add a new L{Thing} to C{self.container} for each element of C{names}.
+
+        @param names: An iterable of L{unicode} giving the names of the things
+            to create and add.
+        """
+        things = []
+        for name in names:
+            thing = objects.Thing(store=self.store, name=name, proper=True)
+            thing.moveTo(self.container)
+            things.append(thing)
+        return things
+
+
     def test_interface(self):
         """
         An instance of L{ExpressContents} provides L{IConcept}.
@@ -108,8 +123,7 @@ class ExpressContentsTests(unittest.TestCase):
         providers representing the things contained by the L{Container} the
         L{ExpressContents} instance is initialized with.
         """
-        something = objects.Thing(store=self.store, name=u"something")
-        something.moveTo(self.container)
+        [something] = self.addContents([u"something"])
 
         contents = self.concept._contentConcepts(self.observer)
         self.assertEqual([something], contents)
@@ -121,8 +135,7 @@ class ExpressContentsTests(unittest.TestCase):
         include the observer, even if the observer is contained by the
         L{Container} the L{ExpressContents} instance is initialized with.
         """
-        something = objects.Thing(store=self.store, name=u"something")
-        something.moveTo(self.container)
+        [something] = self.addContents([u"something"])
         self.observer.moveTo(self.container)
 
         concepts = self.concept._contentConcepts(self.observer)
@@ -136,9 +149,7 @@ class ExpressContentsTests(unittest.TestCase):
         is not included in the returned L{list}.
         """
         objects.LocationLighting.createFor(self.box, candelas=0)
-
-        something = objects.Thing(store=self.store, name=u"something")
-        something.moveTo(self.container)
+        [something] = self.addContents([u"something"])
 
         concepts = self.concept._contentConcepts(self.observer)
         self.assertEqual([], concepts)
@@ -174,18 +185,6 @@ class ExpressContentsTests(unittest.TestCase):
         self.assertEqual(
             [self.box.name],
             list(self.concept.expand(u"{subject:name}", self.observer)))
-
-
-    def addContents(self, names):
-        """
-        Add a new L{Thing} to C{self.container} for each element of C{names}.
-
-        @param names: An iterable of L{unicode} giving the names of the things
-            to create and add.
-        """
-        for name in names:
-            thing = objects.Thing(store=self.store, name=name, proper=True)
-            thing.moveTo(self.container)
 
 
     def conceptAsText(self, concept, observer):
