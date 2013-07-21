@@ -13,7 +13,7 @@ from imaginary.test.commandutils import E
 
 # Regular expression for matching variable parts of the output of certain
 # commands.
-PTR = "[A-F0-9]{1,8}"
+PTR = "[A-F0-9]{1,16}"
 STOREID = "\\d+"
 
 class TransactionalEventBroadcasterTestCase(unittest.TestCase):
