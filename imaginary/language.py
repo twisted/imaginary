@@ -355,6 +355,7 @@ class ConceptTemplate(object):
             if fieldName:
                 target = values[fieldName.lower()]
                 if formatSpec:
+                    # A nice enhancement would be to delegate this logic to target
                     yield getattr(self, '_expand_' + formatSpec.upper())(target)
                 else:
                     yield target
