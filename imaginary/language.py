@@ -324,10 +324,30 @@ class ConceptTemplate(object):
     Values for field names are supplied to the L{expand} method.
     """
     def __init__(self, templateText):
+        """
+        @param templateText: The text of the template.  For example,
+            C{u"Hello, {target:name}."}.
+        @type templateText: L{unicode}
+        """
         self.templateText = templateText
 
 
     def expand(self, values):
+        """
+        Generate concepts based on the template.
+
+        @param values: A L{dict} mapping substitution markers to application
+            objects from which to take values for those substitutions.  For
+            example, a key might be C{u"target"}.  The associated value will be
+            sustituted each place C{u"{target}"} appears in the template
+            string.  Or, the value's name will be substituted each place
+            C{u"{target:name}"} appears in the template string.
+        @type values: L{dict} mapping L{unicode} to L{object}
+
+        @return: An iterator the combined elements of which represent the
+            result of expansion of the template.  The elements are adaptable to
+            L{IConcept}.
+        """
         parts = Formatter().parse(self.templateText)
         for (literalText, fieldName, formatSpec, conversion) in parts:
             if literalText:
@@ -341,8 +361,14 @@ class ConceptTemplate(object):
 
 
     def _expand_NAME(self, target):
+        """
+        Get the name of a L{Thing}.
+        """
         return target.name
 
 
     def _expand_PRONOUN(self, target):
+        """
+        Get the personal pronoun of a L{Thing}.
+        """
         return Noun(target).heShe()
