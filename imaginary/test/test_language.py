@@ -73,6 +73,18 @@ class ConceptTemplateTests(TestCase):
             self.expandToText(template, dict(a=self.thing, b=another)))
 
 
+    def test_adjacent(self):
+        """
+        Adjacent substitution markers are expanded without introducing
+        extraneous intervening characters.
+        """
+        another = Thing(name=u"bob", gender=Gender.FEMALE)
+        template = ConceptTemplate(u"{a:name}{b:name}")
+        self.assertEqual(
+            u"alicebob",
+            self.expandToText(template, dict(a=self.thing, b=another)))
+
+
     def test_missingTarget(self):
         """
         A missing target is expanded to a warning about a bad template.
