@@ -353,12 +353,26 @@ class ConceptTemplate(object):
             if literalText:
                 yield ExpressString(literalText)
             if fieldName:
-                target = values[fieldName.lower()]
-                if formatSpec:
-                    # A nice enhancement would be to delegate this logic to target
-                    yield getattr(self, '_expand_' + formatSpec.upper())(target)
+                try:
+                    target = values[fieldName.lower()]
+                except KeyError:
+                    extra = u""
+                    if formatSpec:
+                        extra = u" '%s'" % (formatSpec,)
+                    yield u"<missing target '%s' for%s expansion>" % (
+                        fieldName, extra)
                 else:
-                    yield target
+                    if formatSpec:
+                        # A nice enhancement would be to delegate this logic to target
+                        try:
+                            expander = getattr(self, '_expand_' + formatSpec.upper())
+                        except AttributeError:
+                            yield u"<'%s' unsupported by target '%s'>" % (
+                                formatSpec, fieldName)
+                        else:
+                            yield expander(target)
+                    else:
+                        yield target
 
 
     def _expand_NAME(self, target):

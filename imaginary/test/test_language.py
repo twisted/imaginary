@@ -60,3 +60,45 @@ class ConceptTemplateTests(TestCase):
         self.assertEqual(
             u"she wins.",
             self.expandToText(template, dict(c=self.thing)))
+
+
+    def test_multiples(self):
+        """
+        Multiple substitution markers may be used in a single template.
+        """
+        another = Thing(name=u"bob", gender=Gender.FEMALE)
+        template = ConceptTemplate(u"{a:name} hits {b:name}.")
+        self.assertEqual(
+            u"alice hits bob.",
+            self.expandToText(template, dict(a=self.thing, b=another)))
+
+
+    def test_missingTarget(self):
+        """
+        A missing target is expanded to a warning about a bad template.
+        """
+        template = ConceptTemplate(u"{c} wins.")
+        self.assertEqual(
+            u"<missing target 'c' for expansion> wins.",
+            self.expandToText(template, dict()))
+
+
+    def test_missingTargetWithSpecifier(self):
+        """
+        A missing target is expanded to a warning about a bad template.
+        """
+        template = ConceptTemplate(u"{c:pronoun} wins.")
+        self.assertEqual(
+            u"<missing target 'c' for 'pronoun' expansion> wins.",
+            self.expandToText(template, dict()))
+
+
+    def test_unsupportedSpecifier(self):
+        """
+        A specifier not supported on the identified target is expanded to a
+        warning about a bad template.
+        """
+        template = ConceptTemplate(u"{c:glorbex} wins.")
+        self.assertEqual(
+            u"<'glorbex' unsupported by target 'c'> wins.",
+            self.expandToText(template, dict(c=self.thing)))
