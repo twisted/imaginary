@@ -225,9 +225,10 @@ class ExpressContentsTests(unittest.TestCase):
     def test_emptyConcepts(self):
         """
         If the wrapped container is empty, L{ExpressContents.concepts} returns
-        an empty string.
+        an empty list.
         """
-        self.assertEqual(u"", self.concept.concepts(self.observer))
+        self.assertEqual(
+            u"", self.conceptAsText(self.concept, self.observer))
 
 
 

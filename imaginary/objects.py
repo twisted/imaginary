@@ -922,7 +922,7 @@ class ExpressContents(language.Sentence):
         """
         if self._contentConcepts(observer):
             return list(self.expand(self.template, observer))
-        return u""
+        return []
 
 
 
