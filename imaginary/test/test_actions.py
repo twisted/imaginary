@@ -202,58 +202,6 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertEquals(o.location, self.location)
 
 
-    def testLook(self):
-        self._test(
-            "look",
-            [E("[ Test Location ]"),
-             "Location for testing.",
-             "Here, you see Observer Player."])
-
-        self._test(
-            "look here",
-            [E("[ Test Location ]"),
-             "Location for testing.",
-             "Here, you see Observer Player."])
-
-        objects.Exit.link(self.location, self.location, u"north")
-        self._test(
-            "look here",
-            [E("[ Test Location ]"),
-             E("( north south )"),
-             "Location for testing.",
-             "Here, you see Observer Player."])
-
-        self._test(
-            "look me",
-            [E("[ Test Player ]"),
-             "Test Player is great.",
-             "She is naked."])
-
-        self._test(
-            "look at me",
-            [E("[ Test Player ]"),
-             "Test Player is great.",
-             "She is naked."])
-
-        self._test(
-            "look at Observer Player",
-            [E("[ Observer Player ]"),
-             "Observer Player is great.",
-             "She is naked."],
-            ["Test Player looks at you."])
-
-
-        o = objects.Thing(store=self.store, name=u"foo")
-        iimaginary.IContainer(self.location).add(o)
-        self._test(
-            "look at foo",
-            [E("[ foo ]")])
-
-        self._test(
-            "look at bar",
-            ["You don't see that."])
-
-
     def testSay(self):
         self._test(
             "say hello",
