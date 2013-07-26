@@ -92,7 +92,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
             u'[ daisy ]\n'
             u'daisy is great.\n'
             u'She is naked.\n'
-            u'a pair of Daisy Dukes'
+            u'She is carrying a pair of Daisy Dukes.'
             )
         self.assertIdentical(self.dukes.location, self.daisy)
 
@@ -109,7 +109,8 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
             u'[ daisy ]\n'
             u'daisy is great.\n'
             u'She is naked.\n'
-            u'a pair of Daisy Dukes and a pair of lacy underwear'
+            u'She is carrying a pair of Daisy Dukes and a pair of lacy '
+            u'underwear.'
             )
         self.assertIdentical(self.dukes.location, self.daisy)
 
@@ -265,7 +266,7 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
                    [E("[ Test Player ]"),
                     E("Test Player is great."),
                     E("She is wearing a pair of overalls."),
-                    E("a pair of daisy dukes"),
+                    E("She is carrying a pair of daisy dukes."),
                     ])
 
 

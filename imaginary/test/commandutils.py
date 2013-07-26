@@ -38,21 +38,14 @@ class CommandTestCaseMixin:
     @ivar observer: The L{Thing} representing the observer who sees the main
         player's actions.
     """
-
     def setUp(self):
         """
         Set up a store with a location, a player and an observer.
         """
         self.store = store.Store()
-
-        self.location = objects.Thing(
-            store=self.store,
-            name=u"Test Location",
-            description=u"Location for testing.",
-            proper=True)
-
-        locContainer = objects.Container.createFor(self.location, capacity=1000)
-
+        locContainer = createLocation(
+            self.store, u"Test Location", u"Location for testing.")
+        self.location = locContainer.thing
         self.world = ImaginaryWorld(store=self.store, origin=self.location)
         self.player = self.world.create(
             u"Test Player", gender=language.Gender.FEMALE)
@@ -213,6 +206,28 @@ class MockEphemeralIntelligence(object):
 
     def prepare(self, event):
         return lambda: self.events.append(event)
+
+
+
+def createLocation(store, name, description):
+    """
+    Create a new L{Thing} and create an L{objects.Container} for it.
+
+    @param name: The name given to the created L{Thing}.
+    @type name: L{unicode}
+
+    @param description: The description given to the created L{Thing}.
+    @type description: L{unicode}
+
+    @return: The containment enhancement of the created L{Thing}.
+    @rtype: L{objects.Container}.
+    """
+    location = objects.Thing(
+        store=store, name=name, description=description, proper=True)
+
+    return objects.Container.createFor(
+        location, capacity=1000,
+        contentsTemplate=u"Here, you see {contents}.")
 
 
 

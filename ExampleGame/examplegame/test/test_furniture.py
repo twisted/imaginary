@@ -5,9 +5,9 @@ This module contains tests for the examplegame.furniture module.
 
 from twisted.trial.unittest import TestCase
 
-from imaginary.test.commandutils import CommandTestCaseMixin, E
+from imaginary.test.commandutils import CommandTestCaseMixin, E, createLocation
 
-from imaginary.objects import Thing, Container, Exit
+from imaginary.objects import Thing, Exit
 from examplegame.furniture import Chair
 
 class SitAndStandTests(CommandTestCaseMixin, TestCase):
@@ -79,8 +79,7 @@ class SitAndStandTests(CommandTestCaseMixin, TestCase):
         first.
         """
         self.test_sitDown()
-        otherRoom = Thing(store=self.store, name=u'elsewhere')
-        Container.createFor(otherRoom, capacity=1000)
+        otherRoom = createLocation(self.store, u"elsewhere", None).thing
         Exit.link(self.location, otherRoom, u'north')
         self.assertCommandOutput(
             "go north",
@@ -102,6 +101,4 @@ class SitAndStandTests(CommandTestCaseMixin, TestCase):
             # at.
             [E("[ Test Location ]"),
              "Location for testing.",
-             "Observer Player and a chair"])
-
-
+             "Here, you see Observer Player and a chair."])
