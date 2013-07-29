@@ -186,3 +186,9 @@ class LookAtTests(TestCase):
         self.assertEqual(
             u"[ Visible Location ]\n( north )\nDescription of visible location.\n",
             flatten(evts[0].actorMessage.plaintext(self.context.actor)))
+
+
+
+class LookAroundTests(TestCase):
+    pass
+
