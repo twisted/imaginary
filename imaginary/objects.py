@@ -150,6 +150,11 @@ class Thing(item.Item):
     """, default=False, allowNone=False)
 
 
+    def __str__(self):
+        return '<Thing %r>' % (self.name,)
+    __repr__ = __str__
+
+
     def destroy(self):
         if self.location is not None:
             iimaginary.IContainer(self.location).remove(self)
@@ -861,6 +866,11 @@ class Container(item.Item, Containment, _Enhancement):
         """)
 
 
+    def __str__(self):
+        return '<Container %r>' % (self.thing.name,)
+    __repr__ = __str__
+
+
 
 class ExpressContents(language.Sentence):
     """
@@ -900,7 +910,7 @@ class ExpressContents(language.Sentence):
         return template
 
 
-    def expand(self, template, observer):
+    def expand(self, template, observer, concepts):
         """
         Expand the given template using the wrapped container's L{Thing} as the
         subject.
@@ -912,7 +922,7 @@ class ExpressContents(language.Sentence):
         """
         return language.ConceptTemplate(template).expand(dict(
                 subject=self.original.thing,
-                contents=language.ItemizedList(self._contentConcepts(observer))))
+                contents=language.ItemizedList(concepts)))
 
 
     def concepts(self, observer):
@@ -920,8 +930,9 @@ class ExpressContents(language.Sentence):
         Return a L{list} of L{IConcept} providers which express the contents of
         the wrapped container.
         """
-        if self._contentConcepts(observer):
-            return list(self.expand(self.template, observer))
+        concepts = self._contentConcepts(observer)
+        if concepts:
+            return list(self.expand(self.template, observer, concepts))
         return []
 
 
