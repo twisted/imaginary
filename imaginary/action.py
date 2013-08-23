@@ -788,13 +788,13 @@ class Drop(TargetAction):
 
 
 
-_direction_names = objects.OPPOSITE_DIRECTIONS.keys()
-_direction_names.extend(objects.DIRECTION_ALIASES.keys())
+_directionNames = objects.OPPOSITE_DIRECTIONS.keys()
+_directionNames.extend(objects.DIRECTION_ALIASES.keys())
 
 DIRECTION_LITERAL = reduce(
     operator.xor, [
         pyparsing.Literal(d)
-        for d in _direction_names]).setResultsName("direction")
+        for d in _directionNames]).setResultsName("direction")
 
 
 
