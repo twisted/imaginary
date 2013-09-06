@@ -62,6 +62,16 @@ This begins traversal from the `Idea` it is called on.
 The retriever to use for the traversal is accepted as the only argument.
 The return value is an iterator of things found by the traversal, as interpreted by the retriever.
 
+Traversal Path
+''''''''''''''
+
+The traversal path, mentioned in passing above, is an important concrete concept in the traversal process.
+As `Idea`\ s are found by graph traversal a sequence of `Link`\ s leading from the `Idea` where traversal began up to each of those found `Idea`\ s.
+This sequence is represented explicitly as an `imaginary.idea.Path` instance and is made available to the retreiver used for the traversal.
+It is important to remember that the same `Idea` might be found by the traversal process via *multiple* paths.
+For example, consider a box with two holes in it or a mirror reflecting an image of other objects.
+The IRetriever_ section below goes into more details about how a `Path` is useful.
+
 ILinkContributor
 ''''''''''''''''
 
@@ -78,6 +88,22 @@ The same physical object can take on all of these behaviors in turn merely by ha
 
 IRetriever
 ''''''''''
+
+The `IRetriever` passed to `Idea.obtain` plays an intimate role in the traversal and its results.
+
+`shouldKeepGoing`
+~~~~~~~~~~~~~~~~~
+
+The `shouldKeepGoing` method provides the only means by which a traversal will ever complete (short of visiting every single `Idea` in the simulation graph).
+One use of this feature is to simply limit traversals to the immediate physical area of the `Idea` where traversal begins.
+This is implemented by `imaginary.idea.Proximity`: this `IRetriever` can be composed with any other `IRetriever` and automatically adds a distance limit to the traversal.
+It passes other method calls through to the `IRetriever` with which it is composed.
+Another example is `imaginary.idea.CanSee`.
+This `IRetriever` allows traversal to continue until encountering an `ILink` which is opaque to visible light.
+Like `Proximity` it is composable and implements the rest of the methods of `IRetriever` as pass-through methods that call the composed retriever's method.
+
+`retrieve`
+~~~~~~~~~~
 
 Annotations
 '''''''''''
