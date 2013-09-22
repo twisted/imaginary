@@ -160,15 +160,18 @@ class Action(object):
     @classmethod
     def match(cls, player, line):
         """
-        @return: a list of 2-tuples of all the results of parsing the given
-            C{line} using this L{Action} type's pyparsing C{expr} attribute, or
-            None if the expression does not match the given line.
+        Parse the given C{line} using this L{Action} type's pyparsing C{expr}
+        attribute.  A C{pyparsing.LineEnd} is appended to C{expr} to avoid
+        accidentally matching a prefix instead of the whole line.
+
+        @return: a list of 2-tuples of all the results of parsing, or None if
+            the expression does not match the given line.
 
         @param line: a line of user input to be interpreted as an action.
 
         @see: L{imaginary.pyparsing}
         """
-        return cls.expr.parseString(line)
+        return (cls.expr + pyparsing.LineEnd()).parseString(line)
 
 
     def do(self, player, line, **slots):
@@ -870,13 +873,13 @@ class Bury(Action):
 
 class Go(Action):
     expr = (
-        (DIRECTION_LITERAL + pyparsing.LineEnd()) |
         (pyparsing.Literal("go") + pyparsing.White() +
          targetString("direction")) |
         (pyparsing.Literal("enter") + pyparsing.White() +
          targetString("direction")) |
         (pyparsing.Literal("exit") + pyparsing.White() +
-         targetString("direction")))
+         targetString("direction")) |
+        DIRECTION_LITERAL)
 
     actorInterface = iimaginary.IThing
 
