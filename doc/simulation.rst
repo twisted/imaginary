@@ -95,6 +95,7 @@ The `IRetriever` passed to `Idea.obtain` plays an intimate role in the traversal
 ~~~~~~~~~~~~~~~~~
 
 The `shouldKeepGoing` method provides the only means by which a traversal will ever complete (short of visiting every single `Idea` in the simulation graph).
+This method is called with a `Path` instance and must return `True` if traversal should continue further down that `Path` or `False` if it should not.
 One use of this feature is to simply limit traversals to the immediate physical area of the `Idea` where traversal begins.
 This is implemented by `imaginary.idea.Proximity`: this `IRetriever` can be composed with any other `IRetriever` and automatically adds a distance limit to the traversal.
 It passes other method calls through to the `IRetriever` with which it is composed.
@@ -104,6 +105,15 @@ Like `Proximity` it is composable and implements the rest of the methods of `IRe
 
 `retrieve`
 ~~~~~~~~~~
+
+Each `Path` through the simulation graph considered during a call to `Idea.obtain` is passed to `IRetriever.retrieve`.
+This method is responsible for returning the object that will become an element in the generator returned by `Idea.obtain`.
+It may also eliminate a `Path` from the result by returning `None`.
+`imaginary.idea.ProviderOf` is one of the few `IRetriever` implementations currently included with Imaginary.
+This implementation is initialized with an interface.
+Its `retrieve` method adapts the *delegate* of the last `Idea` in the `Path` to that interface (if the adaption fails, it removes the `Path` from the result).
+This is convenient for simulation systems that want to deal with a particular aspect of the behavior of objects discovered during traversal.
+For example, the *look at* action uses a `ProviderOf` instance so that it only need consider objects that can be seen - objects that are adaptable to `imaginary.iimaginary.IVisible`.
 
 Annotations
 '''''''''''
