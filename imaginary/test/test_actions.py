@@ -423,7 +423,11 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertEquals(x[5].groups(), ())
 
 
-    def testDig(self):
+    def test_dig(self):
+        """
+        The I{dig} action creates a new location connected to the current
+        location through an exit in the specified direction.
+        """
         self._test(
             "dig west dark tunnel",
             ["You create an exit."],
@@ -447,7 +451,41 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             "dig west boring tunnel",
             ["There is already an exit in that direction."])
 
-    def testBury(self):
+
+    def test_digWithDirectionAliases(self):
+        """
+        The I{dig} action creates a new location connected to the current
+        location through an exit in the specified direction even when that
+        direction is an alias.
+        """
+        self._test(
+            "dig w dark tunnel",
+            ["You create an exit."],
+            ["Test Player created an exit to the west."])
+        room = iimaginary.IContainer(self.location).getExitNamed(u'west').toLocation
+        self.assertEquals(room.name, u"dark tunnel")
+        self.assertEquals(room.description, u'')
+        self.assertIdentical(iimaginary.IContainer(room).getExitNamed(u'east').toLocation,
+                             self.location)
+
+        self._test(
+            "dig e bright tunnel",
+            ["You create an exit."],
+            ["Test Player created an exit to the east."])
+        room = iimaginary.IContainer(self.location).getExitNamed(u'east').toLocation
+        self.assertEquals(room.name, u"bright tunnel")
+        self.assertEquals(room.description, u'')
+        self.assertIdentical(iimaginary.IContainer(room).getExitNamed(u'west').toLocation, self.location)
+
+        self._test(
+            "dig w boring tunnel",
+            ["There is already an exit in that direction."])
+
+
+    def test_bury(self):
+        """
+        The I{bury} action destroys an exit in the specified direction.
+        """
         self._test(
             "bury south",
             ["There isn't an exit in that direction."])
@@ -485,7 +523,53 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             [])
 
 
-    def testGo(self):
+    def test_buryWithDirectionAliases(self):
+        """
+        The I{bury} action destroys an exit in the specified direction even
+        when that direction is an alias.
+        """
+        self._test(
+            "bury s",
+            ["There isn't an exit in that direction."])
+        self.assertEquals(list(iimaginary.IContainer(self.location).getExits()), [])
+
+        room = objects.Thing(store=self.store, name=u"destination", proper=True)
+        objects.Container.createFor(room, capacity=1000)
+        objects.Exit.link(room, self.location, u'north')
+
+        self._test(
+            "bury s",
+            ["It's gone."],
+            ["Test Player destroyed the exit to destination."])
+
+        self.assertEquals(
+            list(iimaginary.IContainer(self.location).getExits()),
+            [])
+
+        self.assertEquals(
+            list(iimaginary.IContainer(room).getExits()),
+            [])
+
+        objects.Exit.link(self.location, room, u'south')
+        self.observer.moveTo(room)
+
+        self._test(
+            "bury s",
+            ["It's gone."],
+            ["The exit to Test Location crumbles and disappears."])
+        self.assertEquals(
+            list(iimaginary.IContainer(self.location).getExits()),
+            [])
+        self.assertEquals(
+            list(iimaginary.IContainer(room).getExits()),
+            [])
+
+
+    def test_go(self):
+        """
+        The I{go} action moves the player through an exit in the specified
+        direction.
+        """
         self._test(
             "go west",
             ["You can't go that way."])
@@ -509,6 +593,41 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["You can't go that way."])
         self._test(
             "go east",
+            [E("[ Test Location ]"),
+             E("( west )"),
+             "Location for testing.",
+             "Here, you see Observer Player."],
+            ["Test Player arrives from the west."])
+
+
+    def test_goThroughDirectionAliases(self):
+        """
+        The I{go} action moves the player through an exit in the specified
+        direction even when that direction is an alias.
+        """
+        self._test(
+            "go w",
+            ["You can't go that way."])
+        self._test(
+            "w",
+            ["You can't go that way."])
+
+        room = objects.Thing(store=self.store, name=u"destination")
+        objects.Container.createFor(room, capacity=1000)
+        objects.Exit.link(self.location, room, u"west")
+
+        self._test(
+            "w",
+            [E("[ destination ]"),
+             E("( east )"),
+             ""],
+            ["Test Player leaves west."])
+
+        self._test(
+            "n",
+            ["You can't go that way."])
+        self._test(
+            "go e",
             [E("[ Test Location ]"),
              E("( west )"),
              "Location for testing.",
@@ -559,7 +678,11 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertCommandOutput("go east", [E("You can't go that way.")], [])
 
 
-    def testDirectionalMovement(self):
+    def test_directionalMovement(self):
+        """
+        You can move through exits in standard directions by just specifying
+        the direction.
+        """
         # A couple tweaks to state to make the test simpler
         self.observer.location = None
         self.location.description = None
@@ -574,6 +697,13 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             oldRoom = room
 
         for d, rd in zip(allDirections, reversed(allDirections)):
+            self._test(
+                d,
+                [E("[ ") + ".*" + E(" ]"), # Not testing room description
+                 E("( ") + ".*" + E(" )"), # Just do enough to make sure it was not an error.
+                 ""])
+        shortDirections = ["nw", "n", "ne", "e", "w", "sw", "s", "se"]
+        for d, rd in zip(shortDirections, reversed(shortDirections)):
             self._test(
                 d,
                 [E("[ ") + ".*" + E(" ]"), # Not testing room description

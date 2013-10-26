@@ -160,15 +160,18 @@ class Action(object):
     @classmethod
     def match(cls, player, line):
         """
-        @return: a list of 2-tuples of all the results of parsing the given
-            C{line} using this L{Action} type's pyparsing C{expr} attribute, or
-            None if the expression does not match the given line.
+        Parse the given C{line} using this L{Action} type's pyparsing C{expr}
+        attribute.  A C{pyparsing.LineEnd} is appended to C{expr} to avoid
+        accidentally matching a prefix instead of the whole line.
+
+        @return: a list of 2-tuples of all the results of parsing, or None if
+            the expression does not match the given line.
 
         @param line: a line of user input to be interpreted as an action.
 
         @see: L{imaginary.pyparsing}
         """
-        return cls.expr.parseString(line)
+        return (cls.expr + pyparsing.LineEnd()).parseString(line)
 
 
     def do(self, player, line, **slots):
@@ -788,11 +791,21 @@ class Drop(TargetAction):
 
 
 
+_directionNames = objects.OPPOSITE_DIRECTIONS.keys()
+_directionNames.extend(objects.DIRECTION_ALIASES.keys())
+
 DIRECTION_LITERAL = reduce(
     operator.xor, [
         pyparsing.Literal(d)
-        for d
-        in objects.OPPOSITE_DIRECTIONS]).setResultsName("direction")
+        for d in _directionNames]).setResultsName("direction")
+
+
+
+def expandDirection(direction):
+    """
+    Expand direction aliases into the names of the directions they refer to.
+    """
+    return objects.DIRECTION_ALIASES.get(direction, direction)
 
 
 
@@ -804,6 +817,7 @@ class Dig(Action):
             pyparsing.restOfLine.setResultsName("name"))
 
     def do(self, player, line, direction, name):
+        direction = expandDirection(direction)
         if iimaginary.IContainer(player.thing.location).getExitNamed(direction, None) is not None:
             raise eimaginary.ActionFailure(events.ThatDoesntMakeSense(
                 actor=player.thing,
@@ -831,6 +845,7 @@ class Bury(Action):
             DIRECTION_LITERAL)
 
     def do(self, player, line, direction):
+        direction = expandDirection(direction)
         for exit in iimaginary.IContainer(player.thing.location).getExits():
             if exit.name == direction:
                 if exit.sibling is not None:
@@ -858,13 +873,13 @@ class Bury(Action):
 
 class Go(Action):
     expr = (
-        DIRECTION_LITERAL |
         (pyparsing.Literal("go") + pyparsing.White() +
          targetString("direction")) |
         (pyparsing.Literal("enter") + pyparsing.White() +
          targetString("direction")) |
         (pyparsing.Literal("exit") + pyparsing.White() +
-         targetString("direction")))
+         targetString("direction")) |
+        DIRECTION_LITERAL)
 
     actorInterface = iimaginary.IThing
 
@@ -873,6 +888,7 @@ class Go(Action):
         Identify a direction by having the player search for L{IExit}
         providers that they can see and reach.
         """
+        directionName = expandDirection(directionName)
         return player.obtainOrReportWhyNot(
             Proximity(
                 3.0,

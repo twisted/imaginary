@@ -433,6 +433,18 @@ _populateOpposite()
 
 
 
+DIRECTION_ALIASES = {
+    u"n": u"north",
+    u"s": u"south",
+    u"w": u"west",
+    u"e": u"east",
+    u"nw": u"northwest",
+    u"se": u"southeast",
+    u"ne": u"northeast",
+    u"sw": u"southwest"}
+
+
+
 class Exit(item.Item):
     """
     An L{Exit} is an oriented pathway between two L{Thing}s which each
