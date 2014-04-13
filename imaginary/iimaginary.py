@@ -456,6 +456,8 @@ class ILinkAnnotator(Interface):
         Produce an iterator of annotations to be applied to a link whose source
         or target is the L{Idea} that this L{ILinkAnnotator} has been applied
         to.
+
+        @param idea: The L{Idea} instance 
         """
 
 
