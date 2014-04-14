@@ -184,7 +184,7 @@ class ExpressContentsTests(unittest.TestCase):
         """
         self.assertEqual(
             [self.box.name],
-            list(self.concept.expand(u"{subject:name}", self.observer)))
+            list(self.concept._expand(u"{subject:name}", self.observer, [])))
 
 
     def conceptAsText(self, concept, observer):
@@ -205,7 +205,10 @@ class ExpressContentsTests(unittest.TestCase):
         """
         self.addContents([u"something", u"something else"])
 
-        contents = self.concept.expand(u"{contents}", self.observer)
+        contents = self.concept._expand(
+            u"{contents}", self.observer,
+            self.concept._contentConcepts(self.concept)
+        )
         self.assertEqual(
             u"something and something else",
             self.conceptAsText(ExpressList(contents), self.observer))

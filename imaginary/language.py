@@ -363,9 +363,12 @@ class ConceptTemplate(object):
                         fieldName, extra)
                 else:
                     if formatSpec:
-                        # A nice enhancement would be to delegate this logic to target
+                        # A nice enhancement would be to delegate this logic to
+                        # target
                         try:
-                            expander = getattr(self, '_expand_' + formatSpec.upper())
+                            expander = getattr(
+                                self, '_expand_' + formatSpec.upper()
+                            )
                         except AttributeError:
                             yield u"<'%s' unsupported by target '%s'>" % (
                                 formatSpec, fieldName)

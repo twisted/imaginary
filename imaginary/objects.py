@@ -922,7 +922,7 @@ class ExpressContents(language.Sentence):
         return template
 
 
-    def expand(self, template, observer, concepts):
+    def _expand(self, template, observer, concepts):
         """
         Expand the given template using the wrapped container's L{Thing} as the
         subject.
@@ -944,7 +944,7 @@ class ExpressContents(language.Sentence):
         """
         concepts = self._contentConcepts(observer)
         if concepts:
-            return list(self.expand(self.template, observer, concepts))
+            return list(self._expand(self.template, observer, concepts))
         return []
 
 
