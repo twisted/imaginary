@@ -4,13 +4,12 @@ Simulation in Imaginary
 Overview
 --------
 
-The core functionality provided by Imaginary is a generalize framework for implementing domain-specific simulations.
+The core functionality provided by Imaginary is a generalized framework for implementing domain-specific simulations.
 One of the primary goals of this framework is to make it easier for different simulation systems to co-exist and even interact.
 Several programming tools have been selected to achieve this goal:
 
   - Explicit interfaces so boundaries between different simulations are well-defined
   - Composition to aggregate simulation behaviors to make this aggregation possible dynamically
-  - 
 
 Speaking in slightly more concrete terms, Imaginary implements a very generic graph representation and tools for traversing that graph.
 The graph is used to represent the simulation and simulation behavior is mostly implemented in terms of different kinds of graph traversal.
@@ -21,14 +20,42 @@ Graph Nodes
 Roughly speaking, a node in the simulation graph corresponds to something that exists in the simulation.
 Put another way, nodes are nouns.
 During traversal, nodes are represented by instances of `imaginary.idea.Idea`.
-Some examples of what you might represent with an `Idea` are people, places, vehicles, garments, or food.
-An `Idea` may also represent something more abstract such as the path by which a location may be exited (not only the physical doorway or tunnel which physically manifests that exit, but -- separately -- the idea of the possibility of egress from the location).
+Some examples of what you might represent with an `Idea` are typical game entities, such as people, places, vehicles, garments, or food.
+An `Idea` itself is simply a point in the graph, though, and implements no logic directly.
+In other words, you don't need to subclass `Idea` at any point; when you want to implement a portion of a simulation, you write your own class and attach it to an `Idea`.
+An `Idea` may also represent something more abstract, such as a character's state of mind.
+For example, in a game like Call of Cthulu, a player may need to calm their character down to retain sanity points, like so:
+
+.. code-block::
+
+   The corners of this room are unsettling.
+   The hairs on the back of your neck bristle as you feel an odd sort of pressure.
+   {Sanity: 4}
+   > examine corners
+   The otherworldly geometry of the corners is too horrible to contemplate.
+   You break out in a cold sweat.
+   {Sanity: 3}
+   > use hideous dagger on corners
+   Your hands shake too violently to weild the dagger.
+   You have dropped the dagger.
+   You have dropped your rope.
+   You can feel your mind going.
+   {Sanity: 1}
+   > reflect on my childhood
+   You center yourself by recalling pleasant memories of afternoons by the seashore.
+   Your hands shake somewhat less.
+   {Sanity: 2}
+
+In this transcript, "my childhood" is a simulated concept which the ``reflect`` verb acts upon, and, as such, must be represented by an `Idea`.
+However, this particular `Idea` has no simulated *physical* representation.
 
 Things
 ''''''
 
-Another representation of physical objects in Imaginary is `imaginary.objects.Thing`.
-`Thing` is one concrete representation of a physical object that happens to be persistently stored in the underlying Axiom database.
+The representation of an object's physical presence in Imaginary is an instance of `imaginary.objects.Thing`.
+`Thing` is a persistent representation of a physical object which is stored in the underlying Axiom database.
+`Things` represent the physical presence of *any* kind of object, including players, tools, clothing, decorations, environmental features, and so on.
+
 The simulation graph doesn't directly contain `Thing` instances, though: they are always wrapped up in an `Idea`.
 Importantly, an `Idea` may be created without a `Thing` instance to support creating parts of the simulation graph without relying on state persisted in a database.
 
@@ -36,7 +63,7 @@ Delegates
 '''''''''
 
 Whatever an `Idea` is wrapped around -- be it a `Thing` instance or something non-persistent, generated on the fly -- is called the idea's *delegate*.
-While `Idea` contains all of the generalized simulation graph logic and implements traversal and other features, the delegate is what actually allows ties this together with the implementations for domain-specific simulations.
+While `Idea` contains all of the generalized simulation graph logic and implements traversal and other features, the delegate is what actually ties this together with the implementations for domain-specific simulations.
 
 Graph Edges
 -----------
@@ -120,6 +147,24 @@ Annotations
 
 ILinkAnnotator
 ~~~~~~~~~~~~~~
+
+An `Idea` has a collection of `ILinkAnnotator`\ s which are each called upon to yield annotations on links.
+Each `ILinkAnnotator` may annotate either links *from* an `Idea` (those which have a *source* of that `Idea`) or *to* an `Idea` (those which have a *target* of that `Idea`).
+`Thing` uses this same interface as a powerup interface; any `ILinkAnnotator` powerups become `ILinkAnnotator`\ s for that `Thing`\ 's idea.
+
+These annotations can then be accessed by the `Path.of` method.
+
+It is then the responsibility of any action which must consider the way in which an `Idea` was accessed to honor the annotators.
+
+For example, consider combat damage and armor.
+The `Hit` action needs to resolve a target, then do damage to that target.
+Armor needs to be able to mitigate that damage somehow, and in the case of armor enchanted with Thorns, it needs to be able to *reverse* that damage.
+
+This would be represented by a link annotation.
+
+Unlike other simulation systems, Imaginary does not provide totally general-purpose action-processing hooks.
+Actions may be physical (like `Hit`) or purely mental (like the earlier example about ``reflect on my childhood``).
+Therefore, it doesn't make sense to have a generic "before you take an action" event, so Thorns can't be implemented as such a hook; the combat system needs to explicitly account for things like damage mitigation and reversal.
 
 ILocationLinkAnnotator
 ~~~~~~~~~~~~~~~~~~~~~~
