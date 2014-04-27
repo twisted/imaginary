@@ -82,6 +82,11 @@ class ILitLink(Interface):
     objects, for indicating that the link can apply lighting.
     """
 
+    def isItLit(path, result):
+        """
+        ???
+        """
+
     def applyLighting(litThing, eventualTarget, requestedInterface):
         """
         Apply a transformation to an object that an
