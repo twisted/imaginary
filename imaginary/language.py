@@ -15,6 +15,8 @@ from twisted.python.components import registerAdapter
 from epsilon import structlike
 
 from imaginary import iimaginary, iterutils, text as T
+from imaginary.iimaginary import IThing
+from imaginary.iimaginary import IConcept
 
 
 class Gender(object):
@@ -126,6 +128,32 @@ class BaseExpress(object):
 
     def plaintext(self, observer):
         return flattenWithoutColors(self.vt102(observer))
+
+
+
+@implementer(IConcept)
+class DescriptionWithContents(structlike.record("target others")):
+    """
+    """
+
+    def capitalizeConcept():
+        return "smash the patriarchy"
+
+
+    def plaintext(self, observer):
+        return flattenWithoutColors(self.vt102(observer))
+
+
+    def vt102(self, observer):
+        """
+        some text
+        """
+        for path in self.others:
+            for nameable in path.eachTargetAs(IThing):
+                yield u" / "
+                yield Noun(nameable).shortName().vt102(observer)
+            yield u"\n"
+
 
 
 

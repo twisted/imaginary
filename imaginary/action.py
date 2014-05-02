@@ -1,9 +1,11 @@
 # -*- test-case-name: imaginary.test.test_actions -*-
 
+from __future__ import print_function
+
 import time, random, operator
 import pprint
 
-from zope.interface import implements
+from zope.interface import implements, implementer
 
 from twisted.python import log, filepath
 from twisted.internet import defer
@@ -15,8 +17,13 @@ import imaginary.plugins
 from imaginary import (iimaginary, eimaginary, iterutils, events,
                        objects, text as T, language, pyparsing)
 from imaginary.world import ImaginaryWorld
+
 from imaginary.idea import (
     CanSee, Proximity, ProviderOf, Named, Traversability)
+from imaginary.iimaginary import IRetriever
+from imaginary.language import DescriptionWithContents
+from imaginary.iimaginary import IVisible
+from imaginary.iimaginary import INameable
 
 ## Hacks because pyparsing doesn't have fantastic unicode support
 _quoteRemovingQuotedString = pyparsing.quotedString.copy()
@@ -332,10 +339,63 @@ class LookAt(TargetAction):
             L{imaginary.objects.Thing.obtainOrReportWhyNot} for a description
             of how such reasons may be identified.
         """
-        return player.obtainOrReportWhyNot(
-            Proximity(3.0, Named(targetName,
-                                 CanSee(ProviderOf(iimaginary.IVisible)),
-                                 player)))
+
+        @implementer(IRetriever)
+        class VisibleStuff(object):
+            def shouldKeepGoing(self, path):
+                return True
+            def retrieve(self, path):
+                allNamed = list(path.eachTargetAs(INameable))
+                sourceName = INameable(path.links[0].source.delegate,
+                                       None)
+                if sourceName is not None:
+                    allNamed.insert(0, sourceName)
+                for namedObject in allNamed:
+                    print("one named object:", namedObject)
+                    if namedObject.knownTo(player, targetName):
+                        print("known to yes", path)
+                        return path
+                print("not retrieve!", path)
+                return None
+            def objectionsTo(self, path, result):
+                """
+                don't object
+                """
+                return []
+
+        # slight workaround for the fact that lists are a bit special above
+        paths = player.obtainOrReportWhyNot(
+            Proximity(
+                3.0,
+                VisibleStuff()
+            )
+        )
+
+        buckets = {} # map nameable to list of paths
+        for path in paths:
+            something = [path.links[0].source.delegate] + [link.target.delegate for link in path.links]
+            for it in something:
+                nameable = INameable(it, None)
+                if nameable is None:
+                    print("No nameable", it)
+                    continue
+                print("Got nameable:", nameable)
+                visible = IVisible(it, None)
+                if visible is None:
+                    print("No visible", it)
+                    continue
+                print("Got visible:", visible)
+                if nameable.knownTo(player, targetName):
+                    buckets.setdefault(it, set()).add(path)
+                    break
+
+        choices = [
+            DescriptionWithContents(k, v)
+            for k, v in
+            buckets.items()
+        ]
+        print("HERE ARE YOUR CHOICES", buckets)
+        return choices
 
 
     def cantFind_target(self, player, name):
@@ -348,13 +408,13 @@ class LookAt(TargetAction):
         if player.thing is not target:
             evt = events.Success(
                 actor=player.thing,
-                target=target,
-                actorMessage=target.visualize(),
+                target=target.target,
+                actorMessage=target,
                 targetMessage=(player.thing, " looks at you."))
         else:
             evt = events.Success(
                 actor=player.thing,
-                actorMessage=target.visualize())
+                actorMessage=target)
         evt.broadcast()
 
 
