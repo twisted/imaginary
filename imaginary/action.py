@@ -340,16 +340,46 @@ class LookAt(TargetAction):
             of how such reasons may be identified.
         """
 
+        # A specialized retriever that is really good at finding stuff *this*
+        # action wants to be able to see.
         @implementer(IRetriever)
         class VisibleStuff(object):
             def shouldKeepGoing(self, path):
                 return True
             def retrieve(self, path):
+                # Find all of the things which are named like the target given
+                # to this action.  Also, find all of the things *past* those
+                # things because they're probably interesting to present in the
+                # look action, too.  Some other code will have to sort out this
+                # mess later.  All the retriever gets to do is produce some
+                # paths.
                 allNamed = list(path.eachTargetAs(INameable))
+                # To figure out if an item is on a path *past* one of the look
+                # action targets, inspect all of the links in the path to that
+                # item.  Check the name of the delegate of the target of each
+                # link.  The target of each link is the same as the source of
+                # the next link so mostly we only need to check link targets.
+                # The one special case is the first link - it has a source
+                # which is not the target of any other link in the path.  So
+                # also take special care to check its delegate.
                 sourceName = INameable(path.links[0].source.delegate,
                                        None)
                 if sourceName is not None:
                     allNamed.insert(0, sourceName)
+
+                # TODO
+                # IVisible filtering
+                #
+                # Also re-insert use of CanSee retriever
+                # 
+                # Also make IVisible a better interface - methods for
+                # describing the object in different ways.  short name, longer
+                # description, etc.  basically, describe the object in various
+                # different contexts.
+                #
+                # And refactor the crazy duplication of code and effort between
+                # the retriever and the post-processing loop to construct
+                # buckets below.
                 for namedObject in allNamed:
                     print("one named object:", namedObject)
                     if namedObject.knownTo(player, targetName):
@@ -371,6 +401,16 @@ class LookAt(TargetAction):
             )
         )
 
+        # Some of the objects we find are actually sensible targets of the look
+        # action.  They have a matching name or whatever.  Other things are
+        # just reachable from *those* targets.  We need to sort all that out.
+        # Create a collection that maps the look action target items to the
+        # paths to all of the things reachable from those things.
+
+        # This lets us figure out if there is ambiguity (are there multiple
+        # look action targets?  if so there is ambiguity and gets the objects
+        # into a shape some other code will have a chance of rendering nicely
+        # later.)
         buckets = {} # map nameable to list of paths
         for path in paths:
             something = [path.links[0].source.delegate] + [link.target.delegate for link in path.links]
