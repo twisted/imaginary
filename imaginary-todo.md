@@ -29,3 +29,28 @@ be modified to be a thin wrapper (perhaps even just a parse expression?) for
 all the things that you *can* see by looking at a particular thing, then make
 some decisions about how to present the things that you can see.
 
+The problem with doing it this way is that LookAt then needs to know explicitly
+about clothing, and about carrying, and if it needs to know about clothing and
+carrying then how is it to be extended to support things like carrying
+invisible, enchanted objects, and so on?  The idea that something you're
+carrying would be hidden in some way (simple example; you're holding a gun
+behind your back) really ought to be expressable without monkeying with the
+core logic in language.py every time.
+
+Actually there's a more serious problem.
+
+We pass 'observer' to the 'vt102' method of DescriptionConcept, but this comes
+from the 'visualize' method of Thing directly.
+
+Which means DescriptionConcept has a *direct* reference to the name, the
+description, the exits, and the IDescriptionContributor powerups present on
+itself.
+
+So if I 'look at' you, I call a method on you and get "your" description, as
+tailored to me; but by that point, the ability to customize that description
+has been curtailed significantly, because the only consideration of the *whole
+path* that goes between the "looker" and the "lookee" is done in the CanSee
+delgating retriever.  In other words, if I can see you, I can see _all_ of you.
+
+Better would be to do the visibility query in the action, then do the
+UI-centric assembly and ordering of strings on the results of doing that.
