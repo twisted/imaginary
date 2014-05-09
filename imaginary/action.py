@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_actions -*-
+# -*- test-case-name: imaginary.test.test_garments.FunSimulationStuff.testProperlyDressed -*-
 
 from __future__ import print_function
 
@@ -19,10 +19,13 @@ from imaginary import (iimaginary, eimaginary, iterutils, events,
 from imaginary.world import ImaginaryWorld
 
 from imaginary.idea import (
-    CanSee, Proximity, ProviderOf, Named, Traversability)
+    CanSee, Proximity, ProviderOf, Named, Traversability, Link
+)
 from imaginary.iimaginary import IRetriever
 from imaginary.language import DescriptionWithContents
 from imaginary.iimaginary import IVisible
+from imaginary.iimaginary import ILocationRelationship
+from imaginary.iimaginary import IContainmentRelationship
 from imaginary.iimaginary import INameable
 
 ## Hacks because pyparsing doesn't have fantastic unicode support
@@ -347,29 +350,64 @@ class LookAt(TargetAction):
             def shouldKeepGoing(self, path):
                 return True
             def retrieve(self, path):
-                # Find all of the things which are named like the target given
-                # to this action.  Also, find all of the things *past* those
-                # things because they're probably interesting to present in the
-                # look action, too.  Some other code will have to sort out this
-                # mess later.  All the retriever gets to do is produce some
-                # paths.
-                allNamed = list(path.eachTargetAs(INameable))
-                # To figure out if an item is on a path *past* one of the look
-                # action targets, inspect all of the links in the path to that
-                # item.  Check the name of the delegate of the target of each
-                # link.  The target of each link is the same as the source of
-                # the next link so mostly we only need to check link targets.
-                # The one special case is the first link - it has a source
-                # which is not the target of any other link in the path.  So
-                # also take special care to check its delegate.
-                sourceName = INameable(path.links[0].source.delegate,
-                                       None)
-                if sourceName is not None:
-                    allNamed.insert(0, sourceName)
 
-                # TODO
-                # IVisible filtering
-                #
+                # If this is a path to something that can't even be looked at
+                # then it isn't interesting to "look at".
+                if path.targetAs(IVisible) is None:
+                    print("not visible:", path)
+                    return None
+                else:
+                    print("visible, ok", path)
+
+                # Inspect all of the link targets to find a visible thing with
+                # the right name.  Also, as a special case, inspect the source
+                # of the first link - it is not the target of any other link in
+                # the path but it might be the thing we're looking for.
+                links = [Link(source=None,
+                              target=path.links[0].source)] + path.links
+                linkIter = iter(links)
+                for link in linkIter:
+                    if IVisible(link.target.delegate, None) is not None:
+                        theThing = link.target.delegate
+                        nameable = INameable(theThing, None)
+                        if nameable is None:
+                            # a link in the path that has no name just gets ignored
+                            continue
+
+                        # This is the thing that the player has named.
+                        # Presumably *this* also needs to be visible, but do we
+                        # need to check that somehow?
+                        if nameable.knownTo(player, targetName):
+                            break
+
+                else:
+                    # We didn't find a visible nameable thing known as the
+                    # target name.  Guess this path is not relevant.
+                    print("No nameable", path)
+                    return None
+
+                # If the remaining path goes up to a location and then back
+                # down to that location's contents, we don't care about that.
+                # In other words if you are sitting in a chair or standing in a
+                # room maybe that will be interesting to render in the
+                # description (and if not, that's the description-renderer's
+                # call to make: the observer *can* see that you're there) but
+                # if there's a thing next to you in the chair you're sitting
+                # in, the observer won't see that when they're looking at
+                # *you*.
+                goneOut = False
+                for link in linkIter:
+                    lr = list(link.of(ILocationRelationship))
+                    cr = list(link.of(IContainmentRelationship))
+                    print("relationships:", lr, cr)
+                    if lr:
+                        print("going out", link)
+                        goneOut = True
+                    if cr:
+                        if goneOut:
+                            print("gone out after gone in?", path, list(linkIter))
+                            return
+
                 # Also re-insert use of CanSee retriever
                 # 
                 # Also make IVisible a better interface - methods for
@@ -380,13 +418,8 @@ class LookAt(TargetAction):
                 # And refactor the crazy duplication of code and effort between
                 # the retriever and the post-processing loop to construct
                 # buckets below.
-                for namedObject in allNamed:
-                    print("one named object:", namedObject)
-                    if namedObject.knownTo(player, targetName):
-                        print("known to yes", path)
-                        return path
-                print("not retrieve!", path)
-                return None
+                return (theThing, path)
+            
             def objectionsTo(self, path, result):
                 """
                 don't object
@@ -412,22 +445,8 @@ class LookAt(TargetAction):
         # into a shape some other code will have a chance of rendering nicely
         # later.)
         buckets = {} # map nameable to list of paths
-        for path in paths:
-            something = [path.links[0].source.delegate] + [link.target.delegate for link in path.links]
-            for it in something:
-                nameable = INameable(it, None)
-                if nameable is None:
-                    print("No nameable", it)
-                    continue
-                print("Got nameable:", nameable)
-                visible = IVisible(it, None)
-                if visible is None:
-                    print("No visible", it)
-                    continue
-                print("Got visible:", visible)
-                if nameable.knownTo(player, targetName):
-                    buckets.setdefault(it, set()).add(path)
-                    break
+        for (it, path) in paths:
+            buckets.setdefault(it, set()).add(path)
 
         choices = [
             DescriptionWithContents(k, v)

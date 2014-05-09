@@ -184,13 +184,6 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
                           iimaginary.IClothingWearer(self.daisy).putOn,
                           iimaginary.IClothing(self.undies))
 
-    def testWornClothingIsFindable(self):
-        iimaginary.IClothingWearer(self.daisy).putOn(
-            iimaginary.IClothing(self.dukes))
-        dukes = list(self.daisy.findProviders(
-            iimaginary.IClothing, 0))
-        self.assertEquals(len(dukes), 1)
-        self.assertIdentical(dukes[0].thing, self.dukes)
 
 
 class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):

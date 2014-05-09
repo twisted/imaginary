@@ -12,7 +12,7 @@ from __future__ import division
 
 import math
 
-from zope.interface import implements
+from zope.interface import implements, implementer
 
 from twisted.python import reflect, components
 
@@ -65,6 +65,14 @@ class Points(item.Item):
     def modify(self, amount):
         self.current = max(min(self.current + amount, self.max), 0)
         return self.current
+
+
+
+@implementer(iimaginary.ILocationRelationship)
+class LocationRelationship(object):
+    """
+    This link goes to the place where the thing the link is from is.
+    """
 
 
 
@@ -181,7 +189,8 @@ class Thing(item.Item):
             # any case I can think of.  However, 'here' is ambiguous in the
             # case where you are present inside a container, and that should
             # probably be dealt with.
-            l.annotate([AlsoKnownAs('here')])
+            l.annotate([AlsoKnownAs('here'),
+                        LocationRelationship()])
             yield l
 
 

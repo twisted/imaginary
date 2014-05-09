@@ -137,7 +137,7 @@ class DescriptionWithContents(structlike.record("target others")):
     """
 
     def capitalizeConcept():
-        return "smash the patriarchy"
+        return "Smash the patriarchy"
 
 
     def plaintext(self, observer):
