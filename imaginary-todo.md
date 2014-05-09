@@ -54,3 +54,20 @@ delgating retriever.  In other words, if I can see you, I can see _all_ of you.
 
 Better would be to do the visibility query in the action, then do the
 UI-centric assembly and ordering of strings on the results of doing that.
+
+Notes:
+
+- clothing actions can't find clothing that you're wearing, because the
+  clothing system currently conceals everything; _DisregardYourWearingIt needs
+  to change (possibly die?)
+- most actions need to not use CanSee; they need to use a smarter retriever.
+  For example: you have a concealed gun; you know what it is, you can reach for
+  it. But you can't see it.  *Other* people probably can't reach for it (unless
+  they pass a Perception check of course)
+- we need to implement the logic that actually orders and presents stuff in
+DescriptionWithContents.
+- DescriptionWithContents is actually DescriptionWithContext
+- reinstate location support (add exits logic back)
+    - this should be accomplished by making exits visible things that get
+      included in the query result as items in their own right (maybe they
+      already are in the graph somewhere, just need to make sure)
