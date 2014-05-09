@@ -134,6 +134,12 @@ class BaseExpress(object):
 @implementer(IConcept)
 class DescriptionWithContents(structlike.record("target others")):
     """
+    A description of a target with some context.
+
+    @ivar target: an L{IVisible}
+
+    @ivar others: some L{Path} objects pointing at objects related to
+        C{target}.
     """
 
     def capitalizeConcept():
@@ -148,6 +154,12 @@ class DescriptionWithContents(structlike.record("target others")):
         """
         some text
         """
+        title = [T.bold, T.fg.green, u'[ ',
+                 [T.fg.normal, Noun(self.target).nounPhrase().vt102(observer)],
+                 u' ]\n']
+        
+        yield title
+
         for path in self.others:
             for nameable in path.eachTargetAs(IThing):
                 yield u" / "
