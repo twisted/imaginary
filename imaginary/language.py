@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_concept -*-
+# -*- test-case-name: imaginary.test.test_garments.FunSimulationStuff.testProperlyDressed -*-
 
 """
 
@@ -136,7 +136,7 @@ class DescriptionWithContents(structlike.record("target others")):
     """
     A description of a target with some context.
 
-    @ivar target: an L{IVisible}
+    @ivar target: an L{IThing}
 
     @ivar others: some L{Path} objects pointing at objects related to
         C{target}.
@@ -157,14 +157,45 @@ class DescriptionWithContents(structlike.record("target others")):
         title = [T.bold, T.fg.green, u'[ ',
                  [T.fg.normal, Noun(self.target).nounPhrase().vt102(observer)],
                  u' ]\n']
-        
+
         yield title
 
-        for path in self.others:
-            for nameable in path.eachTargetAs(IThing):
-                yield u" / "
-                yield Noun(nameable).shortName().vt102(observer)
-            yield u"\n"
+        description = self.target.description or u""
+        if description:
+            description = (T.fg.green, self.description, u'\n')
+
+        descriptionConcepts = []
+
+        for pup in self.target.powerupsFor(iimaginary.IDescriptionContributor):
+            descriptionConcepts.append(pup.conceptualize())
+
+        def index(c):
+            preferredOrder = DescriptionConcept.preferredOrder
+            try:
+                return preferredOrder.index(c.__class__.__name__)
+            except ValueError:
+                # Anything unrecognized goes after anything recognized.
+                return len(preferredOrder)
+
+        descriptionConcepts.sort(key=index)
+
+        descriptionComponents = []
+        for c in descriptionConcepts:
+            s = c.vt102(observer)
+            if s:
+                descriptionComponents.extend([s, u'\n'])
+
+        if descriptionComponents:
+            descriptionComponents.pop()
+
+        yield description
+        yield descriptionComponents
+
+        # for path in self.others:
+        #     for nameable in path.eachTargetAs(IThing):
+        #         yield u" / "
+        #         yield Noun(nameable).shortName().vt102(observer)
+        #     yield u"\n"
 
 
 
