@@ -1,0 +1,27 @@
+language: "python"
+
+os:
+  - "linux"
+
+python:
+  - "pypy"
+  - "2.7"
+
+install:
+  # Install some tools for measuring code coverage and sending the results
+  # to coveralls.
+  - "pip install coveralls coverage"
+
+script:
+  - |
+    pip install -e .
+  - |
+    coverage run --branch --source=imaginary $(type -p trial) --testmodule=imaginary/__init__.py
+  - |
+    coverage report -m
+
+after_success:
+    - "coveralls"
+
+notifications:
+  email: false
