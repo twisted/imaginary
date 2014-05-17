@@ -292,11 +292,11 @@ class Wearer(item.Item, Enhancement):
                 clothing = iimaginary.IClothing(link.target.delegate, None)
                 if clothing is not None:
                     if clothing.wearer is self:
-                        yield _DisregardYourWearingIt()
+                        yield _WornBy(clothing.wearer)
 
 
 
-class _DisregardYourWearingIt(object):
+class _WornBy(object):
     """
     This is an annotation, produced by L{Wearer} for containment relationships
     between people (who are containers) and the clothing that they're wearing.
@@ -306,13 +306,22 @@ class _DisregardYourWearingIt(object):
     """
     implements(iimaginary.IElectromagneticMedium)
 
-    def isOpaque(self):
+
+    def __init__(self, wearer):
+        """
+        @param wearer: The L{Wearer} wearing the object that is the target of
+            the annotated link.
+        """
+        self.wearer = wearer
+                
+    
+    def isOpaque(self, observer):
         """
         I am opaque, so that clothing will show up only once (in your "wearing"
         list, rather than there and in your "contained" list), and obscured
         clothing won't show up at all.
         """
-        return True
+        return observer is not self.wearer.thing
 
 
 

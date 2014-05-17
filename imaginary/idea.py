@@ -589,6 +589,13 @@ class CanSee(DelegatingRetriever):
         more specific type than other L{DelegatingRetriever}s, to make the
         order of composition more flexible.)
     """
+    def __init__(self, retriever, observer=None):
+        """
+        @param observer: The L{Thing} which is trying to see things.
+        """
+        DelegatingRetriever.__init__(self, retriever)
+        self.observer = observer
+        
 
     def resultRetrieved(self, path, subResult):
         """
@@ -611,7 +618,7 @@ class CanSee(DelegatingRetriever):
         Don't keep going through links that are opaque to the observer.
         """
         for opacity in path.of(IElectromagneticMedium):
-            if opacity.isOpaque():
+            if opacity.isOpaque(self.observer):
                 return False
         return True
 
