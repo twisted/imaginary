@@ -23,4 +23,10 @@ distobj = autosetup(
         "Topic :: Games/Entertainment :: Real Time Strategy",
         "Topic :: Games/Entertainment :: Role-Playing",
         "Topic :: Games/Entertainment :: Simulation",
-        "Topic :: Terminals"])
+        "Topic :: Terminals"],
+    install_requires=[
+        "twisted>=14.0.0",
+        "epsilon>=0.7.0",
+        "axiom>=0.7.1",
+        "mantissa>=0.7.0",
+        ])
