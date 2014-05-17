@@ -168,3 +168,12 @@ Therefore, it doesn't make sense to have a generic "before you take an action" e
 
 ILocationLinkAnnotator
 ~~~~~~~~~~~~~~~~~~~~~~
+
+This is a powerup interface used with `Thing` which allows a container to add annotations to the links of all of the things it contains.
+
+This doesn't change the way annotators and annotations work at the basic level.
+Rather, it provides an implementation convenience for effects which are meant to apply to everyone and everything in a certain area.
+
+For example, consider a burning room.
+The intent is to simulate the walls, floor, and ceiling having caught fire.
+Using this powerup interface, a single annotator can apply annotations to links between all of the `Idea`\ s in the room.
