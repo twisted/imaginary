@@ -1,16 +1,25 @@
 from epsilon.setuphelper import autosetup
 
-import imaginary
+import versioneer
+versioneer.vcs = "git"
+versioneer.versionfile_source = "imaginary/_version.py"
+versioneer.versionfile_build = "imaginary/_version.py"
+versioneer.tag_prefix= ""
+versioneer.parentdir_prefix = "Imaginary-"
+
+with open("README.txt") as fObj:
+    readme = fObj.read()
 
 distobj = autosetup(
     name="Imaginary",
-    version=imaginary.version.short(),
+    version=versioneer.get_version(),
     maintainer="Divmod, Inc.",
     maintainer_email="support@divmod.org",
     url="http://divmod.org/trac/wiki/DivmodImaginary",
     license="MIT",
     platforms=["any"],
-    description=imaginary.__doc__,
+    description=readme,
+    cmdclass=versioneer.get_cmdclass(),
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
