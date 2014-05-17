@@ -229,46 +229,9 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["Test Player jumps up and down"],
             ["Test Player jumps up and down"])
 
-    def testSearch(self):
-        self._test(
-            "search self",
-            [E("[ Test Player ]"),
-             "Test Player is great.",
-             "She is naked.",
-             ""])
-
-        self._test(
-            "search me",
-            [E("[ Test Player ]"),
-             "Test Player is great.",
-             "She is naked.",
-             ""])
-
-        self._test(
-            "search here",
-            [E("[ Test Location ]"),
-             "Location for testing.",
-             "Here, you see Observer Player.",
-             ""])
-
-        self._test(
-            "search 'Test Player'",
-            [E("[ Test Player ]"),
-             "Test Player is great.",
-             "She is naked.",
-             ""])
-
-        self._test(
-            'search "Observer Player"',
-            [E("[ Observer Player ]"),
-             "Observer Player is great.",
-             "She is naked.",
-             ""])
-
-        self._test(
-            "search blub",
-            [""])
-
+    # TODO Add an "obtain" command to help debugging or something (replace the
+    # old search action we deleted)
+        
     def testDescribe(self):
         self._test(
             "describe me test description",
