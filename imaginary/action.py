@@ -1,9 +1,11 @@
-# -*- test-case-name: imaginary.test.test_actions -*-
+# -*- test-case-name: imaginary.test.test_garments.FunSimulationStuff.testProperlyDressed -*-
+
+from __future__ import print_function
 
 import time, random, operator
 import pprint
 
-from zope.interface import implements
+from zope.interface import implements, implementer
 
 from twisted.python import log, filepath
 from twisted.internet import defer
@@ -15,8 +17,16 @@ import imaginary.plugins
 from imaginary import (iimaginary, eimaginary, iterutils, events,
                        objects, text as T, language, pyparsing)
 from imaginary.world import ImaginaryWorld
+
 from imaginary.idea import (
-    CanSee, Proximity, ProviderOf, Named, Traversability)
+    CanSee, Proximity, ProviderOf, Named, Traversability, Link
+)
+from imaginary.iimaginary import IRetriever
+from imaginary.language import DescriptionWithContents
+from imaginary.iimaginary import IVisible
+from imaginary.iimaginary import ILocationRelationship
+from imaginary.iimaginary import IContainmentRelationship
+from imaginary.iimaginary import INameable
 
 ## Hacks because pyparsing doesn't have fantastic unicode support
 _quoteRemovingQuotedString = pyparsing.quotedString.copy()
@@ -160,15 +170,18 @@ class Action(object):
     @classmethod
     def match(cls, player, line):
         """
-        @return: a list of 2-tuples of all the results of parsing the given
-            C{line} using this L{Action} type's pyparsing C{expr} attribute, or
-            None if the expression does not match the given line.
+        Parse the given C{line} using this L{Action} type's pyparsing C{expr}
+        attribute.  A C{pyparsing.LineEnd} is appended to C{expr} to avoid
+        accidentally matching a prefix instead of the whole line.
+
+        @return: a list of 2-tuples of all the results of parsing, or None if
+            the expression does not match the given line.
 
         @param line: a line of user input to be interpreted as an action.
 
         @see: L{imaginary.pyparsing}
         """
-        return cls.expr.parseString(line)
+        return (cls.expr + pyparsing.LineEnd()).parseString(line)
 
 
     def do(self, player, line, **slots):
@@ -329,10 +342,119 @@ class LookAt(TargetAction):
             L{imaginary.objects.Thing.obtainOrReportWhyNot} for a description
             of how such reasons may be identified.
         """
-        return player.obtainOrReportWhyNot(
-            Proximity(3.0, Named(targetName,
-                                 CanSee(ProviderOf(iimaginary.IVisible)),
-                                 player)))
+
+        # A specialized retriever that is really good at finding stuff *this*
+        # action wants to be able to see.
+        @implementer(IRetriever)
+        class VisibleStuff(object):
+            def shouldKeepGoing(self, path):
+                return True
+            def retrieve(self, path):
+
+                # If this is a path to something that can't even be looked at
+                # then it isn't interesting to "look at".
+                if path.targetAs(IVisible) is None:
+                    print("not visible:", path)
+                    return None
+                else:
+                    print("visible, ok", path)
+
+                # Inspect all of the link targets to find a visible thing with
+                # the right name.  Also, as a special case, inspect the source
+                # of the first link - it is not the target of any other link in
+                # the path but it might be the thing we're looking for.
+                links = [Link(source=None,
+                              target=path.links[0].source)] + path.links
+                linkIter = iter(links)
+                for link in linkIter:
+                    if IVisible(link.target.delegate, None) is not None:
+                        theThing = link.target.delegate
+                        nameable = INameable(theThing, None)
+                        if nameable is None:
+                            # a link in the path that has no name just gets ignored
+                            continue
+
+                        # This is the thing that the player has named.
+                        # Presumably *this* also needs to be visible, but do we
+                        # need to check that somehow?
+                        if nameable.knownTo(player, targetName):
+                            break
+
+                else:
+                    # We didn't find a visible nameable thing known as the
+                    # target name.  Guess this path is not relevant.
+                    print("No nameable", path)
+                    return None
+
+                # If the remaining path goes up to a location and then back
+                # down to that location's contents, we don't care about that.
+                # In other words if you are sitting in a chair or standing in a
+                # room maybe that will be interesting to render in the
+                # description (and if not, that's the description-renderer's
+                # call to make: the observer *can* see that you're there) but
+                # if there's a thing next to you in the chair you're sitting
+                # in, the observer won't see that when they're looking at
+                # *you*.
+                goneOut = False
+                for link in linkIter:
+                    lr = list(link.of(ILocationRelationship))
+                    cr = list(link.of(IContainmentRelationship))
+                    print("relationships:", lr, cr)
+                    if lr:
+                        print("going out", link)
+                        goneOut = True
+                    if cr:
+                        if goneOut:
+                            print("gone out after gone in?", path, list(linkIter))
+                            return
+
+                # Also re-insert use of CanSee retriever
+                # 
+                # Also make IVisible a better interface - methods for
+                # describing the object in different ways.  short name, longer
+                # description, etc.  basically, describe the object in various
+                # different contexts.
+                #
+                # And refactor the crazy duplication of code and effort between
+                # the retriever and the post-processing loop to construct
+                # buckets below.
+                return (theThing, path)
+            
+            def objectionsTo(self, path, result):
+                """
+                don't object
+                """
+                return []
+
+        # slight workaround for the fact that lists are a bit special above
+        paths = player.obtainOrReportWhyNot(
+            Proximity(
+                3.0,
+                VisibleStuff()
+            )
+        )
+
+        # Some of the objects we find are actually sensible targets of the look
+        # action.  They have a matching name or whatever.  Other things are
+        # just reachable from *those* targets.  We need to sort all that out.
+        # Create a collection that maps the look action target items to the
+        # paths to all of the things reachable from those things.
+
+        # This lets us figure out if there is ambiguity (are there multiple
+        # look action targets?  if so there is ambiguity and gets the objects
+        # into a shape some other code will have a chance of rendering nicely
+        # later.)
+        buckets = {} # map nameable to list of paths
+        for (it, path) in paths:
+            buckets.setdefault(it, set()).add(path)
+
+        choices = [
+            DescriptionWithContents(k, v)
+            for k, v in
+            buckets.items()
+        ]
+        print("HERE ARE YOUR CHOICES", buckets)
+        return choices
 
 
     def cantFind_target(self, player, name):
@@ -345,13 +467,13 @@ class LookAt(TargetAction):
         if player.thing is not target:
             evt = events.Success(
                 actor=player.thing,
-                target=target,
-                actorMessage=target.visualize(),
+                target=target.target,
+                actorMessage=target,
                 targetMessage=(player.thing, " looks at you."))
         else:
             evt = events.Success(
                 actor=player.thing,
-                actorMessage=target.visualize())
+                actorMessage=target)
         evt.broadcast()
 
 
@@ -788,11 +910,21 @@ class Drop(TargetAction):
 
 
 
+_directionNames = objects.OPPOSITE_DIRECTIONS.keys()
+_directionNames.extend(objects.DIRECTION_ALIASES.keys())
+
 DIRECTION_LITERAL = reduce(
     operator.xor, [
         pyparsing.Literal(d)
-        for d
-        in objects.OPPOSITE_DIRECTIONS]).setResultsName("direction")
+        for d in _directionNames]).setResultsName("direction")
+
+
+
+def expandDirection(direction):
+    """
+    Expand direction aliases into the names of the directions they refer to.
+    """
+    return objects.DIRECTION_ALIASES.get(direction, direction)
 
 
 
@@ -804,6 +936,7 @@ class Dig(Action):
             pyparsing.restOfLine.setResultsName("name"))
 
     def do(self, player, line, direction, name):
+        direction = expandDirection(direction)
         if iimaginary.IContainer(player.thing.location).getExitNamed(direction, None) is not None:
             raise eimaginary.ActionFailure(events.ThatDoesntMakeSense(
                 actor=player.thing,
@@ -831,6 +964,7 @@ class Bury(Action):
             DIRECTION_LITERAL)
 
     def do(self, player, line, direction):
+        direction = expandDirection(direction)
         for exit in iimaginary.IContainer(player.thing.location).getExits():
             if exit.name == direction:
                 if exit.sibling is not None:
@@ -858,13 +992,13 @@ class Bury(Action):
 
 class Go(Action):
     expr = (
-        DIRECTION_LITERAL |
         (pyparsing.Literal("go") + pyparsing.White() +
          targetString("direction")) |
         (pyparsing.Literal("enter") + pyparsing.White() +
          targetString("direction")) |
         (pyparsing.Literal("exit") + pyparsing.White() +
-         targetString("direction")))
+         targetString("direction")) |
+        DIRECTION_LITERAL)
 
     actorInterface = iimaginary.IThing
 
@@ -873,6 +1007,7 @@ class Go(Action):
         Identify a direction by having the player search for L{IExit}
         providers that they can see and reach.
         """
+        directionName = expandDirection(directionName)
         return player.obtainOrReportWhyNot(
             Proximity(
                 3.0,

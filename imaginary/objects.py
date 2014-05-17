@@ -12,7 +12,7 @@ from __future__ import division
 
 import math
 
-from zope.interface import implements
+from zope.interface import implements, implementer
 
 from twisted.python import reflect, components
 
@@ -65,6 +65,14 @@ class Points(item.Item):
     def modify(self, amount):
         self.current = max(min(self.current + amount, self.max), 0)
         return self.current
+
+
+
+@implementer(iimaginary.ILocationRelationship)
+class LocationRelationship(object):
+    """
+    This link goes to the place where the thing the link is from is.
+    """
 
 
 
@@ -150,6 +158,11 @@ class Thing(item.Item):
     """, default=False, allowNone=False)
 
 
+    def __str__(self):
+        return '<Thing %r>' % (self.name,)
+    __repr__ = __str__
+
+
     def destroy(self):
         if self.location is not None:
             iimaginary.IContainer(self.location).remove(self)
@@ -176,7 +189,8 @@ class Thing(item.Item):
             # any case I can think of.  However, 'here' is ambiguous in the
             # case where you are present inside a container, and that should
             # probably be dealt with.
-            l.annotate([AlsoKnownAs('here')])
+            l.annotate([AlsoKnownAs('here'),
+                        LocationRelationship()])
             yield l
 
 
@@ -433,6 +447,18 @@ _populateOpposite()
 
 
 
+DIRECTION_ALIASES = {
+    u"n": u"north",
+    u"s": u"south",
+    u"w": u"west",
+    u"e": u"east",
+    u"nw": u"northwest",
+    u"se": u"southeast",
+    u"ne": u"northeast",
+    u"sw": u"southwest"}
+
+
+
 class Exit(item.Item):
     """
     An L{Exit} is an oriented pathway between two L{Thing}s which each
@@ -671,6 +697,9 @@ class Containment(object):
         location.
         """
         if not self.closed:
+            # This is actually wrong; we ought to always return these links,
+            # but annotate them with something that indicates a (potentially
+            # opaque) physical obstruction.
             for ob in self.getContents():
                 content = Link(self.thing.idea, ob.idea)
                 content.annotate([ContainmentRelationship(self)])
@@ -861,6 +890,11 @@ class Container(item.Item, Containment, _Enhancement):
         """)
 
 
+    def __str__(self):
+        return '<Container %r>' % (self.thing.name,)
+    __repr__ = __str__
+
+
 
 class ExpressContents(language.Sentence):
     """
@@ -900,7 +934,7 @@ class ExpressContents(language.Sentence):
         return template
 
 
-    def expand(self, template, observer):
+    def _expand(self, template, observer, concepts):
         """
         Expand the given template using the wrapped container's L{Thing} as the
         subject.
@@ -912,7 +946,7 @@ class ExpressContents(language.Sentence):
         """
         return language.ConceptTemplate(template).expand(dict(
                 subject=self.original.thing,
-                contents=language.ItemizedList(self._contentConcepts(observer))))
+                contents=language.ItemizedList(concepts)))
 
 
     def concepts(self, observer):
@@ -920,8 +954,9 @@ class ExpressContents(language.Sentence):
         Return a L{list} of L{IConcept} providers which express the contents of
         the wrapped container.
         """
-        if self._contentConcepts(observer):
-            return list(self.expand(self.template, observer))
+        concepts = self._contentConcepts(observer)
+        if concepts:
+            return list(self._expand(self.template, observer, concepts))
         return []
 
 

@@ -184,13 +184,6 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
                           iimaginary.IClothingWearer(self.daisy).putOn,
                           iimaginary.IClothing(self.undies))
 
-    def testWornClothingIsFindable(self):
-        iimaginary.IClothingWearer(self.daisy).putOn(
-            iimaginary.IClothing(self.dukes))
-        dukes = list(self.daisy.findProviders(
-            iimaginary.IClothing, 0))
-        self.assertEquals(len(dukes), 1)
-        self.assertIdentical(dukes[0].thing, self.dukes)
 
 
 class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
@@ -304,3 +297,34 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def testNoEquipment(self):
         self._test("equipment",
                    ["You aren't wearing any equipment."])
+
+
+
+class ContainmentInteractionTests(unittest.TestCase):
+    def test_locationConceptExcludesWorn(self):
+        """
+        An L{IClothing} provider worn by an L{IClothingWearer} provider which
+        is contained by a L{IContainer} provider is not included in the concept
+        for the L{IContainer} provider.
+        """
+        db = store.Store()
+
+        observer = objects.Thing(store=db, name=u"observer")
+
+        clothing = garments.Garment.createFor(
+            objects.Thing(store=db, name=u"hat"),
+            garmentDescription=u"a boring hat",
+            garmentSlots=[garments.GarmentSlot.CROWN])
+        wearer = garments.Wearer.createFor(
+            objects.Thing(store=db, name=u"wearer"))
+        location = objects.Container.createFor(
+            objects.Thing(store=db, name=u"somewhere"),
+            contentsTemplate=u"Contents: {contents}")
+
+        wearer.putOn(clothing)
+        location.add(wearer.thing)
+
+        concept = location.conceptualize()
+        self.assertEqual(
+            u"Contents: a wearer",
+            u"".join(list(concept.plaintext(observer))))

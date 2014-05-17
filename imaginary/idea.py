@@ -164,7 +164,7 @@ class Idea(record("delegate linkers annotators")):
 
     An L{Idea} is composed of a C{delegate}, which is an object that implements
     simulation-defined interfaces; a list of L{ILinkContributor}s, which
-    produce L{Link}s to other L{Idea}s, an a set of C{ILinkAnnotator}s, which
+    produce L{Link}s to other L{Idea}s, and a set of C{ILinkAnnotator}s, which
     apply annotations (which themselves implement simulation-defined
     link-annotation interfaces) to those links.
 
@@ -234,7 +234,8 @@ class Idea(record("delegate linkers annotators")):
             # The annotators show up in a non-deterministic order, so in order
             # to facilitate a consistent view of the link in annotationsFor(),
             # all annotations are applied at the end.
-            allAnnotations.extend(annotator.annotationsFor(link, self))
+            annotations = list(annotator.annotationsFor(link, self))
+            allAnnotations.extend(annotations)
         link.annotate(allAnnotations)
 
 

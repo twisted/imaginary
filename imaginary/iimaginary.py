@@ -82,6 +82,11 @@ class ILitLink(Interface):
     objects, for indicating that the link can apply lighting.
     """
 
+    def isItLit(path, result):
+        """
+        ???
+        """
+
     def applyLighting(litThing, eventualTarget, requestedInterface):
         """
         Apply a transformation to an object that an
@@ -426,6 +431,21 @@ class IConcept(Interface):
     This represents a concept which can be expressed in English.
     """
 
+    def vt102(observer):
+        """
+        Produce some nicely colored data structures which can later be rendered
+        to some VT-102-escape-code compatible octets.
+
+        @param observer: the physical body of the player who is perceiving this
+            concept
+        @type observer: L{IThing}
+
+        @return: Some text in the format (currently informally) defined by
+            L{imaginary.text}.
+        @rtype: a L{list} or something, good luck
+        """
+
+
     def plaintext(observer):
         """
         @param observer: the IThing provider who is asking to learn about this
@@ -456,6 +476,8 @@ class ILinkAnnotator(Interface):
         Produce an iterator of annotations to be applied to a link whose source
         or target is the L{Idea} that this L{ILinkAnnotator} has been applied
         to.
+
+        @param idea: The L{Idea} instance 
         """
 
 
@@ -523,6 +545,13 @@ class IContainmentRelationship(Interface):
         A reference to the L{IContainer} which contains the target of the link
         that this L{IContainmentRelationship} annotates.
         """)
+
+
+
+class ILocationRelationship(Interface):
+    """
+    The inverse of L{IContainmentRelationship}.
+    """
 
 
 
@@ -652,21 +681,6 @@ class ISittable(Interface):
         @type sitterThing: L{imaginary.objects.Thing}
         """
 
-
-
-class IDescriptor(IThingPowerUp):
-    """
-    I provide a portion of a Thing's description.
-
-    Install IDescribable powerUps on Thing to influence how it will be shown to
-    the user.
-    """
-
-    def conceptualize():
-        """
-        Return an object adaptable to the IConcept for the language of an
-        observer.
-        """
 
 
 class IWhyNot(Interface):

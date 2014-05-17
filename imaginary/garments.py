@@ -204,7 +204,6 @@ class Wearer(item.Item, Enhancement):
 
     _interfaces = (iimaginary.IClothingWearer,
                    iimaginary.IDescriptionContributor,
-                   iimaginary.ILinkContributor,
                    iimaginary.ILinkAnnotator,
                    )
 
@@ -280,15 +279,6 @@ class Wearer(item.Item, Enhancement):
         Describe the list of clothing.
         """
         return ExpressClothing(self.thing, self.getGarmentDict())
-
-
-    # ILinkContributor
-    def links(self):
-        for garmentThing in self.store.query(objects.Thing,
-                                  attributes.AND(
-                Garment.thing == objects.Thing.storeID,
-                Garment.wearer == self)):
-            yield Link(self.thing.idea, garmentThing.idea)
 
 
     # ILinkAnnotator
