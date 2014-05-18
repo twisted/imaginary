@@ -4,9 +4,6 @@
 Virtual simulation framework.
 """
 
-from imaginary._version import version
-version                         # exported
-
 # Verbs are only registered when they are imported, and important verbs are
 # found in the following modules:
 from imaginary import action, creation
