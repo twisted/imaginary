@@ -43,5 +43,9 @@ distobj = autosetup(
         # smoothly until Mantissa gets fixed.
         "nevow>=0.10.0",
 
+        # Likewise.  PyCrypto has a history of breaking Conch in new releases
+        # so pin it.
+        "PyCrypto==2.6",
+
         "mantissa>=0.7.0",
         ])
