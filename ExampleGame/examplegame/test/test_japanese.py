@@ -391,6 +391,9 @@ class HiraganaMouseTestCase(MouseChallengeMixin, unittest.TestCase):
         del self.mouse
         del self.mouseActor
         del self.mousehood
+        # Force GC under pypy.
+        import gc
+        gc.collect()
         self.assertEquals(deletions, [ref])
         mousehood = self.store.findUnique(mice.HiraganaMouse)
         from twisted.internet import reactor
