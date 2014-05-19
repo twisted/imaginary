@@ -37,5 +37,11 @@ distobj = autosetup(
         "twisted>=14.0.0",
         "epsilon>=0.7.0",
         "axiom>=0.7.1",
+
+        # Nevow is a dependency via Mantissa but Mantissa doesn't declare it in
+        # `install_requires`.  So we'll declare it here to make things go more
+        # smoothly until Mantissa gets fixed.
+        "nevow>=0.10.0",
+
         "mantissa>=0.7.0",
         ])
