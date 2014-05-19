@@ -1,0 +1,32 @@
+language: "python"
+
+os:
+  - "linux"
+
+python:
+  - "pypy"
+  - "2.7"
+
+install:
+  # Install some tools for measuring code coverage and sending the results
+  # to coveralls.
+  - "pip install coveralls coverage"
+
+  # Work-around the fact that Imaginary's setup.py requires Epsilon in order to
+  # actually be imported. :/ Most likely we should just give up and use
+  # setuptools at this point.
+  - "pip install epsilon"
+
+script:
+  - |
+    pip install -e .
+  - |
+    coverage run --branch --source=imaginary $(type -p trial) --testmodule=imaginary/__init__.py
+  - |
+    coverage report -m
+
+after_success:
+    - "coveralls"
+
+notifications:
+  email: false
