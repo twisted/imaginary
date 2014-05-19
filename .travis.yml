@@ -17,12 +17,16 @@ install:
   # setuptools at this point.
   - "pip install epsilon"
 
+  # An "editable" install - which really just means a tweak to the environment
+  # that makes the packages in the source checkout discoverable by the Python
+  # import machinery.  It might eventually make sense to test an install which
+  # actually tries to copy files into the right place.
+  - "pip install -e ."
+
 env:
   - "PYTHONPATH=ExampleGame"
 
 script:
-  - |
-    pip install -e .
   - |
     coverage run --branch --source=imaginary $(type -p trial) --testmodule=imaginary/__init__.py
   - |
