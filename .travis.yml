@@ -28,7 +28,6 @@ env:
 
 script:
   - |
-    echo "TRAVIS_PYTHON_VERSION=${TRAVIS_PYTHON_VERSION}"
     if [ ${TRAVIS_PYTHON_VERSION} == "pypy" ]; then
         $(type -p trial) --testmodule=imaginary/__init__.py
     else
