@@ -17,6 +17,9 @@ install:
   # setuptools at this point.
   - "pip install epsilon"
 
+env:
+  - "PYTHONPATH=${PWD}/ExampleGame"
+
 script:
   - |
     pip install -e .
