@@ -38,7 +38,11 @@ script:
     coverage report -m
 
 after_success:
-    - "coveralls"
+  - |
+    # Nothing to submit for pypy.
+    if [ ${TRAVIS_PYTHON_VERSION} != "pypy" ]; then
+        coveralls
+    fi
 
 notifications:
   email: false
