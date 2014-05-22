@@ -7,7 +7,7 @@ versioneer.versionfile_build = "imaginary/_version.py"
 versioneer.tag_prefix= ""
 versioneer.parentdir_prefix = "Imaginary-"
 
-with open("README.txt") as fObj:
+with open("README.rst") as fObj:
     readme = fObj.read()
 
 distobj = autosetup(
