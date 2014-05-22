@@ -2,4 +2,5 @@ GO
 
 Usage: go <north | south | east | west>
 
-Travel in the indicated direction.
+Travel in the indicated direction.  Short directions (n, s, e, w) may be used
+in place of the full direction names.
