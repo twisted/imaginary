@@ -16,7 +16,7 @@ from xmantissa.ixmantissa import ITerminalServerFactory
 from xmantissa.terminal import ShellAccount
 from xmantissa.sharing import asAccessibleTo, itemFromProxy
 
-from imaginary import copyright as pcopyright
+from imaginary import __version__ as imaginaryVersion
 from imaginary import resources
 from imaginary.objects import Thing
 from imaginary.world import ImaginaryWorld
@@ -279,7 +279,7 @@ class CharacterSelectionTextServer(TextServerBase):
     motd = file(util.sibpath(resources.__file__, 'motd')).read() % {
         'pythonVersion': sys.version,
         'twistedVersion': tcopyright.version,
-        'imaginaryVersion': pcopyright.version}
+        'imaginaryVersion': imaginaryVersion}
 
     state = 'SELECT'
 
