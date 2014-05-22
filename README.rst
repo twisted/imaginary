@@ -1,3 +1,8 @@
+.. image:: https://travis-ci.org/twisted/imaginary.png
+  :target: https://travis-ci.org/twisted/imaginary
+
+.. image:: https://coveralls.io/repos/twisted/imaginary/badge.png
+  :target: https://coveralls.io/r/twisted/imaginary
 
 Imaginary is an experimental simulation-construction toolkit.
 
