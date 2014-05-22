@@ -28,12 +28,21 @@ env:
 
 script:
   - |
-    coverage run --branch --source=imaginary $(type -p trial) --testmodule=imaginary/__init__.py
+    if [ ${TRAVIS_PYTHON_VERSION} == "pypy" ]; then
+        # Skip coverage on pypy so the build doesn't take 15 minutes.
+        $(type -p trial) --testmodule=imaginary/__init__.py
+    else
+        coverage run --branch --source=imaginary $(type -p trial) --testmodule=imaginary/__init__.py
+    fi
   - |
     coverage report -m
 
 after_success:
-    - "coveralls"
+  - |
+    # Nothing to submit for pypy.
+    if [ ${TRAVIS_PYTHON_VERSION} != "pypy" ]; then
+        coveralls
+    fi
 
 notifications:
   email: false
