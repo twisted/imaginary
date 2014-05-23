@@ -378,20 +378,30 @@ class HiraganaMouseTestCase(MouseChallengeMixin, unittest.TestCase):
             u"%s bites you!\n" % (self.mouseName,))
 
 
+
+class HiraganaMouseActivationTestCase(unittest.TestCase):
+    """
+    Test the default scheduler of the mouse.
+
+    This isn't part of HiraganaMouseTestCase because that replaces the
+    scheduler before the test method runs.
+    """
+
+    def setUp(self):
+        self.store = store.Store()
+
+        self.mouseName = u"\N{KATAKANA LETTER PI}\N{KATAKANA LETTER SMALL YU}"
+        self.mouse = mice.createHiraganaMouse(
+            store=self.store,
+            name=self.mouseName)
+
+
     def test_activationUsesReactorScheduling(self):
         """
         Test that the default scheduler of the mouse is the Twisted
         reactor, since that is the scheduler that needs to be used
         with the actual Imaginary server.
         """
-        deletions = []
-        ref = weakref.ref(self.mousehood, deletions.append)
-        # This is a hack to reload the mouse since it gets its
-        # _callLater set in setUp.
-        del self.mouse
-        del self.mouseActor
-        del self.mousehood
-        self.assertEquals(deletions, [ref])
         mousehood = self.store.findUnique(mice.HiraganaMouse)
         from twisted.internet import reactor
         self.assertEquals(mousehood._callLater, reactor.callLater)
