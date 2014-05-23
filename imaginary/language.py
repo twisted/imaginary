@@ -155,7 +155,7 @@ class DescriptionWithContents(structlike.record("target others")):
         some text
         """
         title = [T.bold, T.fg.green, u'[ ',
-                 [T.fg.normal, Noun(self.target).nounPhrase().vt102(observer)],
+                 [T.fg.normal, Noun(self.target).shortName().vt102(observer)],
                  u' ]\n']
 
         yield title
