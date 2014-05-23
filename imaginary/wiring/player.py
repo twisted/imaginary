@@ -99,6 +99,11 @@ class Player(object):
         #FIXME: Encoding should be done *inside* flatten, not here.
         flatterStuff = T.flatten(stuff, useColors=self.useColors,
                                  currentAttrs=self.termAttrs)
-        txt = u''.join(list(flatterStuff))
+        flatterList = list(flatterStuff)
+        try:
+            txt = u''.join(flatterList)
+        except TypeError as e:
+            raise TypeError("bad stuff", str(e), flatterList)
+
         bytes = txt.encode('utf-8')
         self.proto.write(bytes)

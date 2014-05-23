@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_garments.FunSimulationStuff.testProperlyDressed -*-
+# -*- test-case-name: imaginary.test.test_look -*-
 
 """
 
@@ -15,8 +15,7 @@ from twisted.python.components import registerAdapter
 from epsilon import structlike
 
 from imaginary import iimaginary, iterutils, text as T
-from imaginary.iimaginary import IThing
-from imaginary.iimaginary import IConcept
+from imaginary.iimaginary import IConcept, IExit
 
 
 class Gender(object):
@@ -160,9 +159,33 @@ class DescriptionWithContents(structlike.record("target others")):
 
         yield title
 
+        # TODO: Think about how to do better than this special-case support for
+        # IExit.  For example have some powerups on the observer that get a
+        # chance to inspect others and do the formatting.
+        exits = []
+        for other in self.others:
+            # All of self.others are paths that go through self.target so just
+            # using targetAs won't accidentally include any exits that aren't
+            # for the target room except for the bug mentioned below.
+            # 
+            # TODO: This might show too many exits.  There might be exits to
+            # rooms with exits to other rooms, they'll all show up as on some
+            # path here as IExit targets.  Check the exit's source to make sure
+            # it is self.target.
+            exit = other.targetAs(IExit)
+            if exit is not None:
+                exits.append(exit.name)
+                print("Found an exit on", other, ":", exit.name)
+
+        if exits:
+            yield [T.bold, T.fg.green, u'( ',
+                   [T.fg.normal, T.fg.yellow,
+                    iterutils.interlace(u' ', exits)],
+                   u' )', u'\n']
+
         description = self.target.description or u""
         if description:
-            description = (T.fg.green, self.description, u'\n')
+            description = (T.fg.green, description, u'\n')
 
         descriptionConcepts = []
 

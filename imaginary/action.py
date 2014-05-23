@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_garments.FunSimulationStuff.testProperlyDressed -*-
+# -*- test-case-name: imaginary.test.test_look.LookAtTests.test_exitNameEventBroadcasting -*-
 
 from __future__ import print_function
 
@@ -23,11 +23,13 @@ from imaginary.idea import (
 )
 from imaginary.iimaginary import IRetriever
 from imaginary.language import DescriptionWithContents
-from imaginary.iimaginary import IVisible
+from imaginary.iimaginary import IVisible, IExit
 from imaginary.iimaginary import ILocationRelationship
 from imaginary.iimaginary import IContainmentRelationship
 from imaginary.idea import Reachable
-from imaginary.iimaginary import INameable
+from imaginary.idea import isKnownTo
+from imaginary.idea import Idea, Path
+
 
 ## Hacks because pyparsing doesn't have fantastic unicode support
 _quoteRemovingQuotedString = pyparsing.quotedString.copy()
@@ -375,33 +377,34 @@ class LookAt(TargetAction):
             def retrieve(self, path):
 
                 # If this is a path to something that can't even be looked at
-                # then it isn't interesting to "look at".
-                if path.targetAs(IVisible) is None:
-                    print("not visible:", path)
+                # then it isn't interesting to "look at".  TODO: Unless it is
+                # an exit, then we want it so we can include it in location
+                # descriptions.
+                if path.targetAs(IVisible) is None and path.targetAs(IExit) is None:
+                    print("not visible and not exit:", path)
                     return None
                 else:
-                    print("visible, ok", path)
+                    print("visible or exit, ok", path)
 
                 # Inspect all of the link targets to find a visible thing with
                 # the right name.  Also, as a special case, inspect the source
                 # of the first link - it is not the target of any other link in
                 # the path but it might be the thing we're looking for.
-                links = [Link(source=None,
-                              target=path.links[0].source)] + path.links
-                linkIter = iter(links)
-                for link in linkIter:
-                    if IVisible(link.target.delegate, None) is not None:
+                pathWithSource = Path([
+                    Link(source=Idea(None),
+                         target=path.links[0].source)] + path.links)
+                subPathIter = iter(pathWithSource.eachSubPath())
+                for subPath in subPathIter:
+                    link = subPath.links[-1]
+                    if subPath.targetAs(IVisible) is not None:
                         theThing = link.target.delegate
-                        nameable = INameable(theThing, None)
-                        if nameable is None:
-                            # a link in the path that has no name just gets ignored
-                            continue
-
                         # This is the thing that the player has named.
                         # Presumably *this* also needs to be visible, but do we
                         # need to check that somehow?
-                        if nameable.knownTo(player, targetName):
+                        if isKnownTo(player, subPath, targetName):
                             break
+                        else:
+                            print(subPath, "is not known as", targetName)
 
                 else:
                     # We didn't find a visible nameable thing known as the
@@ -419,7 +422,8 @@ class LookAt(TargetAction):
                 # in, the observer won't see that when they're looking at
                 # *you*.
                 goneOut = False
-                for link in linkIter:
+                for subPath in subPathIter:
+                    link = subPath.links[-1]
                     lr = list(link.of(ILocationRelationship))
                     cr = list(link.of(IContainmentRelationship))
                     print("relationships:", lr, cr)
@@ -428,7 +432,7 @@ class LookAt(TargetAction):
                         goneOut = True
                     if cr:
                         if goneOut:
-                            print("gone out after gone in?", path, list(linkIter))
+                            print("gone out after gone in?", path, subPath)
                             return
 
                 # Also re-insert use of CanSee retriever

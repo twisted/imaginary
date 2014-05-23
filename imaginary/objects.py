@@ -678,6 +678,10 @@ class Containment(object):
         yield Link(self.thing.idea, self._entranceIdea)
         yield Link(self.thing.idea, self._exitIdea)
         for exit in self.getExits():
+            # TODO: Annotate this link with the *direction* information Change
+            # the exit to annotate its outbound link with the *distance*
+            # information (which it mostly does already but it mixes in the
+            # direction there too)
             yield Link(self.thing.idea, exit.exitIdea)
 
 
