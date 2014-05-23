@@ -158,11 +158,6 @@ class Thing(item.Item):
     """, default=False, allowNone=False)
 
 
-    def __str__(self):
-        return '<Thing %r>' % (self.name,)
-    __repr__ = __str__
-
-
     def destroy(self):
         if self.location is not None:
             iimaginary.IContainer(self.location).remove(self)
