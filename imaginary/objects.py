@@ -574,6 +574,13 @@ class Exit(item.Item):
         return language.ExpressList(
             [u'the exit to ', language.Noun(self.toLocation).nounPhrase()])
 
+
+    def shouldEvenAttemptTraversal(self, observer):
+        """
+        
+        """
+        return True
+
 components.registerAdapter(lambda exit: exit.conceptualize(),
                            Exit, iimaginary.IConcept)
 
@@ -788,6 +795,13 @@ class _ContainerEntrance(structlike.record('container')):
         return self.container.thing.knownTo(observer, name)
 
 
+    def shouldEvenAttemptTraversal(self, observer):
+        """
+        
+        """
+        return False
+
+
 
 class _ContainerExit(structlike.record('container')):
     """
@@ -825,6 +839,13 @@ class _ContainerExit(structlike.record('container')):
         (i.e. 'go out', 'look out'), but otherwise it has no known description.
         """
         return (observer.location == self.container.thing) and (name == 'out')
+
+
+    def shouldEvenAttemptTraversal(self, observer):
+        """
+        
+        """
+        return False
 
 
 

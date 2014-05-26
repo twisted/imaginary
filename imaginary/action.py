@@ -380,7 +380,10 @@ class LookAt(TargetAction):
                 # then it isn't interesting to "look at".  TODO: Unless it is
                 # an exit, then we want it so we can include it in location
                 # descriptions.
-                if path.targetAs(IVisible) is None and path.targetAs(IExit) is None:
+                if (
+                        path.targetAs(IVisible) is None
+                        and path.targetAs(IExit) is None
+                ):
                     print("not visible and not exit:", path)
                     return None
                 else:

@@ -174,10 +174,11 @@ class DescriptionWithContents(structlike.record("target others")):
             # it is self.target.
             exit = other.targetAs(IExit)
             if exit is not None:
-                nameConcept = IConcept(exit.name)
-                namePileOfVT102Sequences = nameConcept.vt102(observer)
-                exits.append(namePileOfVT102Sequences)
-                print("Found an exit on", other, ":", exit.name)
+                if exit.shouldEvenAttemptTraversal(observer):
+                    nameConcept = IConcept(exit.name)
+                    namePileOfVT102Sequences = nameConcept.vt102(observer)
+                    exits.append(namePileOfVT102Sequences)
+                    print("Found an exit on", other, ":", exit.name)
 
         if exits:
             yield [T.bold, T.fg.green, u'( ',
