@@ -174,7 +174,9 @@ class DescriptionWithContents(structlike.record("target others")):
             # it is self.target.
             exit = other.targetAs(IExit)
             if exit is not None:
-                exits.append(exit.name)
+                nameConcept = IConcept(exit.name)
+                namePileOfVT102Sequences = nameConcept.vt102(observer)
+                exits.append(namePileOfVT102Sequences)
                 print("Found an exit on", other, ":", exit.name)
 
         if exits:
