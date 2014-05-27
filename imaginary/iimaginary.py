@@ -564,7 +564,18 @@ class IVisible(Interface):
         """
         Return an IConcept which represents the visible aspects of this
         visible thing.
+
+        TODO: replace entirely with visualizeWithConcepts.
         """
+
+
+    def visualizeWithContents(pathsToContents):
+        """
+        Return an IConcept which represents the visible aspects of this visible
+        thing, but with the given list of L{imaginary.idea.Path} objects
+        pointing at paths which continue on past this L{IVisible}.
+        """
+
 
 
     def isViewOf(thing):

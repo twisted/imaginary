@@ -28,6 +28,8 @@ from imaginary.iimaginary import ILocationRelationship
 from imaginary.iimaginary import IContainmentRelationship
 from imaginary.idea import Reachable
 from imaginary.idea import isKnownTo
+from imaginary.iimaginary import IThing
+from imaginary.iimaginary import ILitLink
 from imaginary.idea import Idea, Path
 
 
@@ -315,6 +317,7 @@ def _getIt(player, thingName, iface, radius):
 
 
 class LookAround(Action):
+    # TODO: replace this with an alias for 'look at here' or similar.
     actionName = "look"
     expr = pyparsing.Literal("look") + pyparsing.StringEnd()
 
@@ -332,6 +335,107 @@ class LookAround(Action):
             concept = u"You are floating in an empty, formless void."
         events.Success(actor=player.thing,
                        actorMessage=concept).broadcast()
+
+
+# A specialized retriever that is really good at finding stuff *this*
+# action wants to be able to see.
+@implementer(IRetriever)
+class VisibleStuff(object):
+
+    def __init__(self, player, targetName):
+        self.player = player
+        self.targetName = targetName
+
+
+    def shouldKeepGoing(self, path):
+        return True
+
+
+    def retrieve(self, path):
+
+        # If this is a path to something that can't even be looked at
+        # then it isn't interesting to "look at".  TODO: Unless it is
+        # an exit, then we want it so we can include it in location
+        # descriptions.
+        if (
+                path.targetAs(IVisible) is None
+                and path.targetAs(IExit) is None
+        ):
+            # print("not visible and not exit:", path)
+            return None
+        # else:
+        #     print("visible or exit, ok", path)
+
+        # Inspect all of the link targets to find a visible thing with
+        # the right name.  Also, as a special case, inspect the source
+        # of the first link - it is not the target of any other link in
+        # the path but it might be the thing we're looking for.
+        pathWithSource = Path([
+            Link(source=Idea(None),
+                 target=path.links[0].source)] + path.links)
+        subPathIter = iter(pathWithSource.eachSubPath())
+        for subPath in subPathIter:
+            link = subPath.links[-1]
+            if subPath.targetAs(IVisible) is not None:
+                theThing = link.target.delegate
+                # This is the thing that the player has named.
+                # Presumably *this* also needs to be visible, but do we
+                # need to check that somehow?
+                if isKnownTo(self.player, subPath, self.targetName):
+                    break
+                # else:
+                #     print(subPath, "is not known as", self.targetName)
+
+        else:
+            # We didn't find a visible nameable thing known as the
+            # target name.  Guess this path is not relevant.
+            # print("No nameable", path)
+            return None
+
+        # If the remaining path goes up to a location and then back
+        # down to that location's contents, we don't care about that.
+        # In other words if you are sitting in a chair or standing in a
+        # room maybe that will be interesting to render in the
+        # description (and if not, that's the description-renderer's
+        # call to make: the observer *can* see that you're there) but
+        # if there's a thing next to you in the chair you're sitting
+        # in, the observer won't see that when they're looking at
+        # *you*.
+        goneOut = False
+        for subPath in subPathIter:
+            link = subPath.links[-1]
+            lr = list(link.of(ILocationRelationship))
+            cr = list(link.of(IContainmentRelationship))
+            # print("relationships:", lr, cr)
+            if lr:
+                # print("going out", link)
+                goneOut = True
+            if cr:
+                if goneOut:
+                    # print("gone out after gone in?", path, subPath)
+                    return
+
+        # Also re-insert use of CanSee retriever
+
+        # Also make IVisible a better interface - methods for
+        # describing the object in different ways.  short name, longer
+        # description, etc.  basically, describe the object in various
+        # different contexts.
+        #
+        # And refactor the crazy duplication of code and effort between
+        # the retriever and the post-processing loop to construct
+        # buckets below.
+        return (theThing, path)
+
+
+    def objectionsTo(self, path, result):
+        """
+        don't object
+        """
+        for lighting in path.of(ILitLink):
+            if not lighting.isItLit(path, result):
+                tmwn = lighting.whyNotLit()
+                yield tmwn
 
 
 
@@ -368,99 +472,11 @@ class LookAt(TargetAction):
             of how such reasons may be identified.
         """
 
-        # A specialized retriever that is really good at finding stuff *this*
-        # action wants to be able to see.
-        @implementer(IRetriever)
-        class VisibleStuff(object):
-            def shouldKeepGoing(self, path):
-                return True
-            def retrieve(self, path):
-
-                # If this is a path to something that can't even be looked at
-                # then it isn't interesting to "look at".  TODO: Unless it is
-                # an exit, then we want it so we can include it in location
-                # descriptions.
-                if (
-                        path.targetAs(IVisible) is None
-                        and path.targetAs(IExit) is None
-                ):
-                    print("not visible and not exit:", path)
-                    return None
-                else:
-                    print("visible or exit, ok", path)
-
-                # Inspect all of the link targets to find a visible thing with
-                # the right name.  Also, as a special case, inspect the source
-                # of the first link - it is not the target of any other link in
-                # the path but it might be the thing we're looking for.
-                pathWithSource = Path([
-                    Link(source=Idea(None),
-                         target=path.links[0].source)] + path.links)
-                subPathIter = iter(pathWithSource.eachSubPath())
-                for subPath in subPathIter:
-                    link = subPath.links[-1]
-                    if subPath.targetAs(IVisible) is not None:
-                        theThing = link.target.delegate
-                        # This is the thing that the player has named.
-                        # Presumably *this* also needs to be visible, but do we
-                        # need to check that somehow?
-                        if isKnownTo(player, subPath, targetName):
-                            break
-                        else:
-                            print(subPath, "is not known as", targetName)
-
-                else:
-                    # We didn't find a visible nameable thing known as the
-                    # target name.  Guess this path is not relevant.
-                    print("No nameable", path)
-                    return None
-
-                # If the remaining path goes up to a location and then back
-                # down to that location's contents, we don't care about that.
-                # In other words if you are sitting in a chair or standing in a
-                # room maybe that will be interesting to render in the
-                # description (and if not, that's the description-renderer's
-                # call to make: the observer *can* see that you're there) but
-                # if there's a thing next to you in the chair you're sitting
-                # in, the observer won't see that when they're looking at
-                # *you*.
-                goneOut = False
-                for subPath in subPathIter:
-                    link = subPath.links[-1]
-                    lr = list(link.of(ILocationRelationship))
-                    cr = list(link.of(IContainmentRelationship))
-                    print("relationships:", lr, cr)
-                    if lr:
-                        print("going out", link)
-                        goneOut = True
-                    if cr:
-                        if goneOut:
-                            print("gone out after gone in?", path, subPath)
-                            return
-
-                # Also re-insert use of CanSee retriever
-                # 
-                # Also make IVisible a better interface - methods for
-                # describing the object in different ways.  short name, longer
-                # description, etc.  basically, describe the object in various
-                # different contexts.
-                #
-                # And refactor the crazy duplication of code and effort between
-                # the retriever and the post-processing loop to construct
-                # buckets below.
-                return (theThing, path)
-
-            def objectionsTo(self, path, result):
-                """
-                don't object
-                """
-                return []
-
         # slight workaround for the fact that lists are a bit special above
         paths = player.obtainOrReportWhyNot(
             Proximity(
                 3.0,
-                VisibleStuff()
+                VisibleStuff(player, targetName)
             )
         )
 
@@ -474,30 +490,41 @@ class LookAt(TargetAction):
         # look action targets?  if so there is ambiguity and gets the objects
         # into a shape some other code will have a chance of rendering nicely
         # later.)
+
         buckets = {} # map nameable to list of paths
         for (it, path) in paths:
-            buckets.setdefault(it, set()).add(path)
+            buckets.setdefault(it, []).append(path)
 
-        choices = [
-            DescriptionWithContents(k, v)
-            for k, v in
-            buckets.items()
-        ]
-        print("HERE ARE YOUR CHOICES", buckets)
+        choices = []
+        for it, paths in buckets.items():
+            paths.sort(key=lambda x: len(x.links))
+            # replicated logic from CanSee...
+            litlinks = list(paths[0].of(ILitLink))
+            if litlinks:
+                litThing = list(path.eachTargetAs(IThing))[-1]
+                it = litlinks[-1].applyLighting(litThing, it, IVisible)
+            choices.append(it.visualizeWithContents(paths))
         return choices
 
 
     def cantFind_target(self, player, name):
         return "You don't see that."
 
+
     def targetRadius(self, player):
         return 3
+
 
     def do(self, player, line, target):
         if player.thing is not target:
             evt = events.Success(
                 actor=player.thing,
-                target=target.target,
+                # sometimes 'target' is a thing you're looking at, and
+                # therefore a DescriptionWithContents, and therefore has a
+                # 'target' attribute; other times it's some random
+                # ExpressString instance and you are not actually broadcasting
+                # *to* anywhere.
+                target=getattr(target, "target", None),
                 actorMessage=target,
                 targetMessage=(player.thing, " looks at you."))
         else:

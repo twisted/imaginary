@@ -343,6 +343,13 @@ class Rune(object):
         return ExpressString("A totally mystical rune.")
 
 
+    def visualizeWithContents(self, paths):
+        """
+        
+        """
+        return self.visualize()
+
+
     def knownTo(self, observer, asName):
         """
         Implement L{iimaginary.INameable.knownTo} to respond to the word 'rune'

@@ -25,8 +25,10 @@ from imaginary import iimaginary, eimaginary, text as T, events, language
 
 from imaginary.enhancement import Enhancement as _Enhancement
 
+from imaginary.language import DescriptionWithContents
+
 from imaginary.idea import (
-    Idea, Link, Proximity, Reachable, ProviderOf, Named, AlsoKnownAs, CanSee,
+    Idea, Link, Proximity, ProviderOf, AlsoKnownAs, CanSee,
     Vector, DelegatingRetriever)
 
 
@@ -362,6 +364,13 @@ class Thing(item.Item):
             # Maybe we should listify this or something; see
             # http://divmod.org/trac/ticket/2905
             self.powerupsFor(iimaginary.IDescriptionContributor))
+
+
+    def visualizeWithContents(self, paths):
+        """
+        
+        """
+        return DescriptionWithContents(self, paths)
 
 
     def isViewOf(self, thing):
@@ -1207,6 +1216,13 @@ class _DarkLocationProxy(structlike.record('thing')):
             u"You cannot see anything because it is very dark.")
 
 
+    def visualizeWithContents(self, paths):
+        """
+        
+        """
+        return self.visualize()
+
+
     def isViewOf(self, thing):
         """
         Implement L{IVisible.isViewOf} to delegate to this
@@ -1305,11 +1321,16 @@ class _PossiblyDark(structlike.record("lighting")):
         C{eventualTarget} if the target is in a different place.
         """
         if self.lighting.getCandelas():
+            print("applyLighting: passthrough (lit)")
             return eventualTarget
         elif (eventualTarget is self.lighting.thing and
               requestedInterface is iimaginary.IVisible):
+            print("applyLighting: dark location proxy")
             return _DarkLocationProxy(self.lighting.thing)
         elif _eventuallyContains(self.lighting.thing, litThing):
+            print("applyLighting: returning None", eventualTarget,
+                  self.lighting.thing, requestedInterface)
             return None
         else:
+            print("applyLighting: passthrough (beyond scope)")
             return eventualTarget

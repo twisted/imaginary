@@ -155,6 +155,9 @@ class DescriptionWithContents(structlike.record("target others")):
         some text
         """
         if not IThing.providedBy(self.target):
+            # TODO: in the title bar we put a name, the name is a Noun, Noun
+            # takes an IThing and we might otherwise be passed an IVisible;
+            # this should be fixed.
             yield self.target.visualize().vt102(observer)
             return
 
@@ -181,7 +184,7 @@ class DescriptionWithContents(structlike.record("target others")):
             if exit is not None:
                 if exit.shouldEvenAttemptTraversal(observer):
                     exits.append(exit)
-                    print("Found an exit on", other, ":", exit.name)
+                    # print("Found an exit on", other, ":", exit.name)
 
         exits.sort(key=lambda exit: exit.name)
 
