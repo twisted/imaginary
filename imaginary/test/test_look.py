@@ -86,8 +86,7 @@ class LookAroundTranscriptTests(CommandTestCaseMixin, TestCase):
         self._test(
             u"look",
             [E(u"[ Test Location ]"),
-             E(u"( north )"),
-             u"Location for testing."])
+             E(u"Location for testing.")])
 
 
 
