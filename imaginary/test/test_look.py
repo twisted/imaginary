@@ -97,7 +97,7 @@ class LookAtTranscriptTests(CommandTestCaseMixin, TestCase):
             "look here",
             [E("[ Test Location ]"),
              E("( north south )"),
-             "Location for testing.",
+             E("Location for testing."),
              "Here, you see Observer Player."])
 
 
