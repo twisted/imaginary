@@ -293,7 +293,7 @@ def _getIt(player, thingName, iface, radius):
     given interface and are within the given distance.
 
     @param player: The L{Thing} from which to search.
-    
+
     @param radius: How many steps to traverse (note: this is wrong, it
         will become a real distance-y thing with real game-meaning
         someday).
@@ -449,7 +449,7 @@ class LookAt(TargetAction):
                 # the retriever and the post-processing loop to construct
                 # buckets below.
                 return (theThing, path)
-            
+
             def objectionsTo(self, path, result):
                 """
                 don't object
