@@ -16,6 +16,7 @@ from epsilon import structlike
 
 from imaginary import iimaginary, iterutils, text as T
 from imaginary.iimaginary import IConcept, IExit
+from imaginary.iimaginary import IThing
 
 
 class Gender(object):
@@ -153,6 +154,10 @@ class DescriptionWithContents(structlike.record("target others")):
         """
         some text
         """
+        if not IThing.providedBy(self.target):
+            yield self.target.visualize().vt102(observer)
+            return
+
         title = [T.bold, T.fg.green, u'[ ',
                  [T.fg.normal, Noun(self.target).shortName().vt102(observer)],
                  u' ]\n']
