@@ -6,6 +6,7 @@ from twisted.conch.insults import insults, helper
 from imaginary.wiring import textserver
 from imaginary import text as T
 from imaginary import unc
+from imaginary import __version__ as imaginaryVersion
 
 def F(*a, **kw):
     if "currentAttrs" not in kw:
@@ -476,3 +477,18 @@ class TextServerTestCase(unittest.TestCase):
         sequence.
         """
         self._backspaceTest(u'\xa1', 1)
+
+
+
+class MOTDTests(unittest.TestCase):
+    """
+    Tests for the I{message of the day} presented by
+    L{CharacterSelectionTextServer}.
+    """
+    def test_imaginaryVersion(self):
+        """
+        The message contains the Imaginary version number.
+        """
+        self.assertIn(
+            imaginaryVersion,
+            textserver.CharacterSelectionTextServer.motd)
