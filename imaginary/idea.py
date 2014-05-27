@@ -620,7 +620,7 @@ class CanSee(DelegatingRetriever):
         """
         DelegatingRetriever.__init__(self, retriever)
         self.observer = observer
-        
+
 
     def resultRetrieved(self, path, subResult):
         """
