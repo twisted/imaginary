@@ -172,7 +172,7 @@ class DescriptionWithContents(structlike.record("target others")):
             # All of self.others are paths that go through self.target so just
             # using targetAs won't accidentally include any exits that aren't
             # for the target room except for the bug mentioned below.
-            # 
+            #
             # TODO: This might show too many exits.  There might be exits to
             # rooms with exits to other rooms, they'll all show up as on some
             # path here as IExit targets.  Check the exit's source to make sure
