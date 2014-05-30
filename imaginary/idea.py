@@ -564,14 +564,33 @@ class Named(DelegatingRetriever):
         it if the L{INameable} target of the given path is known as this
         L{Named}'s C{name}.
         """
-        named = path.targetAs(INameable)
-        allAliases = list(path.links[-1].of(INameable))
-        if named is not None:
-            allAliases += [named]
-        for alias in allAliases:
-            if alias.knownTo(self.observer, self.name):
-                return subResult
-        return None
+        if isKnownTo(self.observer, path, self.name):
+            return subResult
+        else:
+            return None
+
+
+def isKnownTo(observer, path, name):
+    """
+    Is the given path's target known to the given observer by the given name
+    (as retrieved via the given path?)
+
+    For example: a room may be known as the name 'north' but only if you're
+    standing south of it, so the path via which you retrieved it (starting to
+    the south) is relevant.
+    """
+    named = path.targetAs(INameable)
+    # TODO: don't look at the last link only.  There should be a specific
+    # "alias" annotation which knows how to alias a specific target; we should
+    # give it targetAs(something) so the alias itself can compare.
+    # (Introducing additional links into traversal should never break things.)
+    allAliases = list(path.links[-1].of(INameable))
+    if named is not None:
+        allAliases += [named]
+    for alias in allAliases:
+        if alias.knownTo(observer, name):
+            return True
+    return False
 
 
 
