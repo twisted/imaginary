@@ -22,7 +22,7 @@ from imaginary.idea import (
     CanSee, Proximity, ProviderOf, Named, Traversability, Link
 )
 from imaginary.iimaginary import IRetriever
-from imaginary.language import DescriptionWithContents
+
 from imaginary.iimaginary import IVisible, IExit
 from imaginary.iimaginary import ILocationRelationship
 from imaginary.iimaginary import IContainmentRelationship
