@@ -231,7 +231,7 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
     # TODO Add an "obtain" command to help debugging or something (replace the
     # old search action we deleted)
-        
+
     def testDescribe(self):
         self._test(
             "describe me test description",

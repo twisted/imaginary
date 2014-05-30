@@ -309,10 +309,12 @@ def _getIt(player, thingName, iface, radius):
 
     @return: An iterable of L{iimaginary.IThing} providers which are found.
     """
-    return player.obtainOrReportWhyNot(
-        Proximity(
-            radius,
-            Reachable(Named(thingName, CanSee(ProviderOf(iface), player), player))))
+    providerOf = ProviderOf(iface)
+    canSee = CanSee(providerOf)
+    named = Named(thingName, canSee, player)
+    reachable = Reachable(named)
+    proximity = Proximity(radius, reachable)
+    return player.obtainOrReportWhyNot(proximity)
 
 
 
