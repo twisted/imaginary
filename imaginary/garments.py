@@ -302,11 +302,11 @@ class Wearer(item.Item, Enhancement):
                 clothing = iimaginary.IClothing(link.target.delegate, None)
                 if clothing is not None:
                     if clothing.wearer is self:
-                        yield _DisregardYourWearingIt(clothing.wearer)
+                        yield _WornBy(clothing.wearer)
 
 
 
-class _DisregardYourWearingIt(object):
+class _WornBy(object):
     """
     This is an annotation, produced by L{Wearer} for containment relationships
     between people (who are containers) and the clothing that they're wearing.
