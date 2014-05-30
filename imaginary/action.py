@@ -16,7 +16,8 @@ from imaginary import (iimaginary, eimaginary, iterutils, events,
                        objects, text as T, language, pyparsing)
 from imaginary.world import ImaginaryWorld
 from imaginary.idea import (
-    CanSee, Proximity, ProviderOf, Named, Traversability)
+    CanSee, Proximity, ProviderOf, Named, Traversability, Reachable
+)
 
 ## Hacks because pyparsing doesn't have fantastic unicode support
 _quoteRemovingQuotedString = pyparsing.quotedString.copy()
@@ -294,10 +295,12 @@ def _getIt(player, thingName, iface, radius):
 
     @return: An iterable of L{iimaginary.IThing} providers which are found.
     """
-    return player.obtainOrReportWhyNot(
-        Proximity(
-            radius,
-            Reachable(Named(thingName, CanSee(ProviderOf(iface), player), player))))
+    providerOf = ProviderOf(iface)
+    canSee = CanSee(providerOf)
+    named = Named(thingName, canSee, player)
+    reachable = Reachable(named)
+    proximity = Proximity(radius, reachable)
+    return player.obtainOrReportWhyNot(proximity)
 
 
 
