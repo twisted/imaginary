@@ -654,21 +654,6 @@ class ISittable(Interface):
 
 
 
-class IDescriptor(IThingPowerUp):
-    """
-    I provide a portion of a Thing's description.
-
-    Install IDescribable powerUps on Thing to influence how it will be shown to
-    the user.
-    """
-
-    def conceptualize():
-        """
-        Return an object adaptable to the IConcept for the language of an
-        observer.
-        """
-
-
 class IWhyNot(Interface):
     """
     This interface is an idea link annotation interface, designed to be applied
