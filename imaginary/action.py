@@ -936,8 +936,13 @@ class Restore(TargetAction):
     targetInterface = iimaginary.IActor
 
     def cantFind_target(self, player, targetName):
-        for thing in player.thing.search(self.targetRadius(player),
-                                         iimaginary.IThing, targetName):
+        # XXX Hoist this up to TargetAction and apply it generally.
+        things = _getIt(
+            player.thing,
+            targetName,
+            iimaginary.IThing,
+            self.targetRadius(player))
+        for thing in things:
             return (language.Noun(thing).nounPhrase().plaintext(player),
                     " cannot be restored.")
         return "Who's that?"
@@ -1062,23 +1067,6 @@ class Commands(Action):
 
     def do(self, player, line):
         player.send("Try 'actions' instead.")
-
-
-
-class Search(Action):
-    expr = (pyparsing.Literal("search") +
-            targetString("name"))
-
-    def do(self, player, line, name):
-        srch = player.thing.search(2, iimaginary.IVisible, name)
-        evt = events.Success(
-            actor=player.thing,
-            actorMessage=language.ExpressList(
-                list(iterutils.interlace('\n',
-                                         (o.visualize()
-                                          for o
-                                          in srch)))))
-        evt.broadcast()
 
 
 

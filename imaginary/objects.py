@@ -267,30 +267,6 @@ class Thing(item.Item):
         return results
 
 
-    def search(self, distance, interface, name):
-        """
-        Retrieve game objects answering to the given name which provide the
-        given interface and are within the given distance.
-
-        @param distance: How many steps to traverse (note: this is wrong, it
-            will become a real distance-y thing with real game-meaning
-            someday).
-        @type distance: C{float}
-
-        @param interface: The interface which objects within the required range
-            must be adaptable to in order to be returned.
-
-        @param name: The name of the stuff.
-        @type name: C{str}
-
-        @return: An iterable of L{iimaginary.IThing} providers which are found.
-        """
-        return self.obtainOrReportWhyNot(
-            Proximity(
-                distance,
-                Reachable(Named(name, CanSee(ProviderOf(interface)), self))))
-
-
     def moveTo(self, where, arrivalEventFactory=None):
         """
         Implement L{iimaginary.IThing.moveTo} to change the C{location} of this
