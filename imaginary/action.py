@@ -16,7 +16,8 @@ from imaginary import (iimaginary, eimaginary, iterutils, events,
                        objects, text as T, language, pyparsing)
 from imaginary.world import ImaginaryWorld
 from imaginary.idea import (
-    CanSee, Proximity, ProviderOf, Named, Traversability)
+    CanSee, Proximity, ProviderOf, Named, Traversability, Reachable
+)
 
 ## Hacks because pyparsing doesn't have fantastic unicode support
 _quoteRemovingQuotedString = pyparsing.quotedString.copy()
@@ -275,11 +276,36 @@ class ToolAction(TargetAction):
 
 
 def _getIt(player, thingName, iface, radius):
-    return list(player.search(radius, iface, thingName))
+    """
+    Retrieve game objects answering to the given name which provide the
+    given interface and are within the given distance.
+
+    @param player: The L{Thing} from which to search.
+
+    @param radius: How many steps to traverse (note: this is wrong, it
+        will become a real distance-y thing with real game-meaning
+        someday).
+    @type radius: C{float}
+
+    @param iface: The interface which objects within the required range
+        must be adaptable to in order to be returned.
+
+    @param thingName: The name of the stuff.
+    @type thingName: C{str}
+
+    @return: An iterable of L{iimaginary.IThing} providers which are found.
+    """
+    providerOf = ProviderOf(iface)
+    canSee = CanSee(providerOf)
+    named = Named(thingName, canSee, player)
+    reachable = Reachable(named)
+    proximity = Proximity(radius, reachable)
+    return player.obtainOrReportWhyNot(proximity)
 
 
 
 class LookAround(Action):
+    # TODO: replace this with an alias for 'look at here' or similar.
     actionName = "look"
     expr = pyparsing.Literal("look") + pyparsing.StringEnd()
 
@@ -936,8 +962,13 @@ class Restore(TargetAction):
     targetInterface = iimaginary.IActor
 
     def cantFind_target(self, player, targetName):
-        for thing in player.thing.search(self.targetRadius(player),
-                                         iimaginary.IThing, targetName):
+        # XXX Hoist this up to TargetAction and apply it generally.
+        things = _getIt(
+            player.thing,
+            targetName,
+            iimaginary.IThing,
+            self.targetRadius(player))
+        for thing in things:
             return (language.Noun(thing).nounPhrase().plaintext(player),
                     " cannot be restored.")
         return "Who's that?"
@@ -1062,23 +1093,6 @@ class Commands(Action):
 
     def do(self, player, line):
         player.send("Try 'actions' instead.")
-
-
-
-class Search(Action):
-    expr = (pyparsing.Literal("search") +
-            targetString("name"))
-
-    def do(self, player, line, name):
-        srch = player.thing.search(2, iimaginary.IVisible, name)
-        evt = events.Success(
-            actor=player.thing,
-            actorMessage=language.ExpressList(
-                list(iterutils.interlace('\n',
-                                         (o.visualize()
-                                          for o
-                                          in srch)))))
-        evt.broadcast()
 
 
 
