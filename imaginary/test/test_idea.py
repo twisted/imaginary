@@ -4,7 +4,7 @@ Some basic unit tests for L{imaginary.idea} (but many tests for this code are in
 other modules instead).
 """
 
-from zope.interface import implementer, implements
+from zope.interface import implements, implementer
 
 from twisted.trial.unittest import TestCase
 
@@ -211,7 +211,7 @@ class Glass(object):
         return False
 
 
-implementer(IElectromagneticMedium)
+@implementer(IElectromagneticMedium)
 class SelectivelyOpaque(object):
     def __init__(self, observer):
         self.observer = observer
