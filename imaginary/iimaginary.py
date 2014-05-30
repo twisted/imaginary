@@ -477,7 +477,7 @@ class ILinkAnnotator(Interface):
         or target is the L{Idea} that this L{ILinkAnnotator} has been applied
         to.
 
-        @param idea: The L{Idea} instance 
+        @param idea: The L{Idea} instance
         """
 
 

@@ -125,7 +125,7 @@ class HiraganaMouse(item.Item):
 
 
     def maybeChallenge(self):
-        """ 
+        """
         Start challenging if there is anyone around to challenge (and
         this h-mouse isn't already challenging).
         """
@@ -165,14 +165,14 @@ class HiraganaMouse(item.Item):
         Schedule a challenge to happen in the number of seconds set in
         the instance attribute 'challengeInterval'.
         """
-        self._currentChallengeCall = self._callLater(self.challengeInterval, 
+        self._currentChallengeCall = self._callLater(self.challengeInterval,
                                                      self._challengeAndRepeat)
 
 
     def stopChallenging(self):
         """
         Stop shouting hiragana.
-        
+
         @raises ChallengeVacuum: If this h-mouse is not currently challenging.
         """
         if not self.challenging:

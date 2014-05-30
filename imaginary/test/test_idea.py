@@ -216,7 +216,7 @@ class SelectivelyOpaque(object):
     def __init__(self, observer):
         self.observer = observer
 
-        
+
     def isOpaque(self, observer):
         """
         Be opaque to every observer except the one this object was initialized
@@ -224,7 +224,7 @@ class SelectivelyOpaque(object):
         """
         return observer is not self.observer
 
-    
+
 
 class CanSeeTests(WonderlandSetupMixin, TestCase):
     """

@@ -313,8 +313,8 @@ class _WornBy(object):
             the annotated link.
         """
         self.wearer = wearer
-                
-    
+
+
     def isOpaque(self, observer):
         """
         I am opaque, so that clothing will show up only once (in your "wearing"
