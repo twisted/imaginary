@@ -4,7 +4,7 @@ Some basic unit tests for L{imaginary.idea} (but many tests for this code are in
 other modules instead).
 """
 
-from zope.interface import implements
+from zope.interface import implements, implementer
 
 from twisted.trial.unittest import TestCase
 
@@ -199,7 +199,7 @@ class ReachableTests(WonderlandSetupMixin, TestCase):
 class Wood(object):
     implements(IElectromagneticMedium)
 
-    def isOpaque(self):
+    def isOpaque(self, observer):
         return True
 
 
@@ -207,8 +207,23 @@ class Wood(object):
 class Glass(object):
     implements(IElectromagneticMedium)
 
-    def isOpaque(self):
+    def isOpaque(self, observer):
         return False
+
+
+@implementer(IElectromagneticMedium)
+class SelectivelyOpaque(object):
+    def __init__(self, observer):
+        self.observer = observer
+
+
+    def isOpaque(self, observer):
+        """
+        Be opaque to every observer except the one this object was initialized
+        with.
+        """
+        return observer is not self.observer
+
 
 
 class CanSeeTests(WonderlandSetupMixin, TestCase):
@@ -217,8 +232,10 @@ class CanSeeTests(WonderlandSetupMixin, TestCase):
     """
     def setUp(self):
         WonderlandSetupMixin.setUp(self)
+        self.observer = object()
         self.retriever = CanSee(
-            Named("garden", ProviderOf(INameable), self.alice))
+            Named("garden", ProviderOf(INameable), self.alice),
+            self.observer)
 
 
     def test_throughTransparent(self):
@@ -239,3 +256,15 @@ class CanSeeTests(WonderlandSetupMixin, TestCase):
         # Make the door opaque.  Now Alice cannot see the garden.
         self.door.annotators.append(ConstantAnnotation(Wood()))
         self.assertEquals(list(self.alice.obtain(self.retriever)), [])
+
+
+    def test_observer(self):
+        """
+        L{CanSee} passes the observer it is initialized with as the sole
+        argument to C{isOpaque}.
+        """
+        self.door.annotators.append(
+            ConstantAnnotation(SelectivelyOpaque(self.observer)))
+        self.assertEqual(
+            [self.garden.delegate],
+            list(self.alice.obtain(self.retriever)))

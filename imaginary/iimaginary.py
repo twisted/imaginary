@@ -700,8 +700,22 @@ class IElectromagneticMedium(Interface):
     as a link annotation.
     """
 
-    def isOpaque():
+    def isOpaque(observer):
         """
         Will this propagate radiation the visible spectrum?
+
+        @param observer: The L{Thing} which has eyeballs which are shooting out
+            electromagnetic radiation which could lead to reflected perceptrons
+            to let the L{Thing} perceive a target.
+
+        @note: This interface has a problem.  C{observer} should probably
+            provide some kind of C{ISpectrum} interface and the implementation
+            of L{IElectromagneticMedium} should consult methods of that to
+            determine the frequency that is relevant, etc.  Also, the basic
+            perception interface should probably be something else.  Batman
+            might use echo-location to perceive his environment (he's a bat,
+            right?) so "look at Alice" shouldn't require that he can "see"
+            Alice via L{IElectromagneticMedium} - he can "see" her via
+            L{ISoundMedium} or whatever.
         """
 
