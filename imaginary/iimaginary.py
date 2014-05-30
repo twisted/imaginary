@@ -426,6 +426,21 @@ class IConcept(Interface):
     This represents a concept which can be expressed in English.
     """
 
+    def vt102(observer):
+        """
+        Produce some nicely colored data structures which can later be rendered
+        to some VT-102-escape-code compatible octets.
+
+        @param observer: the physical body of the player who is perceiving this
+            concept
+        @type observer: L{IThing}
+
+        @return: Some text in the format (currently informally) defined by
+            L{imaginary.text}.
+        @rtype: a L{list} or something, good luck
+        """
+
+
     def plaintext(observer):
         """
         @param observer: the IThing provider who is asking to learn about this
