@@ -302,7 +302,7 @@ class Wearer(item.Item, Enhancement):
                 clothing = iimaginary.IClothing(link.target.delegate, None)
                 if clothing is not None:
                     if clothing.wearer is self:
-                        yield _DisregardYourWearingIt()
+                        yield _DisregardYourWearingIt(clothing.wearer)
 
 
 
