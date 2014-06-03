@@ -7,6 +7,7 @@ from imaginary.eimaginary import ActionFailure
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
 from imaginary.world import ImaginaryWorld
+from imaginary.idea import ProviderOf, CanSee
 
 class WearIt(unittest.TestCase, commandutils.LanguageMixin):
 
@@ -184,13 +185,15 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
                           iimaginary.IClothingWearer(self.daisy).putOn,
                           iimaginary.IClothing(self.undies))
 
+
     def testWornClothingIsFindable(self):
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))
-        dukes = list(self.daisy.findProviders(
-            iimaginary.IClothing, 0))
+        dukes = list(self.daisy.idea.obtain(CanSee(ProviderOf(
+            iimaginary.IClothing))))
         self.assertEquals(len(dukes), 1)
         self.assertIdentical(dukes[0].thing, self.dukes)
+
 
 
 class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
