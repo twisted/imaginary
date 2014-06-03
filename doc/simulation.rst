@@ -36,7 +36,7 @@ For example, in a game like Call of Cthulu, a player may need to calm their char
    You break out in a cold sweat.
    {Sanity: 3}
    > use hideous dagger on corners
-   Your hands shake too violently to weild the dagger.
+   Your hands shake too violently to wield the dagger.
    You have dropped the dagger.
    You have dropped your rope.
    You can feel your mind going.
