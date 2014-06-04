@@ -274,10 +274,6 @@ class ActionsInDarkRoomTestCase(commandutils.CommandTestCaseMixin,
         # me->me link, the me->chair link, the chair->room link) so the
         # retriever is going to need to keep a list of those (Refusals) as it
         # retrieves each one.
-        #
-        # resolve calls search
-        # search calls findProviders
-        # findProviders constructs a thingy, calls obtain()
 
         self.test_actionWithNoTargetInDarkRoom()
 
