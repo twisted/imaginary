@@ -34,7 +34,6 @@ install:
         pip install --editable .
     fi
 
-
 script:
   - |
     if [ -v SPHINX_TARGET ]; then
