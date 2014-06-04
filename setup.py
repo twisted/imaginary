@@ -51,4 +51,8 @@ distobj = autosetup(
         "PyCrypto==2.6",
 
         "mantissa>=0.7.0",
-        ])
+        ],
+    extras_require={
+        "doc": ["sphinx>=1.2.2"],
+        },
+    )
