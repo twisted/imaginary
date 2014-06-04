@@ -6,6 +6,7 @@ from twisted.trial import unittest
 from axiom import store
 
 from imaginary import iimaginary, objects, events, action
+from imaginary.idea import CanSee, ProviderOf
 
 from imaginary.test import commandutils
 
@@ -461,7 +462,8 @@ class HiraganaMouseCommandTestCase(commandutils.CommandTestCaseMixin, unittest.T
             [commandutils.E(u"You create " + self.mouseName + u".")],
             [commandutils.E(u"Test Player creates %s." % (self.mouseName,))])
 
-        for thing in self.location.findProviders(iimaginary.IThing, 0):
+        for thing in self.location.idea.obtain(CanSee(ProviderOf(
+            iimaginary.IThing))):
             if thing.name == self.mouseName:
                 break
         else:
