@@ -26,7 +26,7 @@ In other words, you don't need to subclass `Idea` at any point; when you want to
 An `Idea` may also represent something more abstract, such as a character's state of mind.
 For example, in a game like Call of Cthulu, a player may need to calm their character down to retain sanity points, like so:
 
-.. code-block::
+.. code::
 
    The corners of this room are unsettling.
    The hairs on the back of your neck bristle as you feel an odd sort of pressure.
@@ -36,7 +36,7 @@ For example, in a game like Call of Cthulu, a player may need to calm their char
    You break out in a cold sweat.
    {Sanity: 3}
    > use hideous dagger on corners
-   Your hands shake too violently to weild the dagger.
+   Your hands shake too violently to wield the dagger.
    You have dropped the dagger.
    You have dropped your rope.
    You can feel your mind going.
