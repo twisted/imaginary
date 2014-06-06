@@ -284,3 +284,13 @@ class IngressAndEgressTestCase(CommandTestCaseMixin, unittest.TestCase):
                                  ["The box won't fit inside itself."],
                                  [])
 
+
+    def test_cannotExitToNowhere(self):
+        """
+        When I'm in a container (in a location) which itself has no location, I
+        cannot leave it.
+        """
+        self.assertCommandOutput(
+            u"exit out",
+            [u"There is nowhere for you to go out to."],
+            [])
