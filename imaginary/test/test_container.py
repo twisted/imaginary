@@ -292,5 +292,5 @@ class IngressAndEgressTestCase(CommandTestCaseMixin, unittest.TestCase):
         """
         self.assertCommandOutput(
             u"exit out",
-            [u"There is nowhere for you to go out to."],
+            [u"You can't go that way."],
             [])
