@@ -732,6 +732,7 @@ class IElectromagneticMedium(Interface):
         @param observer: The L{Thing} which has eyeballs which are shooting out
             electromagnetic radiation which could lead to reflected perceptrons
             to let the L{Thing} perceive a target.
+        @type observer: L{Thing}
 
         @note: This interface has a problem.  C{observer} should probably
             provide some kind of C{ISpectrum} interface and the implementation

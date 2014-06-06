@@ -310,7 +310,7 @@ def _getIt(player, thingName, iface, radius):
     @return: An iterable of L{iimaginary.IThing} providers which are found.
     """
     providerOf = ProviderOf(iface)
-    canSee = CanSee(providerOf)
+    canSee = CanSee(providerOf, player)
     named = Named(thingName, canSee, player)
     reachable = Reachable(named)
     proximity = Proximity(radius, reachable)
