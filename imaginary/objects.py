@@ -664,7 +664,8 @@ class Containment(object):
                 content.annotate([ContainmentRelationship(self)])
                 yield content
         yield Link(self.thing.idea, self._entranceIdea)
-        yield Link(self.thing.idea, self._exitIdea)
+        if self.thing.location is not None:
+            yield Link(self.thing.idea, self._exitIdea)
         for exit in self.getExits():
             yield Link(self.thing.idea, exit.exitIdea)
 
