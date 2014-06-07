@@ -13,7 +13,7 @@ but we will try to make sure they aren't really required just to get started.
 
 While we have tried to make it possible to get a taste of what is possible
 here, if you want to make any serious progress, you will want to join the IRC
-channel "#imagination" on chat.freenode.net and start asking questions.  If you
+channel "#imaginary" on chat.freenode.net and start asking questions.  If you
 are curious about what needs to be done, have a look here:
 
     http://tinyurl.com/2tuo9o
