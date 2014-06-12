@@ -1321,16 +1321,11 @@ class _PossiblyDark(structlike.record("lighting")):
         C{eventualTarget} if the target is in a different place.
         """
         if self.lighting.getCandelas():
-            print("applyLighting: passthrough (lit)")
             return eventualTarget
         elif (eventualTarget is self.lighting.thing and
               requestedInterface is iimaginary.IVisible):
-            print("applyLighting: dark location proxy")
             return _DarkLocationProxy(self.lighting.thing)
         elif _eventuallyContains(self.lighting.thing, litThing):
-            print("applyLighting: returning None", eventualTarget,
-                  self.lighting.thing, requestedInterface)
             return None
         else:
-            print("applyLighting: passthrough (beyond scope)")
             return eventualTarget
