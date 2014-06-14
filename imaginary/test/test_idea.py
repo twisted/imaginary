@@ -272,3 +272,48 @@ class CanSeeTests(WonderlandSetupMixin, TestCase):
         self.assertEqual(
             [self.garden.delegate],
             list(self.alice.obtain(self.retriever)))
+
+
+
+class EachSubPathTests(TestCase):
+    """
+    Tests for L{Path.eachSubPath}.
+    """
+    def test_empty(self):
+        """
+        An empty L{Path} has no subpaths at all.
+        """
+        self.assertEqual([], list(Path(links=[]).eachSubPath()))
+
+
+    def test_single(self):
+        """
+        A L{Path} of one L{Link} has one subpath that is equal to itself.
+        """
+        source = Idea("source")
+        target = Idea("target")
+        path = Path(links=[Link(source=source, target=target)])
+        self.assertEqual([path], list(path.eachSubPath()))
+
+
+    def test_many(self):
+        """
+        A L{Path} of N L{Link}s has N - 1 subpaths, in order from shortest to
+        longest, consisting of each L{Path} which is a prefix of it.
+        """
+        beginning = Idea("beginning")
+        earlyMiddle = Idea("early middle")
+        lateMiddle = Idea("late middle")
+        end = Idea("end")
+
+        one = Link(source=beginning, target=earlyMiddle)
+        two = Link(source=earlyMiddle, target=lateMiddle)
+        three = Link(source=lateMiddle, target=end)
+
+        path = Path(links=[one, two, three])
+
+        self.assertEqual(
+            [Path(links=[one]),
+             Path(links=[one, two]),
+             Path(links=[one, two, three])],
+            list(path.eachSubPath()))

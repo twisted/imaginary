@@ -84,6 +84,21 @@ class Path(object):
                 yield annotation
 
 
+    def eachSubPath(self):
+        """
+        Iterate over each path which is a prefix of this path.
+
+        @return: A generator which yields L{Path} instances.  The first
+            instance yielded is a L{Path} with only the first L{Link} of this
+            path.  The second instance yielded has the first and second
+            L{Link}s of this path.  This pattern continues until a L{Path} with
+            the same L{Links} as this L{Path} is yielded.
+
+        """
+        for x in range(1, len(self.links) + 1):
+            yield Path(links=self.links[:x])
+
+
     def eachTargetAs(self, interface):
         """
         @return: an iterable of all non-None results of each L{Link.targetAs}
