@@ -35,7 +35,9 @@ class PathTests(TestCase):
         key = Idea(AlsoKnownAs("key"))
         table = Idea(AlsoKnownAs("table"))
         hall = Idea(AlsoKnownAs("hall"))
-        path = Path([Link(hall, table), Link(table, key)])
+        path = Path(links=[
+                Link(source=hall, target=table),
+                Link(source=table, target=key)])
         self.assertEquals(
             repr(path),
             "Path(\n"
@@ -51,7 +53,9 @@ class PathTests(TestCase):
         key = Idea(Reprable("key"))
         table = Idea(Reprable("table"))
         hall = Idea(Reprable("hall"))
-        path = Path([Link(hall, table), Link(table, key)])
+        path = Path(links=[
+                Link(source=hall, target=table),
+                Link(source=table, target=key)])
         self.assertEquals(
             repr(path),
             "Path(\n"
