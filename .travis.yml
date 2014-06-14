@@ -1,46 +1,55 @@
 language: "python"
 
-os:
-  - "linux"
-
-python:
-  - "pypy"
-  - "2.7"
+matrix:
+  include:
+    - python: "pypy"
+    - python: "2.7"
+    - python: "pypy"
+      env: "SPHINX_TARGET=html"
 
 install:
   # Install some tools for measuring code coverage and sending the results
   # to coveralls.
-  - "pip install coveralls coverage"
+  - |
+    pip install coveralls coverage
 
   # Work-around the fact that Imaginary's setup.py requires Epsilon in order to
   # actually be imported. :/ Most likely we should just give up and use
   # setuptools at this point.
-  - "pip install epsilon"
+  - |
+    pip install epsilon
 
   # An "editable" install - which really just means a tweak to the environment
   # that makes the packages in the source checkout discoverable by the Python
   # import machinery.  It might eventually make sense to test an install which
   # actually tries to copy files into the right place.
-  - "pip install -e ."
-
-env:
-  - "PYTHONPATH=ExampleGame"
+  - |
+    if [ -v SPHINX_TARGET ]; then
+        # As a bonus, if this build is going to do something with sphinx, drag
+        # in any doc-related dependencies.
+        pip install --editable .[doc]
+    else
+        pip install --editable .
+        pip install --editable ExampleGame
+    fi
 
 script:
   - |
-    if [ ${TRAVIS_PYTHON_VERSION} == "pypy" ]; then
+    if [ -v SPHINX_TARGET ]; then
+        # This is a documentation-related build.
+        make --directory=doc html
+    elif [ ${TRAVIS_PYTHON_VERSION} == "pypy" ]; then
         # Skip coverage on pypy so the build doesn't take 15 minutes.
         $(type -p trial) --testmodule=imaginary/__init__.py
     else
         coverage run --branch --source=imaginary --omit=imaginary/pyparsing.py $(type -p trial) --testmodule=imaginary/__init__.py
+        coverage report -m
     fi
-  - |
-    coverage report -m
 
 after_success:
   - |
-    # Nothing to submit for pypy.
-    if [ ${TRAVIS_PYTHON_VERSION} != "pypy" ]; then
+    # Only submit coverage results for non-PyPy, non-Sphinx builds.
+    if [ ! -v SPHINX_TARGET ] && [ ${TRAVIS_PYTHON_VERSION} != "pypy" ]; then
         coveralls
     fi
 
