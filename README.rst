@@ -25,10 +25,7 @@ are curious about what needs to be done, have a look here:
 
 The first step in configuring a new installation of Imaginary will normally be
 creating a new Mantissa database.
-
-(This is assuming you have already set up Combinator, installed Twisted, and
-all necessary Divmod dependencies. If not, see
-http://divmod.org/trac/wiki/CombinatorTutorial for more information.)
+The following instructions assume you have already set up installed Twisted, all of Imaginary's dependencies, and Imaginary itself.
 
 First run the following command:
 
