@@ -3,9 +3,7 @@ language: "python"
 matrix:
   include:
     - python: "pypy"
-      env: "PYTHONPATH=ExampleGame"
     - python: "2.7"
-      env: "PYTHONPATH=ExampleGame"
     - python: "pypy"
       env: "SPHINX_TARGET=html"
 
@@ -32,6 +30,7 @@ install:
         pip install --editable .[doc]
     else
         pip install --editable .
+        pip install --editable ExampleGame
     fi
 
 script:
