@@ -1,0 +1,16 @@
+for this particular pull request to be complete:
+
+    - we should be able to specify a 'world' (something that creates the
+      initial world state) on the command line
+
+        - possible options for this:
+
+            1. a python file
+            2. a fully-qualified module name
+            3. a twisted plugin
+
+    - some basic tests need to be added for the stuff in __main__
+
+    - the README needs to be updated.
+
+
