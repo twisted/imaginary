@@ -21,7 +21,7 @@ here, if you want to make any serious progress, you will want to join the IRC
 channel "#imaginary" on chat.freenode.net and start asking questions.  If you
 are curious about what needs to be done, have a look here:
 
-    http://tinyurl.com/2tuo9o
+    https://github.com/twisted/imaginary/issues
 
 The first step in configuring a new installation of Imaginary will normally be
 creating a new Mantissa database.
