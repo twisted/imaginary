@@ -10,6 +10,9 @@ reachability.
 """
 
 from zope.interface import implements
+
+from characteristic import with_cmp, with_init, attributes
+
 from epsilon.structlike import record
 
 from imaginary.iimaginary import (
@@ -18,19 +21,26 @@ from imaginary.iimaginary import (
 
 
 
-class Link(record("source target")):
+@attributes(["source", "target", "annotations"], create_init=False)
+class Link(object):
     """
     A L{Link} is a connection between two L{Idea}s in a L{Path}.
 
-    @ivar source: the idea that this L{Link} originated from.
-    @type source: L{Idea}
-
-    @ivar target: the idea that this L{Link} refers to.
-    @type target: L{Idea}
+    @ivar annotations: The domain-specific simulation annotations that apply to
+        this link.
+    @type annotations: L{list}
     """
 
-    def __init__(self, *a, **k):
-        super(Link, self).__init__(*a, **k)
+    def __init__(self, source, target):
+        """
+        @param source: the idea that this L{Link} originated from.
+        @type source: L{Idea}
+
+        @param target: the idea that this L{Link} refers to.
+        @type target: L{Idea}
+        """
+        self.source = source
+        self.target = target
         self.annotations = []
 
 
@@ -52,9 +62,16 @@ class Link(record("source target")):
 
 
 
-class Path(record('links')):
+@with_cmp(["links"])
+@with_init(["links"])
+class Path(object):
     """
     A list of L{Link}s.
+
+    @ivar links: A L{list} of L{Link}s describing a path through the simulation
+        graph.  The order is significant.  The target of each link is the
+        source of the subsequent link.
+    @type links: L{list} of L{Link}s
     """
 
     def of(self, interface):
@@ -65,6 +82,21 @@ class Path(record('links')):
         for link in self.links:
             for annotation in link.of(interface):
                 yield annotation
+
+
+    def eachSubPath(self):
+        """
+        Iterate over each path which is a prefix of this path.
+
+        @return: A generator which yields L{Path} instances.  The first
+            instance yielded is a L{Path} with only the first L{Link} of this
+            path.  The second instance yielded has the first and second
+            L{Link}s of this path.  This pattern continues until a L{Path} with
+            the same L{Links} as this L{Path} is yielded.
+
+        """
+        for x in range(1, len(self.links) + 1):
+            yield Path(links=self.links[:x])
 
 
     def eachTargetAs(self, interface):
@@ -111,7 +143,7 @@ class Path(record('links')):
         """
         Create a new path, extending this one by one new link.
         """
-        return Path(self.links + [link])
+        return Path(links=self.links + [link])
 
 
     def eachSubPath(self):
@@ -273,12 +305,12 @@ class Idea(record("delegate linkers annotators")):
         if path is None:
             # Special case: we only get a self->self link if we are the
             # beginning _and_ the end.
-            path = Path([])
-            selfLink = Link(self, self)
+            path = Path(links=[])
+            selfLink = Link(source=self, target=self)
             self._annotateOneLink(selfLink)
             finalPath = path.to(selfLink)
         else:
-            finalPath = Path(path.links[:])
+            finalPath = Path(links=path.links[:])
             self._annotateOneLink(finalPath.links[-1])
 
         result = retriever.retrieve(finalPath)
