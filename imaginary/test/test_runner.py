@@ -72,7 +72,7 @@ class WindowSizing(TestCase):
 
         setTerminalSize(leader, 234, 567)
         player = Player(actor)
-        textServer = ConsoleTextServer(player, follower, Deferred())
+        textServer = ConsoleTextServer(player, follower)
         terminalProtocol = ServerProtocol(lambda: textServer)
         self.assertIdentical(player.proto, None)
         terminalProtocol.makeConnection(StringTransport())

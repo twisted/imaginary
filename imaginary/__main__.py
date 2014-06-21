@@ -17,6 +17,7 @@ from twisted.python.log import startLogging
 from twisted.internet.stdio import StandardIO
 from twisted.conch.insults.insults import ServerProtocol
 from twisted.internet.task import react
+from twisted.internet.defer import Deferred
 
 from imaginary.wiring.player import Player
 from imaginary.world import ImaginaryWorld
@@ -48,10 +49,10 @@ class ConsoleTextServer(TextServerBase, object):
     """
     state = b'COMMAND'
 
-    def __init__(self, player, terminalFD, done):
+    def __init__(self, player, terminalFD):
         self.player = player
         self.terminalFD = terminalFD
-        self.done = done
+        self.done = Deferred()
 
     def connectionMade(self):
         super(ConsoleTextServer, self).connectionMade()
@@ -69,7 +70,7 @@ def makeTextServer(reactor):
     world = ImaginaryWorld(store=store)
     actor = world.create("player")
 
-    tsb = ConsoleTextServer(Player(actor), sys.stdout.fileno())
+    tsb = ConsoleTextServer(Player(actor), sys.__stdin__.fileno())
     def winchAccess(signum, frame):
         reactor.callFromThread(tsb.terminalSize, *getTerminalSize()[::-1])
     signal.signal(signal.SIGWINCH, winchAccess)
