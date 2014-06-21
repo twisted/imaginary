@@ -17,11 +17,11 @@ from imaginary.world import ImaginaryWorld
 from imaginary.wiring.terminalui import TextServerBase
 from twisted.conch.stdio import runWithProtocol
 
-def getTerminalSize():
+def getTerminalSize(terminalFD):
     """
     Get the height and width of the terminal, in characters.
     """
-    winsz = fcntl.ioctl(0, tty.TIOCGWINSZ, b'12345678')
+    winsz = fcntl.ioctl(terminalFD, tty.TIOCGWINSZ, b'12345678')
     winSize = struct.unpack(
         b'4H', winsz
     )
