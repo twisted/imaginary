@@ -31,17 +31,26 @@ def getTerminalSize(terminalFD):
 
 class ConsoleTextServer(TextServerBase, object):
     """
-    Sigh.
+    A L{ConsoleTextServer} is a terminal-based view onto an Imaginary world,
+    from the perspective of a given player.
+
+    As it is designed for a console, it gets terminal size from its protocol,
+    and stops the reactor when complete.
+
+    @ivar player: The player which will be given life from the terminal's
+        input.
+    @type player: L{imaginary.wiring.Player}
     """
     state = b'COMMAND'
 
-    def __init__(self, player):
+    def __init__(self, player, terminalFD):
         self.player = player
+        self.terminalFD = terminalFD
 
     def connectionMade(self):
         super(ConsoleTextServer, self).connectionMade()
         self.player.setProtocol(self)
-        height, width = getTerminalSize()
+        height, width = getTerminalSize(self.terminalFD)
         self.terminalSize(width, height)
 
     def connectionLost(self, reason):
@@ -57,7 +66,7 @@ def main():
     actor = world.create("player")
 
     def makeTextServer():
-        tsb = ConsoleTextServer(Player(actor))
+        tsb = ConsoleTextServer(Player(actor), sys.stdout.fileno())
         from twisted.internet import reactor
         def winchAccess(signum, frame):
             reactor.callFromThread(tsb.terminalSize, *getTerminalSize()[::-1])
