@@ -22,6 +22,7 @@ from twisted.internet.defer import Deferred
 from imaginary.wiring.player import Player
 from imaginary.world import ImaginaryWorld
 from imaginary.wiring.terminalui import TextServerBase
+from imaginary.objects import Actor
 
 def getTerminalSize(terminalFD):
     """
@@ -65,12 +66,30 @@ class ConsoleTextServer(TextServerBase, object):
 
 
 
-def makeTextServer(reactor):
-    store = Store()
-    world = ImaginaryWorld(store=store)
-    actor = world.create("player")
+def loadWorld(worldName, store):
+    with open(worldName, "rb") as f:
+        codeobj = compile(f.read(), worldName, "exec")
+        namespace = {}
+        eval(codeobj, namespace, namespace)
+        return namespace['world'](store)
 
-    tsb = ConsoleTextServer(Player(actor), sys.__stdin__.fileno())
+
+
+def findActorThing(store):
+    return store.findUnique(Actor).thing
+
+
+
+def makeTextServer(reactor, world=None):
+    store = Store()
+    if world is not None:
+        world = loadWorld(world, store)
+        actorThing = findActorThing(store)
+    else:
+        world = ImaginaryWorld(store=store)
+        actorThing = world.create("player")
+
+    tsb = ConsoleTextServer(Player(actorThing), sys.__stdin__.fileno())
     def winchAccess(signum, frame):
         reactor.callFromThread(tsb.terminalSize, *getTerminalSize()[::-1])
     signal.signal(signal.SIGWINCH, winchAccess)
@@ -78,11 +97,11 @@ def makeTextServer(reactor):
 
 
 
-def runTextServer(reactor):
+def runTextServer(reactor, *argv):
     """
     Run a L{ConsoleTextServer}.
     """
-    textServer = makeTextServer(reactor)
+    textServer = makeTextServer(reactor, *argv)
     StandardIO(ServerProtocol(lambda: textServer))
     return textServer.done
 
