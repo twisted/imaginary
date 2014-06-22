@@ -146,12 +146,6 @@ class Path(object):
         return Path(links=self.links + [link])
 
 
-    def eachSubPath(self):
-        # TODO: TEST & DOC
-        for x in range(1, len(self.links) + 1):
-            yield Path(self.links[:x])
-
-
     def __repr__(self):
         """
         @return: an expanded pretty-printed representation of this Path,
