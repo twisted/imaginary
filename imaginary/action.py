@@ -379,10 +379,10 @@ class VisibleStuff(object):
         return self._targetImplementsAny(path, IVisible, IExit)
 
 
-    def retrieve(self, path):
-        if not self._possiblyVisible(path):
-            return None
-
+    def _namedLookTargetPath(self, path):
+        """
+        
+        """
         # Inspect all of the link targets to find a visible thing with
         # the right name.  Also, as a special case, inspect the source
         # of the first link - it is not the target of any other link in
@@ -399,40 +399,61 @@ class VisibleStuff(object):
                 # Presumably *this* also needs to be visible, but do we
                 # need to check that somehow?
                 if isKnownTo(self.player, subPath, self.targetName):
-                    break
-                # else:
-                #     print(subPath, "is not known as", self.targetName)
+                    return subPath
 
-        else:
-            # We didn't find a visible nameable thing known as the
-            # target name.  Guess this path is not relevant.
-            # print("No nameable", path)
-            return None
+        return None
 
-        # If the remaining path goes up to a location and then back
-        # down to that location's contents, we don't care about that.
-        # In other words if you are sitting in a chair or standing in a
-        # room maybe that will be interesting to render in the
-        # description (and if not, that's the description-renderer's
-        # call to make: the observer *can* see that you're there) but
-        # if there's a thing next to you in the chair you're sitting
-        # in, the observer won't see that when they're looking at
-        # *you*.
+
+    def _turnsAround(self, path):
+        """
+        Determine if a path goes "out" and then "in".
+
+        If you're looking at a box on a table, and there's a knife on the table
+        next to the box, you want to be able to see the box->table relationship
+        (the box is on the table, and that might be relevant to its
+        description) but you don't want to see the knife at all.
+
+        The box->table link will have an ILocationRelationship annotation on
+        it, and the table->knife link will have an IContainmentRelationship
+        annotation on it, so any path which has those two annotations in
+        sequence "turns around" and goes back out and then in.  This method
+        detects that type of path.
+
+        @note: The inverse relationship, IContainmentRelationship followed by
+            ILocationRelationship, is not something that we need to detect,
+            because objects (should) only have one ILocationRelationship; they
+            are only in one place at a time.  Therefore
+            contents->container->contents would be a cycle, and the results of
+            obtain are acyclic.
+        """
         goneOut = False
-        for subPath in subPathIter:
-            link = subPath.links[-1]
+        for link in path.links:
             lr = list(link.of(ILocationRelationship))
             cr = list(link.of(IContainmentRelationship))
-            # print("relationships:", lr, cr)
             if lr:
-                # print("going out", link)
                 goneOut = True
             if cr:
                 if goneOut:
-                    # print("gone out after gone in?", path, subPath)
-                    return
+                    return True
+        return False
 
-        # Also re-insert use of CanSee retriever
+
+    def retrieve(self, path):
+        if not self._possiblyVisible(path):
+            return None
+
+        targetPath = self._namedLookTargetPath(path)
+
+        if targetPath is None:
+            # We didn't find a visible nameable thing known as the target name.
+            # Guess this path is not relevant.
+            return None
+
+        remainingPath = Path(links=path.links[len(targetPath.links):])
+        if self._turnsAround(remainingPath):
+            # We don't want to consider other contents of our target's
+            # location.
+            return None
 
         # Also make IVisible a better interface - methods for
         # describing the object in different ways.  short name, longer
@@ -442,12 +463,12 @@ class VisibleStuff(object):
         # And refactor the crazy duplication of code and effort between
         # the retriever and the post-processing loop to construct
         # buckets below.
-        return (theThing, path)
+        return (targetPath.links[-1].target.delegate, path)
 
 
     def objectionsTo(self, path, result):
         """
-        don't object
+        
         """
         for lighting in path.of(ILitLink):
             if not lighting.isItLit(path, result):
