@@ -2,7 +2,7 @@ from twisted.trial import unittest
 
 from axiom import store
 
-from imaginary import iimaginary, objects, garments, language
+from imaginary import iimaginary, objects, garments, language, action
 from imaginary.eimaginary import ActionFailure
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
@@ -49,6 +49,16 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
                                                name=u"pair of lacy underwear")
 
 
+    def visualizeDaisy(self):
+        """
+            
+        """
+        [description] = action.visualizations(
+            self.daisy,
+            lambda path: path.targetAs(iimaginary.IThing) is self.daisy)
+        return description
+
+
     def _creationTest(self, garment):
         self.failUnless(
             iimaginary.IClothing.providedBy(iimaginary.IClothing(garment)))
@@ -73,7 +83,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))
 
-        description = self.daisy.visualize()
+        description = self.visualizeDaisy()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u'[ daisy ]\n'
@@ -86,7 +96,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
             iimaginary.IClothing(self.dukes))
         iimaginary.IClothingWearer(self.daisy).takeOff(
             iimaginary.IClothing(self.dukes))
-        description = self.daisy.visualize()
+        description = self.visualizeDaisy()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u'[ daisy ]\n'
@@ -103,7 +113,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         wearer.putOn(iimaginary.IClothing(self.dukes))
         wearer.takeOff(iimaginary.IClothing(self.dukes))
         wearer.takeOff(iimaginary.IClothing(self.undies))
-        description = self.daisy.visualize()
+        description = self.visualizeDaisy()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u'[ daisy ]\n'
@@ -146,7 +156,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
     def testPersonWearsPantsAndShirt(self):
-        description = self.daisy.visualize()
+        description = self.visualizeDaisy()
 
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))
@@ -161,7 +171,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
     def testPersonWearsUnderpantsAndPants(self):
-        description = self.daisy.visualize()
+        description = self.visualizeDaisy()
 
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.undies))
@@ -176,7 +186,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
     def testPersonWearsPantsAndFailsAtPuttingOnUnderpants(self):
-        description = self.daisy.visualize()
+        description = self.visualizeDaisy()
 
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))

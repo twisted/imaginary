@@ -339,17 +339,32 @@ class LookAround(Action):
                        actorMessage=concept).broadcast()
 
 
-# A specialized retriever that is really good at finding stuff *this*
-# action wants to be able to see.
+
 @implementer(IRetriever)
 class VisibleStuff(object):
+    """
+    L{VisibleStuff} is an L{IRetriever} which retrieves 2-tuples where the
+    first element is an object that a simulation entity might be visually
+    focusing on (an L{IVisible}, the path), and the second element is a L{Path}
+    to a subsidary element of that visible object.  For example, when looking
+    at a room, the room itself will be the first element of such a tuple, and
+    the L{Path}s to the contents of that room and the exits from that room will
+    be the second elements.
+    """
 
-    def __init__(self, player, targetName):
-        self.player = player
-        self.targetName = targetName
+    def __init__(self, isPathTargetPredicate):
+        """
+        @param isPathTargetPredicate: A callable taking a L{Path} and returning
+            L{True} if the given L{Path} points at something which the
+            retriever should consider a visual focus, or L{False} if not.
+        """
+        self._isPathTargetPredicate = isPathTargetPredicate
 
 
     def shouldKeepGoing(self, path):
+        """
+        Always keep going; stopping is the responsibility of another retriever.
+        """
         return True
 
 
@@ -379,9 +394,16 @@ class VisibleStuff(object):
         return self._targetImplementsAny(path, IVisible, IExit)
 
 
-    def _namedLookTargetPath(self, path):
+    def _lookTargetPath(self, path):
         """
-        
+        Find the first target in the given path for which the target predicate
+        returns True.
+
+        @param path: The L{Path} to consider.
+
+        @return: a L{Path} which is a prefix of C{path}, whose target satisfies
+            the path target predicate given to this L{VisibleStuff}'s
+            constructor.
         """
         # Inspect all of the link targets to find a visible thing with
         # the right name.  Also, as a special case, inspect the source
@@ -392,13 +414,11 @@ class VisibleStuff(object):
                  target=path.links[0].source)] + path.links)
         subPathIter = iter(pathWithSource.eachSubPath())
         for subPath in subPathIter:
-            link = subPath.links[-1]
             if subPath.targetAs(IVisible) is not None:
-                theThing = link.target.delegate
                 # This is the thing that the player has named.
                 # Presumably *this* also needs to be visible, but do we
                 # need to check that somehow?
-                if isKnownTo(self.player, subPath, self.targetName):
+                if self._isPathTargetPredicate(subPath):
                     return subPath
 
         return None
@@ -440,9 +460,11 @@ class VisibleStuff(object):
 
     def retrieve(self, path):
         if not self._possiblyVisible(path):
+            # If this path points at something which is neither visible, nor a
+            # component of a visual thing, skip it.
             return None
 
-        targetPath = self._namedLookTargetPath(path)
+        targetPath = self._lookTargetPath(path)
 
         if targetPath is None:
             # We didn't find a visible nameable thing known as the target name.
@@ -455,11 +477,6 @@ class VisibleStuff(object):
             # location.
             return None
 
-        # Also make IVisible a better interface - methods for
-        # describing the object in different ways.  short name, longer
-        # description, etc.  basically, describe the object in various
-        # different contexts.
-        #
         # And refactor the crazy duplication of code and effort between
         # the retriever and the post-processing loop to construct
         # buckets below.
@@ -468,12 +485,49 @@ class VisibleStuff(object):
 
     def objectionsTo(self, path, result):
         """
-        
+        Object to any paths which are not illuminated.
         """
         for lighting in path.of(ILitLink):
             if not lighting.isItLit(path, result):
                 tmwn = lighting.whyNotLit()
                 yield tmwn
+
+
+def visualizations(viewingThing, predicate):
+    """
+    Some of the objects we find are actually sensible targets of the look
+    action.  They have a matching name or whatever.  Other things are just
+    reachable from *those* targets.  We need to sort all that out.  Create a
+    collection that maps the look action target items to the paths to all of
+    the things reachable from those things.
+
+    This lets us figure out if there is ambiguity (are there multiple look
+    action targets?  if so there is ambiguity and gets the objects into a shape
+    some other code will have a chance of rendering nicely later.)
+
+    @return: a L{list} of L{IConcept}
+    """
+    paths = viewingThing.obtainOrReportWhyNot(
+        Proximity(
+            3.0,
+            VisibleStuff(predicate)
+        )
+    )
+
+    buckets = {} # map nameable to list of paths
+    for (it, path) in paths:
+        buckets.setdefault(it, []).append(path)
+
+    choices = []
+    for it, paths in buckets.items():
+        paths.sort(key=lambda x: len(x.links))
+        # replicated logic from CanSee...
+        litlinks = list(paths[0].of(ILitLink))
+        if litlinks:
+            litThing = list(path.eachTargetAs(IThing))[-1]
+            it = litlinks[-1].applyLighting(litThing, it, IVisible)
+        choices.append(it.visualizeWithContents(paths))
+    return choices
 
 
 
@@ -500,7 +554,7 @@ class LookAt(TargetAction):
 
         @type targetName: C{unicode}
 
-        @return: A list of visible objects.
+        @return: A list of the results of C{visualizeWithContents}.
 
         @rtype: C{list} of L{IVisible}
 
@@ -509,40 +563,9 @@ class LookAt(TargetAction):
             L{imaginary.objects.Thing.obtainOrReportWhyNot} for a description
             of how such reasons may be identified.
         """
+        return visualizations(player,
+                              lambda path: isKnownTo(player, path, targetName))
 
-        # slight workaround for the fact that lists are a bit special above
-        paths = player.obtainOrReportWhyNot(
-            Proximity(
-                3.0,
-                VisibleStuff(player, targetName)
-            )
-        )
-
-        # Some of the objects we find are actually sensible targets of the look
-        # action.  They have a matching name or whatever.  Other things are
-        # just reachable from *those* targets.  We need to sort all that out.
-        # Create a collection that maps the look action target items to the
-        # paths to all of the things reachable from those things.
-
-        # This lets us figure out if there is ambiguity (are there multiple
-        # look action targets?  if so there is ambiguity and gets the objects
-        # into a shape some other code will have a chance of rendering nicely
-        # later.)
-
-        buckets = {} # map nameable to list of paths
-        for (it, path) in paths:
-            buckets.setdefault(it, []).append(path)
-
-        choices = []
-        for it, paths in buckets.items():
-            paths.sort(key=lambda x: len(x.links))
-            # replicated logic from CanSee...
-            litlinks = list(paths[0].of(ILitLink))
-            if litlinks:
-                litThing = list(path.eachTargetAs(IThing))[-1]
-                it = litlinks[-1].applyLighting(litThing, it, IVisible)
-            choices.append(it.visualizeWithContents(paths))
-        return choices
 
 
     def cantFind_target(self, player, name):

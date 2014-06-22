@@ -34,7 +34,7 @@ class DarknessTestCase(unittest.TestCase):
         """
         Assert that the given L{IVisible} provider is a dark room.
         """
-        descr = visible.visualize()
+        descr = visible.visualizeWithContents([])
         expressed = descr.plaintext(self.observer)
         lines = commandutils.flatten(expressed).splitlines()
 

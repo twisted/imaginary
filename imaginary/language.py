@@ -10,6 +10,8 @@ from string import Formatter
 
 from zope.interface import implements, implementer
 
+from characteristic import attributes
+
 from twisted.python.components import registerAdapter
 
 from epsilon import structlike
@@ -132,6 +134,38 @@ class BaseExpress(object):
 
 
 @implementer(IConcept)
+@attributes(["title", "exits", "description", "components"])
+class Description(object):
+
+    def plaintext(self, observer):
+        return flattenWithoutColors(self.vt102(observer))
+
+
+    def vt102(self, observer):
+        title = [T.bold, T.fg.green, u'[ ',
+                 [T.fg.normal, IConcept(self.title).vt102(observer)],
+                 u' ]\n']
+        yield title
+        if self.exits:
+            yield [
+                T.bold, T.fg.green, u'( ', [
+                    T.fg.normal, T.fg.yellow,
+                    iterutils.interlace(
+                        u' ', (
+                            IConcept(exit.name).vt102(observer)
+                            for exit in self.exits))], u' )', u'\n']
+        if self.description:
+            yield (T.fg.green, self.description, u'\n')
+        if self.components:
+            yield iterutils.interlace(
+                u"\n",
+                filter(None,
+                       (component.vt102(observer)
+                        for component in self.components)))
+
+
+
+@implementer(IConcept)
 class DescriptionWithContents(structlike.record("target others")):
     """
     A description of a target with some context.
@@ -161,12 +195,6 @@ class DescriptionWithContents(structlike.record("target others")):
             yield self.target.visualize().vt102(observer)
             return
 
-        title = [T.bold, T.fg.green, u'[ ',
-                 [T.fg.normal, Noun(self.target).shortName().vt102(observer)],
-                 u' ]\n']
-
-        yield title
-
         # TODO: Think about how to do better than this special-case support for
         # IExit.  For example have some powerups on the observer that get a
         # chance to inspect others and do the formatting.
@@ -180,25 +208,13 @@ class DescriptionWithContents(structlike.record("target others")):
             # rooms with exits to other rooms, they'll all show up as on some
             # path here as IExit targets.  Check the exit's source to make sure
             # it is self.target.
-            exit = other.targetAs(IExit)
-            if exit is not None:
-                if exit.shouldEvenAttemptTraversal(observer):
-                    exits.append(exit)
+            anExit = other.targetAs(IExit)
+            if anExit is not None:
+                if anExit.shouldEvenAttemptTraversal(observer):
+                    exits.append(anExit)
                     # print("Found an exit on", other, ":", exit.name)
 
-        exits.sort(key=lambda exit: exit.name)
-
-        if exits:
-            yield [T.bold, T.fg.green, u'( ',
-                   [T.fg.normal, T.fg.yellow,
-                    iterutils.interlace(u' ',
-                                        (IConcept(exit.name).vt102(observer)
-                                         for exit in exits))],
-                   u' )', u'\n']
-
-        description = self.target.description or u""
-        if description:
-            description = (T.fg.green, description, u'\n')
+        exits.sort(key=lambda anExit: anExit.name)
 
         descriptionConcepts = []
 
@@ -206,7 +222,11 @@ class DescriptionWithContents(structlike.record("target others")):
             descriptionConcepts.append(pup.conceptualize())
 
         def index(c):
-            preferredOrder = DescriptionConcept.preferredOrder
+            preferredOrder = [
+                'ExpressCondition',
+                'ExpressClothing',
+                'ExpressSurroundings',
+            ]
             try:
                 return preferredOrder.index(c.__class__.__name__)
             except ValueError:
@@ -215,105 +235,12 @@ class DescriptionWithContents(structlike.record("target others")):
 
         descriptionConcepts.sort(key=index)
 
-        descriptionComponents = []
-        for c in descriptionConcepts:
-            s = c.vt102(observer)
-            if s:
-                descriptionComponents.extend([s, u'\n'])
-
-        if descriptionComponents:
-            descriptionComponents.pop()
-
-        yield description
-        yield descriptionComponents
-
-        # for path in self.others:
-        #     for nameable in path.eachTargetAs(IThing):
-        #         yield u" / "
-        #         yield Noun(nameable).shortName().vt102(observer)
-        #     yield u"\n"
-
-
-
-
-class DescriptionConcept(structlike.record('name description exits others',
-                                           description=u"", exits=(), others=())):
-    """
-    A concept which is expressed as the description of a Thing as well as
-    any concepts which power up that thing for IDescriptionContributor.
-
-    Concepts will be ordered by the C{preferredOrder} class attribute.
-    Concepts not named in this list will appear last in an unpredictable
-    order.
-
-    @ivar name: The name of the thing being described.
-
-    @ivar description: A basic description of the thing being described, the
-        first thing to show up.
-
-    @ivar exits: An iterable of L{IExit}, to be listed as exits in the
-        description.
-
-    @ivar others: An iterable of L{IDescriptionContributor} that will
-        supplement the description.
-    """
-    implements(iimaginary.IConcept)
-
-    # This may not be the most awesome solution to the ordering problem, but
-    # it is the best I can think of right now.  This is strictly a
-    # user-interface level problem.  Only the ordering in the string output
-    # send to the user should depend on this; nothing in the world should be
-    # affected.
-    preferredOrder = ['ExpressCondition',
-                      'ExpressClothing',
-                      'ExpressSurroundings',
-                      ]
-
-    def plaintext(self, observer):
-        return flattenWithoutColors(self.vt102(observer))
-
-
-    def vt102(self, observer):
-        exits = u''
-        if self.exits:
-            exits = [T.bold, T.fg.green, u'( ',
-                     [T.fg.normal, T.fg.yellow,
-                      iterutils.interlace(u' ',
-                                          (exit.name for exit in self.exits))],
-                     u' )', u'\n']
-
-        description = self.description or u""
-        if description:
-            description = (T.fg.green, self.description, u'\n')
-
-        descriptionConcepts = []
-
-        for pup in self.others:
-            descriptionConcepts.append(pup.conceptualize())
-
-        def index(c):
-            try:
-                return self.preferredOrder.index(c.__class__.__name__)
-            except ValueError:
-                # Anything unrecognized goes after anything recognized.
-                return len(self.preferredOrder)
-
-        descriptionConcepts.sort(key=index)
-
-        descriptionComponents = []
-        for c in descriptionConcepts:
-            s = c.vt102(observer)
-            if s:
-                descriptionComponents.extend([s, u'\n'])
-
-        if descriptionComponents:
-            descriptionComponents.pop()
-
-        return [
-            [T.bold, T.fg.green, u'[ ', [T.fg.normal, self.name], u' ]\n'],
-            exits,
-            description,
-            descriptionComponents]
+        yield Description(
+            title=Noun(self.target).shortName(),
+            exits=exits,
+            description=self.target.description,
+            components=descriptionConcepts,
+        ).vt102(observer)
 
 
 

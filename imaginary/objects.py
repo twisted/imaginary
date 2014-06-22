@@ -357,13 +357,18 @@ class Thing(item.Item):
         else:
             exits = ()
 
-        return language.DescriptionConcept(
-            self.name,
-            self.description,
-            exits,
-            # Maybe we should listify this or something; see
+        return language.Description(
+            title=self.name,
+            exits=exits,
+            description=self.description,
+            # Add a test for the listification here:
             # http://divmod.org/trac/ticket/2905
-            self.powerupsFor(iimaginary.IDescriptionContributor))
+            components=list(
+                contributor.conceptualize()
+                for contributor
+                in self.powerupsFor(iimaginary.IDescriptionContributor)
+            )
+        )
 
 
     def visualizeWithContents(self, paths):
@@ -1212,14 +1217,17 @@ class _DarkLocationProxy(structlike.record('thing')):
         """
         Return a L{DescriptionConcept} that tells the player they can't see.
         """
-        return language.DescriptionConcept(
-            u"Blackness",
-            u"You cannot see anything because it is very dark.")
+        return language.Description(
+            title=u"Blackness",
+            exits=None,
+            description=u"You cannot see anything because it is very dark.",
+            components=None
+        )
 
 
     def visualizeWithContents(self, paths):
         """
-        
+
         """
         return self.visualize()
 

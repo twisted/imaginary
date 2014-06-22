@@ -71,3 +71,11 @@ DescriptionWithContents.
     - this should be accomplished by making exits visible things that get
       included in the query result as items in their own right (maybe they
       already are in the graph somewhere, just need to make sure)
+
+
+# Punch List #
+
+- remove visualize() everywhere, the only method on IVisible should be visualizeWithContents
+
+- similarly, remove DescriptionConcept, the only object that performs this task
+should be DescriptionWithContents
