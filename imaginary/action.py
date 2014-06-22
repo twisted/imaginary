@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_look.LookAtTests.test_exitNameEventBroadcasting -*-
+# -*- test-case-name: imaginary.test -*-
 
 from __future__ import print_function
 
@@ -353,26 +353,41 @@ class VisibleStuff(object):
         return True
 
 
-    def retrieve(self, path):
+    def _targetImplementsAny(self, path, *interfaces):
+        """
+        @param path: A L{Path} to inspect.
 
-        # If this is a path to something that can't even be looked at
-        # then it isn't interesting to "look at".  TODO: Unless it is
-        # an exit, then we want it so we can include it in location
-        # descriptions.
-        if (
-                path.targetAs(IVisible) is None
-                and path.targetAs(IExit) is None
-        ):
-            # print("not visible and not exit:", path)
+        @param interfaces: The interfaces for which to check.
+
+        @return: C{True} if the target of C{path} is adaptable to any of the
+            given interfaces.
+        """
+        return any(path.targetAs(interface) is not None for interface in
+                   interfaces)
+
+
+    def _possiblyVisible(self, path):
+        """
+        Determine if this is a path to something that can be looked at or can
+        be a part of a thing that can be looked at (for example, an exit from a
+        location).
+
+        @param path: The L{Path} to consider.
+
+        @return: C{True} if the target might be visible, C{False} otherwise.
+        """
+        return self._targetImplementsAny(path, IVisible, IExit)
+
+
+    def retrieve(self, path):
+        if not self._possiblyVisible(path):
             return None
-        # else:
-        #     print("visible or exit, ok", path)
 
         # Inspect all of the link targets to find a visible thing with
         # the right name.  Also, as a special case, inspect the source
         # of the first link - it is not the target of any other link in
         # the path but it might be the thing we're looking for.
-        pathWithSource = Path([
+        pathWithSource = Path(links=[
             Link(source=Idea(None),
                  target=path.links[0].source)] + path.links)
         subPathIter = iter(pathWithSource.eachSubPath())
