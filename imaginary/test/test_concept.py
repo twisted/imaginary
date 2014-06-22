@@ -1,14 +1,16 @@
-
 """
 Tests for the conversion between abstract objects representing the world or
 changes in the world into concrete per-user-interface content.
 """
 
+from zope.interface import implementer
+from zope.interface.verify import verifyClass
+
 from twisted.trial import unittest
 
 from epsilon import structlike
 
-from imaginary import language, unc, text as T
+from imaginary import language, unc, text as T, iimaginary
 from imaginary.test import commandutils
 
 class FakeThing(object):
@@ -133,7 +135,7 @@ class SharedTextyTests(commandutils.LanguageMixin):
 
 
 
-def _description(title=None, exits=None, description=None, components=None):
+def _description(title=None, exits=(), description=None, components=None):
     """
 
     """
@@ -220,10 +222,23 @@ class PlaintextDescriptionTests(NounTestCase, SharedTextyTests):
         )
 
 
+@implementer(iimaginary.IExit)
 class StubExit(structlike.record("name")):
-    pass
+    def shouldEvenAttemptTraversal(self, thing):
+        """
+        Yes.
+        """
+        return True
 
 
+    def traverse(self, thing):
+        """
+        Don't go anywhere.
+        """
+
+
+
+verifyClass(iimaginary.IExit, StubExit)
 
 class VT102Tests(NounTestCase, SharedTextyTests):
     def format(self, concept):
@@ -259,7 +274,7 @@ class VT102Tests(NounTestCase, SharedTextyTests):
         """
         L{Description.vt102} can be used with an empty string description.
         """
-        description=self.thing.description = u''
+        self.thing.description = u''
         self._assertECMA48Equality(
             self.format(_description(title=self.thing.name,
                                      description=self.thing.description)),

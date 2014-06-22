@@ -326,6 +326,16 @@ class IExit(Interface):
         """
 
 
+    def shouldEvenAttemptTraversal(thing):
+        """
+        Is it plausible for the given thing to attempt a C{traverse} of this
+        L{IExit}?
+
+        @return: C{True} if so, C{False} if not.
+        """
+
+
+
 
 
 class IObstruction(Interface):

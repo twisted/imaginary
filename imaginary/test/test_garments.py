@@ -156,12 +156,12 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
     def testPersonWearsPantsAndShirt(self):
-        description = self.visualizeDaisy()
-
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.blouse))
+
+        description = self.visualizeDaisy()
 
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
@@ -171,12 +171,12 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
     def testPersonWearsUnderpantsAndPants(self):
-        description = self.visualizeDaisy()
-
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.undies))
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))
+
+        description = self.visualizeDaisy()
 
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),

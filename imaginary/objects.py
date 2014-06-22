@@ -25,7 +25,7 @@ from imaginary import iimaginary, eimaginary, text as T, events, language
 
 from imaginary.enhancement import Enhancement as _Enhancement
 
-from imaginary.language import DescriptionWithContents
+from imaginary.language import Description
 
 from imaginary.idea import (
     Idea, Link, Proximity, ProviderOf, AlsoKnownAs, CanSee,
@@ -347,9 +347,9 @@ class Thing(item.Item):
     # IVisible
     def visualize(self):
         """
-        Implement L{IVisible.visualize} to return a
-        L{language.DescriptionConcept} that describes this L{Thing}, including
-        all its L{iimaginary.IDescriptionContributor} powerups.
+        Implement L{IVisible.visualize} to return a L{language.Description}
+        that describes this L{Thing}, including all its
+        L{iimaginary.IDescriptionContributor} powerups.
         """
         container = iimaginary.IContainer(self, None)
         if container is not None:
@@ -375,7 +375,7 @@ class Thing(item.Item):
         """
         
         """
-        return DescriptionWithContents(self, paths)
+        return Description.fromVisualization(self, paths)
 
 
     def isViewOf(self, thing):

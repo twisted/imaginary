@@ -146,14 +146,17 @@ class Description(object):
                  [T.fg.normal, IConcept(self.title).vt102(observer)],
                  u' ]\n']
         yield title
-        if self.exits:
+        exits = list(
+            IConcept(exit.name).vt102(observer)
+            for exit in (self.exits or ())
+            if exit.shouldEvenAttemptTraversal(observer))
+        if exits:
             yield [
                 T.bold, T.fg.green, u'( ', [
                     T.fg.normal, T.fg.yellow,
                     iterutils.interlace(
-                        u' ', (
-                            IConcept(exit.name).vt102(observer)
-                            for exit in self.exits))], u' )', u'\n']
+                        u' ', exits)],
+                    u' )', u'\n']
         if self.description:
             yield (T.fg.green, self.description, u'\n')
         if self.components:
@@ -164,61 +167,37 @@ class Description(object):
                         for component in self.components)))
 
 
-
-@implementer(IConcept)
-class DescriptionWithContents(structlike.record("target others")):
-    """
-    A description of a target with some context.
-
-    @ivar target: an L{IThing}
-
-    @ivar others: some L{Path} objects pointing at objects related to
-        C{target}.
-    """
-
-    def capitalizeConcept():
-        return "Smash the patriarchy"
-
-
-    def plaintext(self, observer):
-        return flattenWithoutColors(self.vt102(observer))
-
-
-    def vt102(self, observer):
+    @classmethod
+    def fromVisualization(cls, target, others):
         """
-        some text
-        """
-        if not IThing.providedBy(self.target):
-            # TODO: in the title bar we put a name, the name is a Noun, Noun
-            # takes an IThing and we might otherwise be passed an IVisible;
-            # this should be fixed.
-            yield self.target.visualize().vt102(observer)
-            return
+        Create a L{Description} from a L{Thing} and some L{Paths} visually
+        related to that L{Thing}.
 
+        @return: A L{Description} comprising C{target} and C{others}.
+        """
         # TODO: Think about how to do better than this special-case support for
         # IExit.  For example have some powerups on the observer that get a
         # chance to inspect others and do the formatting.
         exits = []
-        for other in self.others:
-            # All of self.others are paths that go through self.target so just
+        for other in others:
+            # All of others are paths that go through target so just
             # using targetAs won't accidentally include any exits that aren't
             # for the target room except for the bug mentioned below.
             #
             # TODO: This might show too many exits.  There might be exits to
             # rooms with exits to other rooms, they'll all show up as on some
             # path here as IExit targets.  Check the exit's source to make sure
-            # it is self.target.
+            # it is target.
             anExit = other.targetAs(IExit)
             if anExit is not None:
-                if anExit.shouldEvenAttemptTraversal(observer):
-                    exits.append(anExit)
-                    # print("Found an exit on", other, ":", exit.name)
+                exits.append(anExit)
+                # print("Found an exit on", other, ":", exit.name)
 
         exits.sort(key=lambda anExit: anExit.name)
 
         descriptionConcepts = []
 
-        for pup in self.target.powerupsFor(iimaginary.IDescriptionContributor):
+        for pup in target.powerupsFor(iimaginary.IDescriptionContributor):
             descriptionConcepts.append(pup.conceptualize())
 
         def index(c):
@@ -235,12 +214,12 @@ class DescriptionWithContents(structlike.record("target others")):
 
         descriptionConcepts.sort(key=index)
 
-        yield Description(
-            title=Noun(self.target).shortName(),
+        return cls(
+            title=Noun(target).shortName(),
             exits=exits,
-            description=self.target.description,
+            description=target.description,
             components=descriptionConcepts,
-        ).vt102(observer)
+        )
 
 
 
