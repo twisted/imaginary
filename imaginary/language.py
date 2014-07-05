@@ -134,7 +134,8 @@ class BaseExpress(object):
 
 
 @implementer(IConcept)
-@attributes(["title", "exits", "description", "components"])
+@attributes(["title", "exits", "description", "components", "target"],
+            defaults=dict(target=None))
 class Description(object):
 
     def plaintext(self, observer):
@@ -219,6 +220,7 @@ class Description(object):
             exits=exits,
             description=target.description,
             components=descriptionConcepts,
+            target=target,
         )
 
 
