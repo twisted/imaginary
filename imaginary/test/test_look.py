@@ -1,11 +1,17 @@
 """
 Tests for L{imaginary.action.LookAt} and L{imaginary.action.LookAround}.
 """
+from __future__ import print_function
+
 from twisted.trial.unittest import TestCase
 
-from axiom import store
+from zope.interface import implementer
+
+from characteristic import attributes as has_attributes
+from axiom import store, item, attributes
 
 from imaginary import iimaginary, objects, language, action, events
+from imaginary.enhancement import Enhancement
 from imaginary.world import ImaginaryWorld
 from imaginary.test.commandutils import (
     CommandTestCaseMixin, E, createLocation, flatten)
@@ -90,7 +96,69 @@ class LookAroundTranscriptTests(CommandTestCaseMixin, TestCase):
 
 
 
+
+@implementer(iimaginary.ILitLink)
+@has_attributes(["bear"])
+class BlindToBears(object):
+    def isItLit(self, path, result):
+        schroedingerBear = path.targetAs(iimaginary.IThing)
+        actualBear = self.bear
+        print("Comparing Target")
+        print("    ",schroedingerBear)
+        print("    ",actualBear)
+        if schroedingerBear == actualBear:
+            print("Found the bear, isItLit == False")
+            return False
+        else:
+            return True
+
+    def whyNotLit(self):
+        return BearsWhyNot()
+
+    def applyLighting(self, litThing, it, interface):
+        """
+        Don't ever apply lighting (unless perhaps it's to a bear?).
+        """
+        return it
+
+class BearsWhyNot(object):
+    """
+    
+    """
+    def tellMeWhyNot(self):
+        return u"IT'S A BEAR"
+interfaces = [iimaginary.ILinkAnnotator]
+@implementer(*interfaces)
+class BearBlindness(item.Item, Enhancement):
+    powerupInterfaces = interfaces
+    thing = attributes.reference()
+    bear = attributes.reference()
+
+    def annotationsFor(self, link, idea):
+        yield BlindToBears(bear=self.bear)
+
+
+
 class LookAtTranscriptTests(CommandTestCaseMixin, TestCase):
+    def test_bearBlindness(self):
+        """
+        If I cast a spell on you which makes you unable to see bears, you
+        should not see a bear when you look at the room around you.
+        """
+        bear = objects.Thing(store=self.store,
+                             name=u"Bear",
+                             location=self.location)
+        BearBlindness(store=self.store,
+                      thing=self.player,
+                      bear=bear).applyEnhancement()
+        self._test(
+            "look here",
+            [E("[ Test Location ]"),
+             E("Location for testing."),
+             "Here, you see Observer Player."])
+
+
+
     def test_exits(self):
         objects.Exit.link(self.location, self.location, u"north")
         self._test(
@@ -187,7 +255,4 @@ class LookAtTests(TestCase):
             flatten(evts[0].actorMessage.plaintext(self.context.actor)))
 
 
-
-class LookAroundTests(TestCase):
-    pass
 

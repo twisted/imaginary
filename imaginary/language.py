@@ -1,5 +1,4 @@
-# -*- test-case-name: imaginary.test.test_look -*-
-
+# -*- test-case-name: imaginary.test.test_look.LookAtTranscriptTests.test_bearBlindness -*-
 """
 
 Textual formatting for game objects.
@@ -199,6 +198,13 @@ class Description(object):
         descriptionConcepts = []
 
         for pup in target.powerupsFor(iimaginary.IDescriptionContributor):
+            # TODO: Currently description contributors are doing their own
+            # obtain() calls, losing all the work we just put into the
+            # correctly-originated-perspective results ("others") which we
+            # obtained above.  Instead, this really needs to be passing on
+            # others and allowing these description contributors to simply
+            # determine *how* some subset of "others" is *presented* to the
+            # user, not determining *what* should be presented.
             descriptionConcepts.append(pup.conceptualize())
 
         def index(c):
@@ -214,6 +220,9 @@ class Description(object):
                 return len(preferredOrder)
 
         descriptionConcepts.sort(key=index)
+
+        print("Creating a description for", target.name, "with components",
+              descriptionConcepts)
 
         return cls(
             title=Noun(target).shortName(),
