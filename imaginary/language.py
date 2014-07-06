@@ -173,6 +173,13 @@ class Description(object):
         Create a L{Description} from a L{Thing} and some L{Paths} visually
         related to that L{Thing}.
 
+        @param target: The L{IThing} being described by this L{Description}.
+        @type target: L{IThing}
+
+        @param others: Paths to items that are visible as portions of the
+            target.
+        @type others: L{list} of L{Path <imaginary.idea.Path>}s.
+
         @return: A L{Description} comprising C{target} and C{others}.
         """
         # TODO: Think about how to do better than this special-case support for
