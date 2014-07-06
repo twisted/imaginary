@@ -584,19 +584,18 @@ class Exit(item.Item):
         yield l
 
 
-    def conceptualize(self):
-        return language.ExpressList(
-            [u'the exit to ', language.Noun(self.toLocation).nounPhrase()])
-
-
     def shouldEvenAttemptTraversal(self, observer):
         """
         
         """
         return True
 
-components.registerAdapter(lambda exit: exit.conceptualize(),
-                           Exit, iimaginary.IConcept)
+def _exitAsConcept(exit):
+    return language.ExpressList(
+        [u'the exit to ', language.Noun(exit.toLocation).nounPhrase()])
+
+
+components.registerAdapter(_exitAsConcept, Exit, iimaginary.IConcept)
 
 
 
