@@ -344,36 +344,9 @@ class Thing(item.Item):
         return False
 
 
-    # IVisible
-    def visualize(self):
-        """
-        Implement L{IVisible.visualize} to return a L{language.Description}
-        that describes this L{Thing}, including all its
-        L{iimaginary.IDescriptionContributor} powerups.
-        """
-        container = iimaginary.IContainer(self, None)
-        if container is not None:
-            exits = list(container.getExits())
-        else:
-            exits = ()
-
-        return language.Description(
-            title=self.name,
-            exits=exits,
-            description=self.description,
-            # Add a test for the listification here:
-            # http://divmod.org/trac/ticket/2905
-            components=list(
-                contributor.conceptualize()
-                for contributor
-                in self.powerupsFor(iimaginary.IDescriptionContributor)
-            )
-        )
-
-
     def visualizeWithContents(self, paths):
         """
-        
+        Visualize this L{Thing} via L{Description.fromVisualization}.
         """
         return Description.fromVisualization(self, paths)
 
@@ -1212,9 +1185,9 @@ class _DarkLocationProxy(structlike.record('thing')):
 
     implements(iimaginary.IVisible)
 
-    def visualize(self):
+    def visualizeWithContents(self, paths):
         """
-        Return a L{DescriptionConcept} that tells the player they can't see.
+        Return a L{language.Description} that tells the player they can't see.
         """
         return language.Description(
             title=u"Blackness",
@@ -1223,12 +1196,6 @@ class _DarkLocationProxy(structlike.record('thing')):
             components=None
         )
 
-
-    def visualizeWithContents(self, paths):
-        """
-
-        """
-        return self.visualize()
 
 
     def isViewOf(self, thing):

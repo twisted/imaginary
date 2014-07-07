@@ -13,12 +13,8 @@ from characteristic import attributes
 
 from twisted.python.components import registerAdapter
 
-from epsilon import structlike
-
 from imaginary import iimaginary, iterutils, text as T
 from imaginary.iimaginary import IConcept, IExit
-from imaginary.iimaginary import IThing
-
 
 class Gender(object):
     """

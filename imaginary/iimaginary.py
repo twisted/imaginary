@@ -570,15 +570,6 @@ class IVisible(Interface):
     A thing which can be seen.
     """
 
-    def visualize():
-        """
-        Return an IConcept which represents the visible aspects of this
-        visible thing.
-
-        TODO: replace entirely with visualizeWithConcepts.
-        """
-
-
     def visualizeWithContents(pathsToContents):
         """
         Return an IConcept which represents the visible aspects of this visible

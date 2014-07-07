@@ -335,19 +335,12 @@ class Rune(object):
 
     implements(iimaginary.IVisible, iimaginary.INameable)
 
-    def visualize(self):
+    def visualizeWithContents(self, paths):
         """
         Return an L{ExpressString} with a sample string that can be tested
         against.
         """
         return ExpressString("A totally mystical rune.")
-
-
-    def visualizeWithContents(self, paths):
-        """
-        
-        """
-        return self.visualize()
 
 
     def knownTo(self, observer, asName):

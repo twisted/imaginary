@@ -331,7 +331,7 @@ class LookAround(Action):
             # XXX what if my location is furniture?  I want to see '( Foo,
             # sitting in the Bar )', not '( Bar )'.
             if visible.isViewOf(ultimateLocation):
-                concept = visible.visualize()
+                concept = visible.visualizeWithContents([])
                 break
         else:
             concept = u"You are floating in an empty, formless void."
