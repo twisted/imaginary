@@ -505,6 +505,14 @@ def visualizations(viewingThing, predicate):
     action targets?  if so there is ambiguity and gets the objects into a shape
     some other code will have a chance of rendering nicely later.)
 
+    @param viewingThing: The observer
+    @type viewingThing: L{IThing}
+
+    @param predicate: A callable which takes a L{Path} and returns L{True} if
+        the targe tof that L{Path} is relevant as a focus of this
+        visualization, L{False} otherwise.
+    @type predicate: L{callable} taking L{Path} returning L{bool}
+
     @return: a L{list} of L{IConcept}
     """
     paths = viewingThing.obtainOrReportWhyNot(
