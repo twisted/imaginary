@@ -194,7 +194,6 @@ class Description(object):
             anExit = other.targetAs(IExit)
             if anExit is not None:
                 exits.append(anExit)
-                # print("Found an exit on", other, ":", exit.name)
 
         exits.sort(key=lambda anExit: anExit.name)
 
@@ -223,9 +222,6 @@ class Description(object):
                 return len(preferredOrder)
 
         descriptionConcepts.sort(key=index)
-
-        print("Creating a description for", target.name, "with components",
-              descriptionConcepts)
 
         return cls(
             title=Noun(target).shortName(),

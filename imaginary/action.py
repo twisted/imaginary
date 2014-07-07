@@ -490,7 +490,6 @@ class VisibleStuff(object):
         for lighting in path.of(ILitLink):
             if not lighting.isItLit(path, result):
                 tmwn = lighting.whyNotLit()
-                print("It is not lit because", tmwn)
                 yield tmwn
 
 

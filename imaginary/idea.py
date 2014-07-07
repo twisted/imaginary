@@ -312,7 +312,6 @@ class Idea(record("delegate linkers annotators")):
         reasonsWhyNot |= objections
         if result is not None:
             if not objections:
-                print("result is", result, "and no objections")
                 yield result
 
         for link in self._applyAnnotators(self._allLinks()):

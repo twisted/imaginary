@@ -246,7 +246,6 @@ class VT102Tests(NounTestCase, SharedTextyTests):
 
 
     def unparse(self, s):
-        print repr(s)
         return list(unc.parser(unc.tokenize(s)))
 
     def _assertECMA48Equality(self, a, b):

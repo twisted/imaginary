@@ -1273,7 +1273,6 @@ class _PossiblyDark(structlike.record("lighting")):
         litThing = list(path.eachTargetAs(iimaginary.IThing))[-1]
         if _eventuallyContains(self.lighting.thing, litThing):
             val = litThing is self.lighting.thing
-            #print 'checking if', litThing, 'is lit:', val
             return val
         else:
             return True

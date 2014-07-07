@@ -103,11 +103,7 @@ class BlindToBears(object):
     def isItLit(self, path, result):
         schroedingerBear = path.targetAs(iimaginary.IThing)
         actualBear = self.bear
-        print("Comparing Target")
-        print("    ",schroedingerBear)
-        print("    ",actualBear)
         if schroedingerBear == actualBear:
-            print("Found the bear, isItLit == False")
             return False
         else:
             return True
