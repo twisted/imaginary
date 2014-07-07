@@ -327,16 +327,15 @@ class LookAround(Action):
         ultimateLocation = player.thing.location
         while ultimateLocation.location is not None:
             ultimateLocation = ultimateLocation.location
-        for visible in player.thing.findProviders(iimaginary.IVisible, 1):
-            # XXX what if my location is furniture?  I want to see '( Foo,
-            # sitting in the Bar )', not '( Bar )'.
-            if visible.isViewOf(ultimateLocation):
-                concept = visible.visualizeWithContents([])
-                break
+        targets = visualizations(player.thing,
+                                 lambda viewTarget:
+                                 viewTarget.targetAs(IThing) is ultimateLocation)
+        if targets:
+            target = targets[0]
         else:
-            concept = u"You are floating in an empty, formless void."
+            target = u"You are floating in an empty, formless void."
         events.Success(actor=player.thing,
-                       actorMessage=concept).broadcast()
+                       actorMessage=target).broadcast()
 
 
 
