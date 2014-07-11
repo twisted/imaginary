@@ -1,7 +1,12 @@
-This document is mainly concerned with getting an Imaginary server up and
-running, to the point where you can edit the code and see things change.  Some
-familiarity with Python, Twisted, Nevow, Axiom, and Mantissa are all helpful,
-but we will try to make sure they aren't really required just to get started.
+This document is mainly concerned with getting a multi-player Imaginary
+*server* up and running, to the point where you can edit the code and see
+things change.  If you are just getting started with writing code for
+Imaginary, you probably want to see the far simpler getting-started guide in
+``README.rst``.
+
+Some familiarity with Python, Twisted, Nevow, Axiom, and Mantissa are all
+helpful, but we will try to make sure they aren't really required just to get
+started.
 
 While we have tried to make it possible to get a taste of what is possible
 here, if you want to make any serious progress, you will want to join the IRC
@@ -16,7 +21,9 @@ The following instructions assume you have already set up installed Twisted, all
 
 First run the following command:
 
-      axiomatic mantissa
+.. code-block:: console
+
+    $ axiomatic mantissa
 
 And answer the prompts appropriately. Please take note of the new password you
 enter for the "admin" user, as you will need it in a few steps.
@@ -27,7 +34,9 @@ Mantissa, in this case, Imaginary), create users, and grant them
 privileges. You can start this webserver with the following command: (the -n
 option will run it in the foreground on the current terminal)
 
-    axiomatic start -n
+.. code-block:: console
+
+    $ axiomatic start -n
 
 You should now be able to access this server at http://localhost:8080 in your
 web browser.
@@ -58,7 +67,9 @@ Ideally, you will now be able to ssh into your Imaginary server. In a new
 terminal, ssh to localhost on the Mantissa server's SSH port (by default, this
 is 8022).  For example:
 
-         ssh -p 8022 admin@localhost@localhost
+.. code-block:: console
+
+    $ ssh -p 8022 admin@localhost@localhost
 
 Note the odd username/host specifier - "admin@localhost" is the user, and the
 last "localhost" specifies the host to connect to.
