@@ -45,7 +45,7 @@ To load that world, run
 
 .. code-block:: console
 
-   $ python -m imaginary docs/examples/example_world.py
+   $ python -m imaginary doc/examples/example_world.py
 
 A "world" for a single-player game is simply a Python file with a function
 called ``world`` in it, that returns an instance of an ``ImaginaryWorld``.  The
