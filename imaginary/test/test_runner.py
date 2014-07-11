@@ -86,24 +86,31 @@ class WindowSizing(TestCase):
         L{withSavedTerminalSettings} saves and then restores the settings for
         the terminal that it is given.
         """
+        CFLAG = 2
+        LFLAG = 3
         leader, follower = makeTerminal(self)
+        def attributesEqual(a, b):
+            # lflags seem to change randomly, and I'm not sure why, so let's
+            # exclude them from the test (we never change them in mangle()
+            # anyway).
+            a[LFLAG] = 0
+            b[LFLAG] = 0
+            self.assertEqual(a, b)
 
         attrs = termios.tcgetattr(follower)
-        [iflag, oflag, cflag, lflag, ispeed, ospeed, cc] = attrs
+        chattrs = attrs[:]
+        # Change one flag, just to change it.
+        chattrs[CFLAG] ^= termios.INLCR
         def mangle():
             os.write(follower, b"HELLO")
-            termios.tcsetattr(follower, termios.TCSANOW,
-                              [iflag, oflag, cflag, lflag,
-                               ispeed + 1000, ospeed + 1000, cc])
+            termios.tcsetattr(follower, termios.TCSANOW, chattrs)
+            mangle.attrs = termios.tcgetattr(follower)
             mangle.run = True
         mangle.run = False
         withSavedTerminalSettings(follower, mangle)
         self.assertEqual(mangle.run, True)
+        # Sanity check: did the attributes change in the first place?
+        attributesEqual(mangle.attrs, chattrs)
         newattrs = termios.tcgetattr(follower)
-        LFLAGS = 3
-        # These seem to change randomly, and I'm not sure why, so let's exclude
-        # them from the test (we never changed them in mangle() anyway).
-        newattrs[LFLAGS] = 0
-        attrs[LFLAGS] = 0
-        self.assertEqual(newattrs, attrs)
+        attributesEqual(newattrs, attrs)
         self.assertEqual(os.read(leader, 1024), b"HELLO" + CLEAR_SCREEN)
