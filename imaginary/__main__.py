@@ -1,3 +1,4 @@
+# -*- test-case-name: imaginary.test.test_runner -*-
 """
 Run a single-player Imaginary world.
 """
