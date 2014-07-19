@@ -51,6 +51,13 @@ class ConsoleTextServer(TextServerBase, object):
     @ivar player: The player which will be given life from the terminal's
         input.
     @type player: L{imaginary.wiring.Player}
+
+    @ivar terminalFD: The file descriptor of the terminal from which to get the
+        size of the player.
+    @type terminalFD: L{int}
+
+    @ivar done: A L{Deferred} firing when the connection is lost.
+    @type done: L{Deferred}
     """
     state = b'COMMAND'
 
@@ -59,18 +66,40 @@ class ConsoleTextServer(TextServerBase, object):
         self.terminalFD = terminalFD
         self.done = Deferred()
 
+
     def connectionMade(self):
+        """
+        The terminal interaction has started; size the displayed terminal
+        according to the current size of C{self.terminalFD}.
+        """
         super(ConsoleTextServer, self).connectionMade()
         self.player.setProtocol(self)
         height, width = getTerminalSize(self.terminalFD)
         self.terminalSize(width, height)
 
+
     def connectionLost(self, reason):
+        """
+        The connection is complete; fire L{self.done}.
+        """
         self.done.callback(None)
 
 
 
 def loadWorld(worldName, store):
+    """
+    Load an imaginary world from a file.
+
+    The specified file should be a Python file defining a global callable named
+    C{world}, taking an axiom L{Store} object and returning an
+    L{ImaginaryWorld}.
+
+    @param worldName: The path name to a Python file containing a world.
+    @type worldName: L{str}
+
+    @param store: The axiom data store to read the world into.
+    @type store: L{Store}
+    """
     with open(worldName, "rb") as f:
         codeobj = compile(f.read(), worldName, "exec")
         namespace = {}
