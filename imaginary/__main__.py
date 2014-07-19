@@ -40,6 +40,7 @@ def getTerminalSize(terminalFD):
     return ws_row, ws_col
 
 
+
 class ConsoleTextServer(TextServerBase, object):
     """
     A L{ConsoleTextServer} is a terminal-based view onto an Imaginary world,
@@ -156,11 +157,20 @@ CLEAR_SCREEN = b"\r\x1bc\r"
 def withSavedTerminalSettings(fd, blockingCall):
     """
     Save and restore terminal settings for the given file descriptor.
+
+    @param fd: The file descriptor, a PTY, to preserve terminal settings for.
+    @type fd: L{int}
+
+    @param blockingCall: A 0-argument callable that might modify C{fd}'s
+        terminal settings.
+    @type blockingCall: L{callable}
+
+    @return: The result of L{blockingCall}.
     """
     oldSettings = termios.tcgetattr(fd)
     tty.setraw(fd)
     try:
-        blockingCall()
+        return blockingCall()
     finally:
         termios.tcsetattr(fd, termios.TCSANOW, oldSettings)
         os.write(fd, CLEAR_SCREEN)
@@ -168,6 +178,14 @@ def withSavedTerminalSettings(fd, blockingCall):
 
 
 def ifmain(thunk):
+    """
+    If the current module is being run as C{__main__}, then run the decorated
+    function with C{sys.argv[1:]}.  Otherwise, return it.
+
+    @param thunk: A function taking C{argv} to run if it's defined in
+        C{__main__}.
+    @type thunk: L{callable}
+    """
     if __name__ == '__main__':
         thunk(sys.argv[1:])
     return thunk
@@ -176,6 +194,9 @@ def ifmain(thunk):
 
 @ifmain
 def main(argv):
+    """
+    Start logging to a temporary file and then run the main loop.
+    """
     startLogging(file('imaginary-debug.log', 'w'))
     withSavedTerminalSettings(sys.__stdin__.fileno(),
                               lambda: react(runTextServer, argv))
