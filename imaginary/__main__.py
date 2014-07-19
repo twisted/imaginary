@@ -28,6 +28,9 @@ from imaginary.objects import Actor
 def getTerminalSize(terminalFD):
     """
     Get the height and width of the terminal, in characters.
+
+    @param terminalFD: The file descriptor of the terminal to inspect.
+    @type terminalFD: L{int}
     """
     winsz = fcntl.ioctl(terminalFD, tty.TIOCGWINSZ, b'12345678')
     winSize = struct.unpack(
