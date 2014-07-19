@@ -92,7 +92,9 @@ def loadWorld(worldName, store):
 
     The specified file should be a Python file defining a global callable named
     C{world}, taking an axiom L{Store} object and returning an
-    L{ImaginaryWorld}.
+    L{ImaginaryWorld}.  This world (and its attendant L{Store}) should contain
+    only a single L{Actor} instance, which will be used for the player
+    character.
 
     @param worldName: The path name to a Python file containing a world.
     @type worldName: L{str}
@@ -109,6 +111,16 @@ def loadWorld(worldName, store):
 
 
 def findActorThing(store):
+    """
+    Discover the L{Thing} associated with the only L{Actor} in the given
+    L{Store}.
+
+    @param store: An axiom store to query.
+    @type store: L{Store}
+
+    @return: a L{Thing} belonging to an L{Actor}; the L{Actor}'s physical body.
+    @rtype: L{Thing}
+    """
     return store.findUnique(Actor).thing
 
 
