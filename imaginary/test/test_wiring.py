@@ -23,6 +23,43 @@ from axiom.plugins.mantissacmd import Mantissa
 from imaginary.world import ImaginaryWorld
 from imaginary.wiring.textserver import ImaginaryApp
 from xmantissa.plugins.imaginaryoff import imaginaryOffering
+from twisted.test.proto_helpers import StringTransport
+from twisted.conch.insults.insults import ServerProtocol
+
+from characteristic import attributes
+
+@attributes("proto world".split())
+class TestWorld(object):
+    """
+    A fixture for testing a terminal protcol.
+    """
+
+
+
+def buildWorld(testCase):
+    """
+    Build a L{TestWorld}.
+    """
+    # XXX This is too many stores for a unit test to need to create.
+    siteStore = Store(filesdir=FilePath(testCase.mktemp()))
+    Mantissa().installSite(siteStore, u'example.com', u'', False)
+    installOffering(siteStore, imaginaryOffering, {})
+    login = siteStore.findUnique(LoginSystem)
+    account = login.addAccount(u'alice', u'example.com', u'password')
+    userStore = account.avatars.open()
+
+    app = ImaginaryApp(store=userStore)
+    installOn(app, userStore)
+
+    imaginary = login.accountByAddress(u'Imaginary', None).avatars.open()
+    world = imaginary.findUnique(ImaginaryWorld)
+
+    # Alice connects to her own ImaginaryApp (all that is possible at the
+    # moment).
+    viewer = _AuthenticatedShellViewer(getAccountNames(userStore))
+    return TestWorld(proto=app.buildTerminalProtocol(viewer),
+                     world=world)
+
 
 
 class ImaginaryAppTests(TestCase):
@@ -56,24 +93,19 @@ class ImaginaryAppTests(TestCase):
         Imaginary application store, and a list of L{Thing} items shared to the
         role.
         """
-        # XXX This is too many stores for a unit test to need to create.
-        siteStore = Store(filesdir=FilePath(self.mktemp()))
-        Mantissa().installSite(siteStore, u'example.com', u'', False)
-        installOffering(siteStore, imaginaryOffering, {})
-        login = siteStore.findUnique(LoginSystem)
-        account = login.addAccount(u'alice', u'example.com', u'password')
-        userStore = account.avatars.open()
+        testWorld = buildWorld(self)
+        self.assertIdentical(testWorld.proto.world, testWorld.world)
+        self.assertEqual(testWorld.proto.role.externalID, u'alice@example.com')
+        self.assertEqual(testWorld.proto.choices, [])
 
-        app = ImaginaryApp(store=userStore)
-        installOn(app, userStore)
 
-        imaginary = login.accountByAddress(u'Imaginary', None).avatars.open()
-        world = imaginary.findUnique(ImaginaryWorld)
-
-        # Alice connects to her own ImaginaryApp (all that is possible at the
-        # moment).
-        viewer = _AuthenticatedShellViewer(getAccountNames(userStore))
-        proto = app.buildTerminalProtocol(viewer)
-        self.assertIdentical(proto.world, world)
-        self.assertEqual(proto.role.externalID, u'alice@example.com')
-        self.assertEqual(proto.choices, [])
+    def test_connectionMadePrompt(self):
+        """
+        L{CharacterSelectionTextServer} prompts the player upon connection,
+        giving them the option to create a character.
+        """
+        testWorld = buildWorld(self)
+        transport = StringTransport()
+        terminal = ServerProtocol(lambda: testWorld.proto)
+        terminal.makeConnection(transport)
+        self.assertIn("0) Create", transport.io.getvalue())

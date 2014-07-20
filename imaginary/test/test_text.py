@@ -3,7 +3,7 @@ import pprint, string
 from twisted.trial import unittest
 from twisted.conch.insults import insults, helper
 
-from imaginary.wiring import textserver
+from imaginary.wiring import textserver, terminalui
 from imaginary import text as T
 from imaginary import unc
 from imaginary import __version__ as imaginaryVersion
@@ -208,10 +208,10 @@ class Colorization(unittest.TestCase):
 
 class AsynchronousIncrementalUTF8DecoderTestCase(unittest.TestCase):
     """
-    Test L{imaginary.wiring.textserver.AsynchronousIncrementalUTF8Decoder}
+    Test L{imaginary.wiring.terminalui.AsynchronousIncrementalUTF8Decoder}
     """
     def setUp(self):
-        self.a = textserver.AsynchronousIncrementalUTF8Decoder()
+        self.a = terminalui.AsynchronousIncrementalUTF8Decoder()
 
 
     def testASCII(self):
@@ -352,7 +352,7 @@ class TextServerTestCase(unittest.TestCase):
     def setUp(self):
         self.terminal = UTF8TerminalBuffer()
         self.terminal.connectionMade()
-        self.protocol = textserver.TextServerBase()
+        self.protocol = terminalui.TextServerBase()
         self.protocol.makeConnection(self.terminal)
         self.terminal.reset()
 
