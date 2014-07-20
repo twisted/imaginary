@@ -745,6 +745,7 @@ class _ContainedBy(DelegatingRetriever):
 
 
 
+@implementer(iimaginary.IExit, iimaginary.INameable)
 class _ContainerEntrance(structlike.record('container')):
     """
     A L{_ContainerEntrance} is the implicit entrance to a container from its
@@ -754,8 +755,6 @@ class _ContainerEntrance(structlike.record('container')):
 
     @type container: L{Containment}
     """
-
-    implements(iimaginary.IExit, iimaginary.INameable)
 
     @property
     def name(self):
@@ -787,6 +786,14 @@ class _ContainerEntrance(structlike.record('container')):
         
         """
         return False
+
+
+    @property
+    def fromLocation(self):
+        """
+        
+        """
+        return self.container.thing.location
 
 
 
@@ -833,6 +840,14 @@ class _ContainerExit(structlike.record('container')):
         
         """
         return False
+
+
+    @property
+    def fromLocation(self):
+        """
+        
+        """
+        return self.container.thing
 
 
 

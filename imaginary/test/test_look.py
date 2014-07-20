@@ -2,6 +2,7 @@
 Tests for L{imaginary.action.LookAt} and L{imaginary.action.LookAround}.
 """
 from __future__ import print_function
+from textwrap import dedent
 
 from twisted.trial.unittest import TestCase
 
@@ -247,8 +248,12 @@ class LookAtTests(TestCase):
         self.assertEqual(1, len(evts))
         self.assertIsInstance(evts[0], events.Success)
         self.assertEqual(
-            u"[ Visible Location ]\n( north )\nDescription of visible location.\n",
-            flatten(evts[0].actorMessage.plaintext(self.context.actor)))
+            dedent(u"""
+            [ Visible Location ]
+            ( north )
+            Description of visible location.
+            """).lstrip(),
+            flatten(evts[0].actorMessage.plaintext(self.context.actor.thing)))
 
 
 

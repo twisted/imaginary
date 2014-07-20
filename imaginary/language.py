@@ -192,7 +192,7 @@ class Description(object):
             # path here as IExit targets.  Check the exit's source to make sure
             # it is target.
             anExit = other.targetAs(IExit)
-            if anExit is not None:
+            if anExit is not None and anExit.fromLocation is target:
                 exits.append(anExit)
 
         exits.sort(key=lambda anExit: anExit.name)
