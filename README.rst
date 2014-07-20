@@ -28,7 +28,7 @@ At this point, you may just do:
 
 .. code-block:: console
 
-   ~/Projects/Imaginary$ pip install . ExampleGame
+   ~/Projects/Imaginary$ pip install . ./ExampleGame
 
 ... but if you want to develop Imaginary itself (and you probably do, because
 as we explained above, it's still in a very early state), you can set up an
