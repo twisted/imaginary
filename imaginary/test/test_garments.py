@@ -186,8 +186,6 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
     def testPersonWearsPantsAndFailsAtPuttingOnUnderpants(self):
-        description = self.visualizeDaisy()
-
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))
         self.assertRaises(garments.TooBulky,
