@@ -423,40 +423,6 @@ class VisibleStuff(object):
         return None
 
 
-    def _turnsAround(self, path):
-        """
-        Determine if a path goes "out" and then "in".
-
-        If you're looking at a box on a table, and there's a knife on the table
-        next to the box, you want to be able to see the box->table relationship
-        (the box is on the table, and that might be relevant to its
-        description) but you don't want to see the knife at all.
-
-        The box->table link will have an ILocationRelationship annotation on
-        it, and the table->knife link will have an IContainmentRelationship
-        annotation on it, so any path which has those two annotations in
-        sequence "turns around" and goes back out and then in.  This method
-        detects that type of path.
-
-        @note: The inverse relationship, IContainmentRelationship followed by
-            ILocationRelationship, is not something that we need to detect,
-            because objects (should) only have one ILocationRelationship; they
-            are only in one place at a time.  Therefore
-            contents->container->contents would be a cycle, and the results of
-            obtain are acyclic.
-        """
-        goneOut = False
-        for link in path.links:
-            lr = list(link.of(ILocationRelationship))
-            cr = list(link.of(IContainmentRelationship))
-            if lr:
-                goneOut = True
-            if cr:
-                if goneOut:
-                    return True
-        return False
-
-
     def retrieve(self, path):
         if not self._possiblyVisible(path):
             # If this path points at something which is neither visible, nor a
@@ -468,12 +434,6 @@ class VisibleStuff(object):
         if targetPath is None:
             # We didn't find a visible nameable thing known as the target name.
             # Guess this path is not relevant.
-            return None
-
-        remainingPath = Path(links=path.links[len(targetPath.links):])
-        if self._turnsAround(remainingPath):
-            # We don't want to consider other contents of our target's
-            # location.
             return None
 
         # And refactor the crazy duplication of code and effort between
@@ -490,6 +450,7 @@ class VisibleStuff(object):
             if not lighting.isItLit(path, result):
                 tmwn = lighting.whyNotLit()
                 yield tmwn
+
 
 
 def visualizations(viewingThing, predicate):
