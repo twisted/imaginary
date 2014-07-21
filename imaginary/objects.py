@@ -698,7 +698,7 @@ class Containment(object):
 
 
     # IDescriptionContributor
-    def conceptualize(self):
+    def contributeDescriptionFrom(self, paths):
         """
         Implement L{IDescriptionContributor} to enumerate the contents of this
         containment.
@@ -706,7 +706,19 @@ class Containment(object):
         @return: an L{ExpressSurroundings} with an iterable of all visible
         contents of this container.
         """
-        return ExpressContents(self)
+        return ExpressContents(self, paths)
+
+
+
+def pathIndicatesContainmentIn(path, container):
+    """
+    Does the given L{Path} indicate containment in the given container?
+    """
+    containments = list(path.of(iimaginary.IContainmentRelationship))
+    if containments:
+        if containments[-1].containedBy is container:
+            return True
+    return False
 
 
 
@@ -738,10 +750,8 @@ class _ContainedBy(DelegatingRetriever):
         of the given path, return the result of this L{_ContainedBy}'s
         retriever retrieving from the given C{path}, otherwise C{None}.
         """
-        containments = list(path.of(iimaginary.IContainmentRelationship))
-        if containments:
-            if containments[-1].containedBy is self.container:
-                return result
+        if pathIndicatesContainmentIn(path, self.container):
+            return result
 
 
 
@@ -909,6 +919,14 @@ class ExpressContents(language.Sentence):
     """
     _CONDITION = CanSee(ProviderOf(iimaginary.IThing))
 
+    def __init__(self, original, paths):
+        """
+        
+        """
+        super(ExpressContents, self).__init__(original)
+        self.paths = paths
+
+
     def _contentConcepts(self, observer):
         """
         Get concepts for the contents of the thing wrapped by this concept.
@@ -920,12 +938,14 @@ class ExpressContents(language.Sentence):
             C{observer}.
         """
         container = self.original
-        idea = container.thing.idea
-        return [
-            concept
-            for concept
-            in idea.obtain(_ContainedBy(self._CONDITION, container))
-            if concept is not observer]
+        seer = CanSee(ProviderOf(iimaginary.IThing))
+        for path in self.paths:
+            target = path.targetAs(iimaginary.IThing)
+            if target is None:
+                continue
+            if pathIndicatesContainmentIn(path, container):
+                if seer.shouldStillKeepGoing(path):
+                    yield target
 
 
     @property
@@ -960,7 +980,7 @@ class ExpressContents(language.Sentence):
         Return a L{list} of L{IConcept} providers which express the contents of
         the wrapped container.
         """
-        concepts = self._contentConcepts(observer)
+        concepts = list(self._contentConcepts(observer))
         if concepts:
             return list(self._expand(self.template, observer, concepts))
         return []
@@ -1002,7 +1022,7 @@ class Actable(object):
 
 
     # IDescriptionContributor
-    def conceptualize(self):
+    def contributeDescriptionFrom(self, paths):
         return ExpressCondition(self)
 
 

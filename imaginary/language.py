@@ -207,7 +207,7 @@ class Description(object):
             # others and allowing these description contributors to simply
             # determine *how* some subset of "others" is *presented* to the
             # user, not determining *what* should be presented.
-            descriptionConcepts.append(pup.conceptualize())
+            descriptionConcepts.append(pup.contributeDescriptionFrom(others))
 
         def index(c):
             preferredOrder = [
@@ -301,7 +301,7 @@ class ItemizedList(BaseExpress):
     implements(iimaginary.IConcept)
 
     def __init__(self, listOfConcepts):
-        self.listOfConcepts = listOfConcepts
+        self.listOfConcepts = list(listOfConcepts)
 
 
     def concepts(self, observer):

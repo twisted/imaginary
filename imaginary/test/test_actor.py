@@ -20,7 +20,9 @@ class ActorTest(unittest.TestCase, commandutils.LanguageMixin):
     def testCondition(self):
         o = objects.Thing(store=self.store, name=u"wannabe")
         actor = objects.Actor.createFor(o)
-        self.failUnless("great" in self.flatten(actor.conceptualize().plaintext(o)))
+        self.failUnless("great" in self.flatten(
+            actor.contributeDescriptionFrom([]).plaintext(o))
+        )
 
     def testHitPoints(self):
         o = objects.Thing(store=self.store, name=u"hitty")

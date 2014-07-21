@@ -41,12 +41,13 @@ class IDescriptionContributor(Interface):
     A powerup interface which can add text to the description of an object.
 
     All IDescriptionContributors which are powered up on a particular Object
-    will be given a chance to add to the output of its C{conceptualize} method.
+    will be given a chance to add to the output of its
+    C{contributeDescriptionFrom} method.
     """
 
-    def conceptualize():
+    def contributeDescriptionFrom(paths):
         """
-        Return an IConcept provider.
+        Contribute descriptions from the given paths.
         """
 
 

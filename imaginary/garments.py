@@ -10,10 +10,9 @@ from zope.interface import implements, implementer
 
 from axiom import item, attributes
 
-from imaginary import iimaginary, language, objects
+from imaginary import iimaginary, language
 from imaginary.eimaginary import ActionFailure
 from imaginary.events import ThatDoesntWork
-from imaginary.idea import Link
 from imaginary.creation import createCreator
 from imaginary.enhancement import Enhancement
 
@@ -110,7 +109,7 @@ class Garment(item.Item, Enhancement):
     wearLevel = attributes.integer(default=0)
 
 
-    def conceptualize(self):
+    def contributeDescriptionFrom(self, paths):
         return language.ExpressString(u'This can be worn.')
 
 
@@ -274,7 +273,7 @@ class Wearer(item.Item, Enhancement):
 
 
     # IDescriptionContributor
-    def conceptualize(self):
+    def contributeDescriptionFrom(self, paths):
         """
         Describe the list of clothing.
         """

@@ -1,3 +1,6 @@
+
+from zope.interface import implementer
+
 from twisted.trial import unittest
 
 from axiom import store
@@ -7,6 +10,8 @@ from imaginary.eimaginary import ActionFailure
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
 from imaginary.world import ImaginaryWorld
+from imaginary.idea import Path
+from imaginary.idea import Link
 
 class WearIt(unittest.TestCase, commandutils.LanguageMixin):
 
@@ -331,8 +336,18 @@ class ContainmentInteractionTests(unittest.TestCase):
 
         wearer.putOn(clothing)
         location.add(wearer.thing)
+        @implementer(iimaginary.IRetriever)
+        class ThePathItself(object):
+            def retrieve(self, path):
+                return path
+            def objectionsTo(self, path, result):
+                return []
+            def shouldKeepGoing(self, path):
+                return True
 
-        concept = location.conceptualize()
+        concept = location.contributeDescriptionFrom(
+            location.thing.idea.obtain(ThePathItself())
+        )
         self.assertEqual(
             u"Contents: a wearer",
             u"".join(list(concept.plaintext(observer))))
