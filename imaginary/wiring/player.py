@@ -7,6 +7,7 @@ from twisted.python import log
 
 from imaginary import iimaginary, eimaginary, text as T
 
+from imaginary.text import flatten
 from imaginary.action import Action
 
 
@@ -46,7 +47,11 @@ class Player(object):
             err.trap(eimaginary.AmbiguousArgument)
             exc = err.value
             msg = "Could you be more specific?  When you said '" + exc.partValue + "', did you mean: "
-            format = lambda potentialTarget: ''.join(iimaginary.IConcept(potentialTarget).vt102(self.player))
+            def format(potentialTarget):
+                concept = iimaginary.IConcept(potentialTarget)
+                vt102 = concept.vt102(self.player)
+                flattened = list(flatten(vt102, useColors=False))
+                return "".join(flattened)
             for obj in exc.objects[:-1]:
                 msg += format(obj)
                 msg += ", "
