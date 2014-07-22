@@ -313,7 +313,8 @@ class LookAround(Action):
         ultimateLocation = player.thing.location
         while ultimateLocation.location is not None:
             ultimateLocation = ultimateLocation.location
-        for visible in player.thing.findProviders(iimaginary.IVisible, 1):
+        for visible in player.thing.idea.obtain(CanSee(ProviderOf(
+            iimaginary.IVisible))):
             # XXX what if my location is furniture?  I want to see '( Foo,
             # sitting in the Bar )', not '( Bar )'.
             if visible.isViewOf(ultimateLocation):

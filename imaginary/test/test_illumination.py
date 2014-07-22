@@ -9,6 +9,7 @@ from imaginary.enhancement import Enhancement
 from imaginary import iimaginary, objects, idea
 from imaginary.language import ExpressString
 from imaginary.manipulation import Manipulator
+from imaginary.idea import ProviderOf, CanSee
 
 from imaginary.test import commandutils
 
@@ -49,15 +50,16 @@ class DarknessTestCase(unittest.TestCase):
         Test that when a 'dark' LocationLighting proxy is on a location,
         only darkness can be seen.
         """
-        darkThings = list(self.observer.findProviders(iimaginary.IVisible, 1))
+        darkThings = list(self.observer.idea.obtain(CanSee(ProviderOf(
+            iimaginary.IVisible))))
         self.assertDarkRoom(darkThings[0])
         self.assertEquals(len(darkThings), 1)
 
 
     def testLookingOut(self):
         """
-        Test that when findProviders is called on an observer in a dark
-        location, objects in nearby illuminated rooms are returned.
+        An observer in a dark location can see  objects in the nearby
+        illuminated rooms.
         """
         nearby = objects.Thing(store=self.store, name=u"other room")
         objects.Container.createFor(nearby, capacity=1000)
@@ -66,7 +68,8 @@ class DarknessTestCase(unittest.TestCase):
 
         objects.Exit.link(self.location, nearby, u"west")
 
-        found = list(self.observer.findProviders(iimaginary.IVisible, 3))
+        found = list(self.observer.idea.obtain(CanSee(ProviderOf(
+            iimaginary.IVisible))))
         self.assertDarkRoom(found[0])
         self.assertEquals(found[1:], [nearby, ball])
         self.assertEquals(len(found), 3)
@@ -74,12 +77,12 @@ class DarknessTestCase(unittest.TestCase):
 
     def test_nonVisibilityAffected(self):
         """
-        L{LocationLightning} blocks out non-IVisible stuff from
-        L{Thing.findProviders} by default.
+        L{LocationLightning} blocks out non-IVisible stuff by default from
+        the list of seeable ProvidersOf L{IThing} query.
         """
         self.assertEquals(
-            list(self.observer.findProviders(iimaginary.IThing, 3)),
-            [])
+            list(self.observer.idea.obtain(CanSee(ProviderOf(
+                iimaginary.IThing)))), [])
         # XXX need another test: not blocked out from ...
 
 
@@ -105,7 +108,8 @@ class DarknessTestCase(unittest.TestCase):
         torch.moveTo(self.location)
 
         self.assertEquals(
-            list(self.observer.findProviders(iimaginary.IVisible, 1)),
+            list(self.observer.idea.obtain(CanSee(ProviderOf(
+                iimaginary.IVisible)))),
             [self.observer, self.location, self.rock, torch])
 
 
@@ -121,7 +125,8 @@ class DarknessTestCase(unittest.TestCase):
         torch.moveTo(self.observer)
 
         self.assertEquals(
-            list(self.observer.findProviders(iimaginary.IVisible, 1)),
+            list(self.observer.idea.obtain(CanSee(ProviderOf(
+                iimaginary.IVisible)))),
             [self.observer, torch, self.location, self.rock])
 
 
@@ -138,7 +143,8 @@ class DarknessTestCase(unittest.TestCase):
         torch.moveTo(self.observer)
         c.closed = True
 
-        found = list(self.observer.findProviders(iimaginary.IVisible, 1))
+        found = list(self.observer.idea.obtain(CanSee(ProviderOf(
+            iimaginary.IVisible))))
         self.assertDarkRoom(found[0])
         self.assertEquals(len(found), 1)
 
@@ -268,10 +274,6 @@ class ActionsInDarkRoomTestCase(commandutils.CommandTestCaseMixin,
         # me->me link, the me->chair link, the chair->room link) so the
         # retriever is going to need to keep a list of those (Refusals) as it
         # retrieves each one.
-        #
-        # resolve calls search
-        # search calls findProviders
-        # findProviders constructs a thingy, calls obtain()
 
         self.test_actionWithNoTargetInDarkRoom()
 

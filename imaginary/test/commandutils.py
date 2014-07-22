@@ -13,6 +13,8 @@ from axiom import store, item, attributes
 from imaginary import iimaginary, objects, text, language
 from imaginary.wiring import player
 from imaginary.world import ImaginaryWorld
+from imaginary.idea import ProviderOf, CanSee
+
 
 class PlayerProtocol(object):
     def __init__(self, transport):
@@ -148,7 +150,8 @@ class CommandTestCaseMixin:
     def find(self, name):
         return [
             th
-            for th in self.player.findProviders(iimaginary.IThing, 1)
+            for th in self.player.idea.obtain(CanSee(ProviderOf(
+                iimaginary.IThing)))
             if th.name == name][0]
 
 
