@@ -24,8 +24,7 @@ from imaginary.idea import (
 from imaginary.iimaginary import IRetriever
 
 from imaginary.iimaginary import IVisible, IExit
-from imaginary.iimaginary import ILocationRelationship
-from imaginary.iimaginary import IContainmentRelationship
+
 from imaginary.idea import Reachable
 from imaginary.idea import isKnownTo
 from imaginary.iimaginary import IThing
