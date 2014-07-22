@@ -19,7 +19,7 @@ from epsilon.structlike import record
 
 from imaginary.iimaginary import (
     INameable, ILitLink, IThing, IObstruction, IElectromagneticMedium,
-    IDistance, IRetriever, IExit)
+    IDistance, IRetriever, IExit, ILocationRelationship)
 
 
 
@@ -314,6 +314,7 @@ class Idea(record("delegate linkers annotators")):
         reasonsWhyNot |= objections
         if result is not None:
             if not objections:
+                # print("obtained", result, finalPath)
                 yield result
 
         for link in self._applyAnnotators(self._allLinks()):
@@ -467,6 +468,13 @@ class Proximity(DelegatingRetriever):
         return ok
 
 
+    def __repr__(self):
+        """
+        
+        """
+        return "<Proximity {} {}>".format(self.distance, self.retriever)
+
+
 
 class Reachable(DelegatingRetriever):
     """
@@ -482,6 +490,13 @@ class Reachable(DelegatingRetriever):
         if result is not None:
             for obstruction in path.of(IObstruction):
                 yield obstruction.whyNot()
+
+
+    def __repr__(self):
+        """
+        
+        """
+        return "<Reachable {}>".format(self.retriever)
 
 
 
@@ -554,6 +569,13 @@ class ProviderOf(record("interface")):
         return True
 
 
+    def __repr__(self):
+        """
+        
+        """
+        return "<ProviderOf {!r}>".format(self.interface)
+
+
 
 class AlsoKnownAs(record('name')):
     """
@@ -603,6 +625,15 @@ class Named(DelegatingRetriever):
             return subResult
         else:
             return None
+
+
+    def __repr__(self):
+        """
+        
+        """
+        return "<Named {!r} {} {}>".format(
+            self.name, self.retriever, self.observer
+        )
 
 
 def isKnownTo(observer, path, name):
@@ -684,3 +715,13 @@ class CanSee(DelegatingRetriever):
             if not lighting.isItLit(path, result):
                 tmwn = lighting.whyNotLit()
                 yield tmwn
+
+
+
+def deduplicate(sequence, key=lambda x: x):
+    yielded = set()
+    for element in sequence:
+        keyed = key(element)
+        if keyed not in yielded:
+            yielded.add(keyed)
+            yield element

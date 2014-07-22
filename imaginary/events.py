@@ -5,6 +5,7 @@ from zope.interface import implements
 from twisted.python import context
 
 from imaginary import iimaginary, language, eimaginary
+from imaginary.idea import deduplicate
 from imaginary.idea import Proximity, ProviderOf
 
 
@@ -71,7 +72,7 @@ class Event(language.BaseExpress):
             L{Event}'s location when this method, L{Event.reify}, was called.
         """
         L = []
-        for observer in (self.location.idea.obtain(
+        for observer in deduplicate(self.location.idea.obtain(
                 Proximity(0.5, ProviderOf(iimaginary.IEventObserver)))):
             sender = observer.prepare(self)
             if not callable(sender):

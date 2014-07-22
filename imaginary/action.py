@@ -29,6 +29,7 @@ from imaginary.idea import Reachable
 from imaginary.idea import isKnownTo
 from imaginary.iimaginary import IThing
 from imaginary.iimaginary import ILitLink
+from imaginary.idea import deduplicate
 from imaginary.idea import Idea, Path
 
 
@@ -313,7 +314,7 @@ def _getIt(player, thingName, iface, radius):
     named = Named(thingName, canSee, player)
     reachable = Reachable(named)
     proximity = Proximity(radius, reachable)
-    return player.obtainOrReportWhyNot(proximity)
+    return list(deduplicate(player.obtainOrReportWhyNot(proximity)))
 
 
 
@@ -488,6 +489,7 @@ def visualizations(viewingThing, predicate):
     choices = []
     for it, paths in buckets.items():
         paths.sort(key=lambda x: len(x.links))
+        paths = list(deduplicate(paths, key=lambda p: p.links[-1].target))
         # replicated logic from CanSee...
         litlinks = list(paths[0].of(ILitLink))
         if litlinks:
@@ -1093,12 +1095,12 @@ class Go(Action):
         providers that they can see and reach.
         """
         directionName = expandDirection(directionName)
-        return player.obtainOrReportWhyNot(
+        return list(deduplicate(player.obtainOrReportWhyNot(
             Proximity(
                 3.0,
                 Traversability(
                     Named(directionName,
-                          CanSee(ProviderOf(iimaginary.IExit)), player))))
+                          CanSee(ProviderOf(iimaginary.IExit)), player))))))
 
 
     def cantFind_direction(self, actor, directionName):
