@@ -19,7 +19,7 @@ from epsilon.structlike import record
 
 from imaginary.iimaginary import (
     INameable, ILitLink, IThing, IObstruction, IElectromagneticMedium,
-    IDistance, IRetriever, IExit, ILocationRelationship)
+    IDistance, IRetriever, IExit)
 
 
 

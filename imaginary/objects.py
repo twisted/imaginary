@@ -70,14 +70,6 @@ class Points(item.Item):
 
 
 
-@implementer(iimaginary.ILocationRelationship)
-class LocationRelationship(object):
-    """
-    This link goes to the place where the thing the link is from is.
-    """
-
-
-
 class Thing(item.Item):
     """
     A L{Thing} is a physically located object in the game world.
@@ -189,8 +181,7 @@ class Thing(item.Item):
             # any case I can think of.  However, 'here' is ambiguous in the
             # case where you are present inside a container, and that should
             # probably be dealt with.
-            l.annotate([AlsoKnownAs('here'),
-                        LocationRelationship()])
+            l.annotate([AlsoKnownAs('here')])
             yield l
 
 

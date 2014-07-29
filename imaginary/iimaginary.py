@@ -559,13 +559,6 @@ class IContainmentRelationship(Interface):
 
 
 
-class ILocationRelationship(Interface):
-    """
-    The inverse of L{IContainmentRelationship}.
-    """
-
-
-
 class IVisible(Interface):
     """
     A thing which can be seen.
