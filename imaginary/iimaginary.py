@@ -327,10 +327,18 @@ class IExit(Interface):
         """
 
 
-    def shouldEvenAttemptTraversal(thing):
+    def shouldEvenAttemptTraversalFrom(fromLocation, potentialTraverser):
         """
         Is it plausible for the given thing to attempt a C{traverse} of this
         L{IExit}?
+
+        @param fromLocation: The location from which the traversal might be
+            attempted.
+        @type fromLocation: L{IThing}
+
+        @param potentialTraverser: The thing which might attempt to traverse
+            the exit.
+        @type potentialTraverser: L{IThing}
 
         @return: C{True} if so, C{False} if not.
         """

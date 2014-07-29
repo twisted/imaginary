@@ -224,7 +224,7 @@ class PlaintextDescriptionTests(NounTestCase, SharedTextyTests):
 
 @implementer(iimaginary.IExit)
 class StubExit(structlike.record("name")):
-    def shouldEvenAttemptTraversal(self, thing):
+    def shouldEvenAttemptTraversalFrom(self, where, thing):
         """
         Yes.
         """

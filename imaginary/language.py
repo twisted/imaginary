@@ -145,7 +145,8 @@ class Description(object):
         exits = list(
             IConcept(exit.name).vt102(observer)
             for exit in (self.exits or ())
-            if exit.shouldEvenAttemptTraversal(observer))
+            if exit.shouldEvenAttemptTraversalFrom(self.target,
+                                                   observer))
         if exits:
             yield [
                 T.bold, T.fg.green, u'( ', [
@@ -192,7 +193,7 @@ class Description(object):
             # path here as IExit targets.  Check the exit's source to make sure
             # it is target.
             anExit = other.targetAs(IExit)
-            if anExit is not None and anExit.fromLocation is target:
+            if anExit is not None:
                 exits.append(anExit)
 
         exits.sort(key=lambda anExit: anExit.name)

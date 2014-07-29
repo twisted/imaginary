@@ -551,11 +551,11 @@ class Exit(item.Item):
         yield l
 
 
-    def shouldEvenAttemptTraversal(self, observer):
+    def shouldEvenAttemptTraversalFrom(self, where, observer):
         """
         
         """
-        return True
+        return (self.fromLocation is where)
 
 def _exitAsConcept(exit):
     return language.ExpressList(
@@ -785,7 +785,7 @@ class _ContainerEntrance(structlike.record('container')):
         return self.container.thing.knownTo(observer, name)
 
 
-    def shouldEvenAttemptTraversal(self, observer):
+    def shouldEvenAttemptTraversalFrom(self, where, observer):
         """
         
         """
@@ -839,7 +839,7 @@ class _ContainerExit(structlike.record('container')):
         return (observer.location == self.container.thing) and (name == 'out')
 
 
-    def shouldEvenAttemptTraversal(self, observer):
+    def shouldEvenAttemptTraversalFrom(self, where, observer):
         """
         
         """
