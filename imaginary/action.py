@@ -436,9 +436,6 @@ class VisibleStuff(object):
             # Guess this path is not relevant.
             return None
 
-        # And refactor the crazy duplication of code and effort between
-        # the retriever and the post-processing loop to construct
-        # buckets below.
         return (targetPath.links[-1].target.delegate, path)
 
 
@@ -455,15 +452,21 @@ class VisibleStuff(object):
 
 def visualizations(viewingThing, predicate):
     """
-    Some of the objects we find are actually sensible targets of the look
-    action.  They have a matching name or whatever.  Other things are just
-    reachable from *those* targets.  We need to sort all that out.  Create a
-    collection that maps the look action target items to the paths to all of
-    the things reachable from those things.
+    C{viewingThing} wants to look at something; it might know the name, or
+    description, or placement of "something".  For example, if a player types
+    C{"look at elephant"}, then "something" would be defined as "anything named
+    'elephant'".
 
-    This lets us figure out if there is ambiguity (are there multiple look
-    action targets?  if so there is ambiguity and gets the objects into a shape
-    some other code will have a chance of rendering nicely later.)
+    L{visualizations} takes the thing doing the looking and a function to
+    determine if a path to a thing-being-looked-at qualifies as, for example, a
+    thing that C{viewingThing} might refer to as 'elephant' called
+    C{predicate}, which takes a L{Path} whose target is something which may or
+    may not be interesting, and returns L{True} if so and L{False} if not.
+
+    L{visualizations} locates all of the options (for example, if there are
+    multiple elephants, you might get multiple results) and returns a L{list}
+    of L{IConcept} providers, each of which represents the description of one
+    thing-that-can-be-looked-at which L{viewingThing} can see.
 
     @param viewingThing: The observer
     @type viewingThing: L{IThing}
@@ -496,6 +499,7 @@ def visualizations(viewingThing, predicate):
             litThing = list(path.eachTargetAs(IThing))[-1]
             it = litlinks[-1].applyLighting(litThing, it, IVisible)
         choices.append(it.visualizeWithContents(paths))
+
     return choices
 
 
