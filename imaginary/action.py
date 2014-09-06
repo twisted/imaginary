@@ -450,7 +450,7 @@ class VisibleStuff(object):
 
 
 
-def visualizations(viewingThing, predicate):
+def visualizations(viewingThing, predicate, withinDistance=3.0):
     """
     C{viewingThing} wants to look at something; it might know the name, or
     description, or placement of "something".  For example, if a player types
@@ -476,19 +476,37 @@ def visualizations(viewingThing, predicate):
         visualization, L{False} otherwise.
     @type predicate: L{callable} taking L{Path} returning L{bool}
 
+    @param withinDistance: Only search within the distance of this given number
+        of meters.
+    @type withinDistance: L{float}
+
     @return: a L{list} of L{IConcept}
     """
+
+    # Obtain paths to all of the items that satisfy the predicate, as well as
+    # paths *through* each of those items as well, in case those items want to
+    # display them (for example, a room will want to display its exits and
+    # contents).  VisibleStuff gives us a list of 2-tuples of (IVisible
+    # thing-satsifying-predicate, path-to-that-thing-or-something-past-it).
     paths = viewingThing.obtainOrReportWhyNot(
-        Proximity(
-            3.0,
-            VisibleStuff(predicate)
-        )
+        Proximity(withinDistance, VisibleStuff(predicate))
     )
 
-    buckets = {} # map nameable to list of paths
+    # Now we want to group all of the paths-through-an-item with the
+    # predicate-satisfying item that they're through.  Construct a dictionary
+    # mapping a predicate-satisfier to a list of paths.  If we typed 'look at
+    # backpack' with an apple and an orange in it, then this would end up being
+    # {backpack: [path-to-backpack, path-to-apple, path-to-orange]}.  ()Keep in
+    # mind that all the paths originate at viewingThing, not backpack.)
+    buckets = {}
     for (it, path) in paths:
         buckets.setdefault(it, []).append(path)
 
+    # Now that we have that grouping, we need to allow each item we might look
+    # at to customize its own presentation, but taking into account only those
+    # objects which viewingThing can see and access.  So we apply lighting to
+    # each thing, and then we hand that list of paths *back* to that thing, so
+    # that it can give us an IConcept.
     choices = []
     for it, paths in buckets.items():
         paths.sort(key=lambda x: len(x.links))
