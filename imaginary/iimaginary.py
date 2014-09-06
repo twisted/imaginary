@@ -565,6 +565,12 @@ class IContainmentRelationship(Interface):
         that this L{IContainmentRelationship} annotates.
         """)
 
+    contained = Attribute(
+        """
+        A reference to the L{IThing} being contained.
+        """
+    )
+
 
 
 class IVisible(Interface):

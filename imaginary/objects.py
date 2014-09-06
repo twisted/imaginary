@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_objects,imaginary.test.test_actions -*-
+# -*- test-case-name: imaginary.test.test_garments.FunSimulationStuff.testTooBulky -*-
 
 """
 This module contains the core, basic objects in Imaginary.
@@ -566,7 +566,7 @@ components.registerAdapter(_exitAsConcept, Exit, iimaginary.IConcept)
 
 
 
-class ContainmentRelationship(structlike.record("containedBy")):
+class ContainmentRelationship(structlike.record("containedBy contained")):
     """
     Implementation of L{iimaginary.IContainmentRelationship}.  The interface
     specifies no methods or attributes.  See its documentation for more
@@ -660,7 +660,7 @@ class Containment(object):
             # opaque) physical obstruction.
             for ob in self.getContents():
                 content = Link(self.thing.idea, ob.idea)
-                content.annotate([ContainmentRelationship(self)])
+                content.annotate([ContainmentRelationship(self, ob)])
                 yield content
         yield Link(self.thing.idea, self._entranceIdea)
         if self.thing.location is not None:
@@ -710,7 +710,14 @@ def pathIndicatesContainmentIn(path, container):
     """
     containments = list(path.of(iimaginary.IContainmentRelationship))
     if containments:
-        if containments[-1].containedBy is container:
+        # TODO: need direct tests for this, since deduplicate() fixes it by
+        # accident; objects in containers all have links to their locations and
+        # those links could be interpreted as meaning that everything is
+        # located in that object unless you look specifically at the
+        # contained-thing as well as the container.
+        if (containments[-1].containedBy is container and
+            containments[-1].contained is
+            path.targetAs(iimaginary.IThing)):
             return True
     return False
 
