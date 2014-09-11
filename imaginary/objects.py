@@ -550,9 +550,12 @@ class Exit(item.Item):
 
     def shouldEvenAttemptTraversalFrom(self, where, observer):
         """
-        
+        Normal (i.e. room-to-room) L{Exit}s appear traversable to observers
+        located inside the location that they lead away from.
         """
         return (self.fromLocation is where)
+
+
 
 def _exitAsConcept(exit):
     return language.ExpressList(
