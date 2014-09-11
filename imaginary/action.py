@@ -20,7 +20,7 @@ from imaginary.world import ImaginaryWorld
 
 from imaginary.idea import (
     CanSee, Proximity, ProviderOf, Named, Traversability,
-    Reachable, Path, isKnownTo, deduplicate
+    Reachable, Path, isKnownTo
 )
 from imaginary.iimaginary import IVisible, IThing, ILitLink, IRetriever
 
@@ -1085,12 +1085,12 @@ class Go(Action):
         providers that they can see and reach.
         """
         directionName = expandDirection(directionName)
-        return list(deduplicate(player.obtainOrReportWhyNot(
+        return list(player.obtainOrReportWhyNot(
             Proximity(
                 3.0,
                 Traversability(
                     Named(directionName,
-                          CanSee(ProviderOf(iimaginary.IExit)), player))))))
+                          CanSee(ProviderOf(iimaginary.IExit)), player)))))
 
 
     def cantFind_direction(self, actor, directionName):
