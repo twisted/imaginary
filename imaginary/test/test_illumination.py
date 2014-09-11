@@ -10,7 +10,6 @@ from imaginary import iimaginary, objects, idea
 from imaginary.language import ExpressString
 from imaginary.manipulation import Manipulator
 
-from imaginary.idea import deduplicate
 from imaginary.test import commandutils
 
 
@@ -122,9 +121,7 @@ class DarknessTestCase(unittest.TestCase):
         torch.moveTo(self.observer)
 
         self.assertEquals(
-            list(deduplicate(
-                self.observer.findProviders(iimaginary.IVisible, 1))
-             ),
+            list(self.observer.findProviders(iimaginary.IVisible, 1)),
             [self.observer, torch, self.location, self.rock])
 
 
