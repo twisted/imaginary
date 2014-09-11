@@ -829,7 +829,8 @@ class _ContainerExit(structlike.record('container')):
         Implement L{iimaginary.IExit.name} to return a descriptive name for the
         outward exit of this specific container.
         """
-        return 'out of ', language.Noun(self.container.thing).definiteNounPhrase()
+        return ['out of ',
+                language.Noun(self.container.thing).definiteNounPhrase()]
 
 
     def traverse(self, thing):
