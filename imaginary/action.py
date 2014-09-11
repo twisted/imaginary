@@ -450,7 +450,46 @@ class VisibleStuff(object):
 
 
 
-def visualizations(viewingThing, predicate, withinDistance=3.0):
+@implementer(IRetriever)
+class PathSatisfiesPredicate(object):
+    """
+    Retrieve the paths that satisfy the given predicate.
+    """
+
+    def __init__(self, predicate):
+        """
+        Create a L{PathSatisfiesPredicate} with the given predicate.
+        """
+        self.predicate = predicate
+
+
+    def retrieve(self, path):
+        """
+        Return the suitable object described by C{path}, or None if the path is
+        unsuitable for this retriever's purposes.
+        """
+        if self.predicate(path):
+            return path
+
+    def shouldKeepGoing(self, path):
+        """
+        Inspect a L{Path}. True if it should be searched, False if not.
+        """
+        return True
+
+
+    def objectionsTo(self, path, result):
+        """
+        @return: an iterator of IWhyNot, if you object to this result being
+            yielded.
+        """
+        for lighting in path.of(ILitLink):
+            if not lighting.isItLit(path, result):
+                tmwn = lighting.whyNotLit()
+                yield tmwn
+
+
+def visualizations(viewingThing, predicate, withinDistance):
     """
     C{viewingThing} wants to look at something; it might know the name, or
     description, or placement of "something".  For example, if a player types
@@ -482,43 +521,66 @@ def visualizations(viewingThing, predicate, withinDistance=3.0):
 
     @return: a L{list} of L{IConcept}
     """
-
-    # Obtain paths to all of the items that satisfy the predicate, as well as
-    # paths *through* each of those items as well, in case those items want to
-    # display them (for example, a room will want to display its exits and
-    # contents).  VisibleStuff gives us a list of 2-tuples of (IVisible
-    # thing-satsifying-predicate, path-to-that-thing-or-something-past-it).
-    paths = viewingThing.obtainOrReportWhyNot(
-        Proximity(withinDistance, VisibleStuff(predicate))
+    startPaths = viewingThing.obtainOrReportWhyNot(
+        Proximity(
+            withinDistance,
+            PathSatisfiesPredicate(predicate)
+        )
     )
 
-    # Now we want to group all of the paths-through-an-item with the
-    # predicate-satisfying item that they're through.  Construct a dictionary
-    # mapping a predicate-satisfier to a list of paths.  If we typed 'look at
-    # backpack' with an apple and an orange in it, then this would end up being
-    # {backpack: [path-to-backpack, path-to-apple, path-to-orange]}.  ()Keep in
-    # mind that all the paths originate at viewingThing, not backpack.)
-    buckets = {}
-    for (it, path) in paths:
-        buckets.setdefault(it, []).append(path)
-
-    # Now that we have that grouping, we need to allow each item we might look
-    # at to customize its own presentation, but taking into account only those
-    # objects which viewingThing can see and access.  So we apply lighting to
-    # each thing, and then we hand that list of paths *back* to that thing, so
-    # that it can give us an IConcept.
     choices = []
-    for it, paths in buckets.items():
-        paths.sort(key=lambda x: len(x.links))
-        paths = list(deduplicate(paths, key=lambda p: p.links[-1].target))
-        # replicated logic from CanSee...
-        litlinks = list(paths[0].of(ILitLink))
-        if litlinks:
-            litThing = list(path.eachTargetAs(IThing))[-1]
-            it = litlinks[-1].applyLighting(litThing, it, IVisible)
-        choices.append(it.visualizeWithContents(paths))
 
+    for startPath in startPaths:
+        lastLink = startPath.links[-1]
+        # visible = IVisible(lastLink.target.delegate, None)
+        visible = _lightingApplied(startPath)
+        if visible is not None:
+            subPaths = lastLink.target.obtain(
+                Proximity(withinDistance,
+                          PathSatisfiesPredicate(lambda p: True))
+            )
+            sourcedPath = Path(links=[Link(source=Idea(None),
+                                           target=startPath.links[0].source)]
+                               + startPath.links)
+            paths = [Path(links=sourcedPath.links + subPath.links)
+                     for subPath in subPaths
+                     if not subPath.targetAs(IThing) is viewingThing]
+            paths.sort(key=lambda x: len(x.links))
+            paths = list(deduplicate(paths, key=lambda p: p.links[-1].target))
+            paths = list(path for path in paths if _isIlluminated(path))
+            choices.append(visible.visualizeWithContents(paths))
     return choices
+
+
+
+def _isIlluminated(path):
+    """
+    
+    """
+    litlinks = list(path.of(ILitLink))
+    if not litlinks:
+        return True
+    for litlink in litlinks:
+        if litlink.isItLit(path, path.targetAs(IVisible)):
+            return True
+        else:
+            return False
+
+
+
+def _lightingApplied(path):
+    """
+    
+    """
+    thing = path.targetAs(IVisible)
+    if not _isIlluminated(path):
+        return None
+    litPath = list(path.of(ILitLink))
+    if not litPath:
+        return thing
+    litThing = list(path.eachTargetAs(IVisible))[-1]
+    thing = litPath[-1].applyLighting(litThing, thing, IVisible)
+    return thing
 
 
 

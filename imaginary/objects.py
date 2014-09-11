@@ -170,11 +170,8 @@ class Thing(item.Item):
             for link in pup.links():
                 # wooo composition
                 yield link
-        aLocation = self
-        while aLocation.location is not None:
-            aLocation = aLocation.location
-        if aLocation is not self:
-            l = Link(self.idea, aLocation.idea)
+        if self.location is not None:
+            l = Link(self.idea, self.location.idea)
             # XXX this incorrectly identifies any container with an object in
             # it as 'here', since it doesn't distinguish the observer; however,
             # cycle detection will prevent these links from being considered in
