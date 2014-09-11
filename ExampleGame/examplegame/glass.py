@@ -68,5 +68,6 @@ class GlassBox(Item, Enhancement):
             for content in container.getContents():
                 link = Link(self.thing.idea, content.idea)
                 link.annotate([_ObstructedByGlass(),
-                               ContainmentRelationship(container)])
+                               ContainmentRelationship(container,
+                                                       content)])
                 yield link
