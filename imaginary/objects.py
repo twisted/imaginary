@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_garments.FunSimulationStuff.testTooBulky -*-
+# -*- test-case-name: imaginary.test -*-
 
 """
 This module contains the core, basic objects in Imaginary.
@@ -795,7 +795,9 @@ class _ContainerEntrance(structlike.record('container')):
         Container entrances (currently) never appear as though they're an
         obvious route for traversal to any observer.
 
-        (In the future, this should probably be based on )
+        (In the future, this should probably be based on the capacity of the
+        container, whether it's open or closed, and the location of the
+        observer.)
         """
         return False
 
@@ -851,7 +853,12 @@ class _ContainerExit(structlike.record('container')):
 
     def shouldEvenAttemptTraversalFrom(self, where, observer):
         """
-        
+        Container exits (currently) never appear as though they're an obvious
+        route for traversal to any observer.
+
+        (In the future, this should probably be based on the location of the
+        observer; observers in an open container should generally be able to
+        exit it.)
         """
         return False
 
@@ -859,7 +866,8 @@ class _ContainerExit(structlike.record('container')):
     @property
     def fromLocation(self):
         """
-        
+        Container exits are exits from the container itself, so this property
+        reflects the container's L{IThing}.
         """
         return self.container.thing
 
