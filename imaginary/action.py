@@ -306,7 +306,7 @@ def _getIt(player, thingName, iface, radius):
     named = Named(thingName, canSee, player)
     reachable = Reachable(named)
     proximity = Proximity(radius, reachable)
-    return list(deduplicate(player.obtainOrReportWhyNot(proximity)))
+    return list(player.obtainOrReportWhyNot(proximity))
 
 
 
