@@ -453,7 +453,6 @@ def visualizations(viewingThing, predicate, withinDistance=3.0):
                 if not subPath.targetAs(IThing) is viewingThing
             ]
             paths.sort(key=lambda x: len(x.links))
-            paths = list(deduplicate(paths, key=lambda p: p.links[-1].target))
             paths = list(path for path in paths if _isIlluminated(path))
             choices.append(visible.visualizeWithContents(paths))
     return choices
