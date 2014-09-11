@@ -19,18 +19,10 @@ from imaginary import (iimaginary, eimaginary, iterutils, events,
 from imaginary.world import ImaginaryWorld
 
 from imaginary.idea import (
-    CanSee, Proximity, ProviderOf, Named, Traversability, Link
+    CanSee, Proximity, ProviderOf, Named, Traversability,
+    Reachable, Path, isKnownTo, deduplicate
 )
-from imaginary.iimaginary import IRetriever
-
-from imaginary.iimaginary import IVisible, IExit
-
-from imaginary.idea import Reachable
-from imaginary.idea import isKnownTo
-from imaginary.iimaginary import IThing
-from imaginary.iimaginary import ILitLink
-from imaginary.idea import deduplicate
-from imaginary.idea import Idea, Path
+from imaginary.iimaginary import IVisible, IThing, ILitLink, IRetriever
 
 
 ## Hacks because pyparsing doesn't have fantastic unicode support
