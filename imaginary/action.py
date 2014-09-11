@@ -410,6 +410,8 @@ def visualizations(viewingThing, predicate, withinDistance=3.0):
 
     @return: a L{list} of L{IConcept}
     """
+    # First, get all the things meeting the predicate's criteria that we can
+    # see.
     startPaths = viewingThing.obtainOrReportWhyNot(
         Proximity(
             withinDistance,
@@ -419,21 +421,45 @@ def visualizations(viewingThing, predicate, withinDistance=3.0):
 
     choices = []
 
+    # Now, for each of those "visual targets", we need to gather a set of
+    # related objects which might show up in its description.
     for startPath in startPaths:
-        lastLink = startPath.links[-1]
-        # visible = IVisible(lastLink.target.delegate, None)
+        visualTargetIdea = startPath.links[-1].target
+
+        # Now we need to apply lighting to the path, getting the IVisible (or
+        # modified IVisible, if it's too dark to see it properly) that we are
+        # in fact looking at.
         visible = _lightingApplied(startPath)
         if visible is not None:
-            subPaths = lastLink.target.obtain(
+            # For each visual target, query outwards from *it*, not the
+            # observer, looking for other objects which may be "part" of that
+            # visual target - visible along with it.  This is stuff like the
+            # contents of a container, the exits from a room, et cetera.  This
+            # obtain() begins from the visual target rather than the player,
+            # because some of the paths the player wants to see may fold back
+            # on themselves.  For example, if a player is seated on a table,
+            # and there is a gun next to them on the table and they look at the
+            # room, they should still be able to see the gun as part of the
+            # room, despite the fact that the path goes player -> chair -> room
+            # -> chair -> gun.  The chair -> room -> chair path would be
+            # disallowed by the cycle-detection in obtain().
+            subPaths = visualTargetIdea.obtain(
                 Proximity(withinDistance,
                           PathSatisfiesPredicate(lambda p: True))
             )
-            sourcedPath = Path(links=[Link(source=Idea(None),
-                                           target=startPath.links[0].source)]
-                               + startPath.links)
-            paths = [Path(links=sourcedPath.links + subPath.links)
-                     for subPath in subPaths
-                     if not subPath.targetAs(IThing) is viewingThing]
+
+            # However, since visual obstructions which may obscure or transform
+            # the appearance of the objects related to the object being
+            # observed begin from the viewer, and *not* from the object being
+            # observed, we must re-introduce the viewer.
+            paths = [
+                Path(links=startPath.links + subPath.links)
+                for subPath in subPaths
+
+                # Hide the viewer from themselves - random objects that you
+                # look at shouldn't function as mirrors.
+                if not subPath.targetAs(IThing) is viewingThing
+            ]
             paths.sort(key=lambda x: len(x.links))
             paths = list(deduplicate(paths, key=lambda p: p.links[-1].target))
             paths = list(path for path in paths if _isIlluminated(path))

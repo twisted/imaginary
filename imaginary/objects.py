@@ -770,7 +770,8 @@ class _ContainerEntrance(structlike.record('container')):
         Implement L{iimaginary.IExit.name} to return a descriptive name for the
         inward exit of this specific container.
         """
-        return 'into ', language.Noun(self.container.thing).definiteNounPhrase()
+        return ['into ',
+                language.Noun(self.container.thing).definiteNounPhrase()]
 
 
     def traverse(self, thing):
@@ -791,7 +792,10 @@ class _ContainerEntrance(structlike.record('container')):
 
     def shouldEvenAttemptTraversalFrom(self, where, observer):
         """
-        
+        Container entrances (currently) never appear as though they're an
+        obvious route for traversal to any observer.
+
+        (In the future, this should probably be based on )
         """
         return False
 
@@ -799,7 +803,8 @@ class _ContainerEntrance(structlike.record('container')):
     @property
     def fromLocation(self):
         """
-        
+        Container entrances are exits from the container's location into the
+        container, so this property returns the container.
         """
         return self.container.thing.location
 
