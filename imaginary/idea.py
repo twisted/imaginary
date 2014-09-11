@@ -715,13 +715,3 @@ class CanSee(DelegatingRetriever):
             if not lighting.isItLit(path, result):
                 tmwn = lighting.whyNotLit()
                 yield tmwn
-
-
-
-def deduplicate(sequence, key=lambda x: x):
-    yielded = set()
-    for element in sequence:
-        keyed = key(element)
-        if keyed not in yielded:
-            yielded.add(keyed)
-            yield element

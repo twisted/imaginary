@@ -710,49 +710,15 @@ def pathIndicatesContainmentIn(path, container):
     """
     containments = list(path.of(iimaginary.IContainmentRelationship))
     if containments:
-        # TODO: need direct tests for this, since deduplicate() fixes it by
-        # accident; objects in containers all have links to their locations and
-        # those links could be interpreted as meaning that everything is
-        # located in that object unless you look specifically at the
-        # contained-thing as well as the container.
+        # TODO: need direct tests for checking all these attributes; paths that
+        # lead away from containers via any other kind of link still look like
+        # they indicate containment without checking the '.contained'
+        # attribute.
         if (containments[-1].containedBy is container and
             containments[-1].contained is
             path.targetAs(iimaginary.IThing)):
             return True
     return False
-
-
-
-class _ContainedBy(DelegatingRetriever):
-    """
-    An L{iimaginary.IRetriever} which discovers only things present in a given
-    container.  Currently used only for discovering the list of things to list
-    in a container's description.
-
-    @ivar retriever: a retriever to delegate to.
-
-    @type retriever: L{iimaginary.IRetriever}
-
-    @ivar container: the container to test containment by
-
-    @type container: L{IThing}
-    """
-
-    implements(iimaginary.IRetriever)
-
-    def __init__(self, retriever, container):
-        DelegatingRetriever.__init__(self, retriever)
-        self.container = container
-
-
-    def resultRetrieved(self, path, result):
-        """
-        If this L{_ContainedBy}'s container contains the last L{IThing} target
-        of the given path, return the result of this L{_ContainedBy}'s
-        retriever retrieving from the given C{path}, otherwise C{None}.
-        """
-        if pathIndicatesContainmentIn(path, self.container):
-            return result
 
 
 
