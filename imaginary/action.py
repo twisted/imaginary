@@ -340,117 +340,6 @@ class LookAround(Action):
 
 
 @implementer(IRetriever)
-class VisibleStuff(object):
-    """
-    L{VisibleStuff} is an L{IRetriever} which retrieves 2-tuples where the
-    first element is an object that a simulation entity might be visually
-    focusing on (an L{IVisible}, the path), and the second element is a L{Path}
-    to a subsidary element of that visible object.  For example, when looking
-    at a room, the room itself will be the first element of such a tuple, and
-    the L{Path}s to the contents of that room and the exits from that room will
-    be the second elements.
-    """
-
-    def __init__(self, isPathTargetPredicate):
-        """
-        @param isPathTargetPredicate: A callable taking a L{Path} and returning
-            L{True} if the given L{Path} points at something which the
-            retriever should consider a visual focus, or L{False} if not.
-        """
-        self._isPathTargetPredicate = isPathTargetPredicate
-
-
-    def shouldKeepGoing(self, path):
-        """
-        Always keep going; stopping is the responsibility of another retriever.
-        """
-        return True
-
-
-    def _targetImplementsAny(self, path, *interfaces):
-        """
-        @param path: A L{Path} to inspect.
-
-        @param interfaces: The interfaces for which to check.
-
-        @return: C{True} if the target of C{path} is adaptable to any of the
-            given interfaces.
-        """
-        return any(path.targetAs(interface) is not None for interface in
-                   interfaces)
-
-
-    def _possiblyVisible(self, path):
-        """
-        Determine if this is a path to something that can be looked at or can
-        be a part of a thing that can be looked at (for example, an exit from a
-        location).
-
-        @param path: The L{Path} to consider.
-
-        @return: C{True} if the target might be visible, C{False} otherwise.
-        """
-        return self._targetImplementsAny(path, IVisible, IExit)
-
-
-    def _lookTargetPath(self, path):
-        """
-        Find the first target in the given path for which the target predicate
-        returns True.
-
-        @param path: The L{Path} to consider.
-
-        @return: a L{Path} which is a prefix of C{path}, whose target satisfies
-            the path target predicate given to this L{VisibleStuff}'s
-            constructor.
-        """
-        # Inspect all of the link targets to find a visible thing with
-        # the right name.  Also, as a special case, inspect the source
-        # of the first link - it is not the target of any other link in
-        # the path but it might be the thing we're looking for.
-        pathWithSource = Path(links=[
-            Link(source=Idea(None),
-                 target=path.links[0].source)] + path.links)
-        subPathIter = iter(pathWithSource.eachSubPath())
-        for subPath in subPathIter:
-            if subPath.targetAs(IVisible) is not None:
-                # This is the thing that the player has named.
-                # Presumably *this* also needs to be visible, but do we
-                # need to check that somehow?
-                if self._isPathTargetPredicate(subPath):
-                    return subPath
-
-        return None
-
-
-    def retrieve(self, path):
-        if not self._possiblyVisible(path):
-            # If this path points at something which is neither visible, nor a
-            # component of a visual thing, skip it.
-            return None
-
-        targetPath = self._lookTargetPath(path)
-
-        if targetPath is None:
-            # We didn't find a visible nameable thing known as the target name.
-            # Guess this path is not relevant.
-            return None
-
-        return (targetPath.links[-1].target.delegate, path)
-
-
-    def objectionsTo(self, path, result):
-        """
-        Object to any paths which are not illuminated.
-        """
-        for lighting in path.of(ILitLink):
-            if not lighting.isItLit(path, result):
-                tmwn = lighting.whyNotLit()
-                yield tmwn
-
-
-
-@implementer(IRetriever)
 class PathSatisfiesPredicate(object):
     """
     Retrieve the paths that satisfy the given predicate.
@@ -489,7 +378,7 @@ class PathSatisfiesPredicate(object):
                 yield tmwn
 
 
-def visualizations(viewingThing, predicate, withinDistance):
+def visualizations(viewingThing, predicate, withinDistance=3.0):
     """
     C{viewingThing} wants to look at something; it might know the name, or
     description, or placement of "something".  For example, if a player types
