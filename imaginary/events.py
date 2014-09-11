@@ -71,8 +71,8 @@ class Event(language.BaseExpress):
             L{Event}'s location when this method, L{Event.reify}, was called.
         """
         L = []
-        for observer in self.location.idea.obtain(
-                Proximity(0.5, ProviderOf(iimaginary.IEventObserver))):
+        for observer in (self.location.idea.obtain(
+                Proximity(0.5, ProviderOf(iimaginary.IEventObserver)))):
             sender = observer.prepare(self)
             if not callable(sender):
                 raise TypeError("Senders must be callable", sender)
