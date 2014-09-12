@@ -732,8 +732,7 @@ class _ContainerEntrance(structlike.record('container')):
         Implement L{iimaginary.IExit.name} to return a descriptive name for the
         inward exit of this specific container.
         """
-        return ['into ',
-                language.Noun(self.container.thing).definiteNounPhrase()]
+        return 'into ', language.Noun(self.container.thing).definiteNounPhrase()
 
 
     def traverse(self, thing):
