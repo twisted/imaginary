@@ -555,13 +555,6 @@ class ProviderOf(record("interface")):
         return True
 
 
-    def __repr__(self):
-        """
-        
-        """
-        return "<ProviderOf {!r}>".format(self.interface)
-
-
 
 class AlsoKnownAs(record('name')):
     """
@@ -612,14 +605,6 @@ class Named(DelegatingRetriever):
         else:
             return None
 
-
-    def __repr__(self):
-        """
-        
-        """
-        return "<Named {!r} {} {}>".format(
-            self.name, self.retriever, self.observer
-        )
 
 
 def isKnownTo(observer, path, name):
