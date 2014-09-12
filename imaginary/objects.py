@@ -655,9 +655,6 @@ class Containment(object):
         location.
         """
         if not self.closed:
-            # This is actually wrong; we ought to always return these links,
-            # but annotate them with something that indicates a (potentially
-            # opaque) physical obstruction.
             for ob in self.getContents():
                 content = Link(self.thing.idea, ob.idea)
                 content.annotate([ContainmentRelationship(self, ob)])
