@@ -887,11 +887,6 @@ class Container(item.Item, Containment, _Enhancement):
         """)
 
 
-    def __str__(self):
-        return '<Container %r>' % (self.thing.name,)
-    __repr__ = __str__
-
-
 
 class ExpressContents(language.Sentence):
     """
