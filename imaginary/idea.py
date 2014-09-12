@@ -468,13 +468,6 @@ class Proximity(DelegatingRetriever):
         return ok
 
 
-    def __repr__(self):
-        """
-        
-        """
-        return "<Proximity {} {}>".format(self.distance, self.retriever)
-
-
 
 class Reachable(DelegatingRetriever):
     """
@@ -490,13 +483,6 @@ class Reachable(DelegatingRetriever):
         if result is not None:
             for obstruction in path.of(IObstruction):
                 yield obstruction.whyNot()
-
-
-    def __repr__(self):
-        """
-        
-        """
-        return "<Reachable {}>".format(self.retriever)
 
 
 
