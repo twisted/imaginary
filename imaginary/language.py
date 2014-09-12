@@ -179,9 +179,6 @@ class Description(object):
 
         @return: A L{Description} comprising C{target} and C{others}.
         """
-        # TODO: Think about how to do better than this special-case support for
-        # IExit.  For example have some powerups on the observer that get a
-        # chance to inspect others and do the formatting.
         exits = []
         for other in others:
             # All of others are paths that go through target so just
