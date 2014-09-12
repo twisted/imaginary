@@ -855,13 +855,6 @@ class Container(item.Item, Containment, _Enhancement):
     A generic L{_Enhancement} that implements containment.
     """
 
-    # TODO: Add `hasExits` flag - somewhere - maybe not as persistent state?
-    # If it is false then don't generate any exit links (mainly into and out of
-    # since those are currently automatic and pervasive).  Set it to false on
-    # players.  Players aren't really containers.  It's just a hack to make
-    # inventories easy.  Implement a better inventory system later - holding
-    # things, putting things in your pockets, etc.
-
     contentsTemplate = attributes.text(
         doc="""
         Define how the contents of this container are presented to observers.
