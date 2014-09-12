@@ -9,8 +9,6 @@ It also implements several basic retrievers related to visibility and physical
 reachability.
 """
 
-from __future__ import print_function
-
 from zope.interface import implements
 
 from characteristic import with_cmp, with_init, attributes
