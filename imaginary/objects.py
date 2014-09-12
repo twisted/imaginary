@@ -8,7 +8,7 @@ associated with scoring (L{Points}), and the basic actor interface which allows
 the user to perform simple actions (L{Actor}).
 """
 
-from __future__ import division, print_function
+from __future__ import division
 
 import math
 
