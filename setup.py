@@ -1,3 +1,4 @@
+# -*- test-case-name: imaginary,examplegame -*-
 from epsilon.setuphelper import autosetup
 
 import versioneer
