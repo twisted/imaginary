@@ -533,14 +533,27 @@ class IRetriever(Interface):
 
     def shouldKeepGoing(path):
         """
-        Inspect a L{Path}. True if it should be searched, False if not.
+        Inspect a L{Path}.  True if it should be searched, False if not.
+
+        @param path: A path to inspect.
+        @type path: L{Path}
+
+        @return: L{True} if retrieval should continue to the paths reachable
+            beyond C{path}, L{False} otherwise.
         """
 
 
     def objectionsTo(path, result):
         """
+        @param path: The path to a particular result.
+        @type path: L{Path}
+
+        @param result: An object previously returned by C{retrieve} which will
+            be retrieved if this method does not return any objections to it.
+        @type result: ???
+
         @return: an iterator of IWhyNot, if you object to this result being
-        yielded.
+            yielded.
         """
 
 
