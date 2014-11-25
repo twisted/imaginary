@@ -30,7 +30,10 @@ class _VisiblePathSatisfiesPredicate(object):
     def retrieve(self, path):
         """
         Return the suitable object described by C{path}, or None if the path is
-        unsuitable for this retriever's purposes.
+        unsuitable for this retriever's purposes.  Any path for which
+        C{predicate} returns L{True} will be retrieved.
+
+        @param path: See L{IRetriever.retrieve}
         """
         if self.predicate(path):
             return path
@@ -38,13 +41,23 @@ class _VisiblePathSatisfiesPredicate(object):
 
     def shouldKeepGoing(self, path):
         """
-        Inspect a L{Path}. True if it should be searched, False if not.
+        Always keep going (rely on the predicate to end traversal).
+
+        @param path: See L{IRetriever.shouldKeepGoing}
+
+        @return: See L{IRetriever.shouldKeepGoing}
         """
         return True
 
 
     def objectionsTo(self, path, result):
         """
+        Object to unlit paths.
+
+        @param path: See L{IRetriever.objectionsTo}
+
+        @param result: See L{IRetriever.objectionsTo}
+
         @return: an iterator of IWhyNot, if you object to this result being
             yielded.
         """
@@ -120,6 +133,16 @@ def visualizations(viewingThing, predicate, withinDistance=3.0):
             # room, despite the fact that the path goes player -> chair -> room
             # -> chair -> gun.  The chair -> room -> chair path would be
             # disallowed by the cycle-detection in obtain().
+            #
+            # Use of a distance predicate here is a temporary solution.  It is
+            # necessary to avoid collecting all the objects in the entire
+            # simulation graph but it doesn't necessarily set the bounds of
+            # this obtain call correctly.  How much stuff around the target is
+            # worth returning here?  How much is relevant to the thing you're
+            # looking at?  Mere proximity doesn't really answer that question.
+            # At some point, we should figure out what rules we want to use to
+            # define "related to" for the purposes of the vision system and
+            # replace this Proximity with them somehow.
             subPaths = visualTargetIdea.obtain(
                 Proximity(withinDistance,
                           _VisiblePathSatisfiesPredicate(lambda p: True))
@@ -170,7 +193,20 @@ def _isIlluminated(path):
 
 def _lightingApplied(path):
     """
-    
+    Treat the given path as a path identifying a visual object, and apply
+    lighting to it.
+
+    @param path: The path to the visual object to which to apply lighting.
+        L{IVisible} annotations along this path may influence the lighting
+        results.
+    @type path: L{Path}
+
+    @return: an L{IConcept} provider which can render an appropriate
+        description for the target of the given C{path}, dependent upon the
+        level of lighting conferred by the given C{path}; or L{None} if the
+        target of the given path does not adapt to L{IVisible}, or if the given
+        path is not L{illuminated <_isIlluminated>}.
+    @rtype: L{IConcept} or L{types.NoneType}
     """
     thing = path.targetAs(IVisible)
     if not _isIlluminated(path):
