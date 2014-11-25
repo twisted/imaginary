@@ -277,6 +277,14 @@ class Wearer(item.Item, Enhancement):
         """
         Describe the list of clothing.
         """
+        # This should respect paths instead of using getGarmentDict.  paths
+        # includes all of the garments that should be described (which may or
+        # may not be all of the garments this wearer is wearing).  Just
+        # describe those.  We probably also want a way to "claim" certain paths
+        # from the input to indicate that they've been described and other
+        # systems don't need to worry about them (so maybe mutate paths - or
+        # maybe do something better using an API that explicitly supports
+        # removing these things).
         return ExpressClothing(self.thing, self.getGarmentDict())
 
 
