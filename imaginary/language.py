@@ -201,10 +201,10 @@ class Description(object):
             descriptionConcepts.append(pup.contributeDescriptionFrom(others))
 
         def index(c):
+            # https://github.com/twisted/imaginary/issues/63
             preferredOrder = [
                 'ExpressCondition',
                 'ExpressClothing',
-                'ExpressSurroundings',
             ]
             try:
                 return preferredOrder.index(c.__class__.__name__)

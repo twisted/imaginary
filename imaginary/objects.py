@@ -690,8 +690,8 @@ class Containment(object):
         Implement L{IDescriptionContributor} to enumerate the contents of this
         containment.
 
-        @return: an L{ExpressSurroundings} with an iterable of all visible
-        contents of this container.
+        @return: an L{ExpressContents} with an iterable of all visible contents
+            of this container.
         """
         return ExpressContents(self, paths)
 
@@ -831,14 +831,6 @@ class _ContainerExit(structlike.record('container')):
         reflects the container's L{IThing}.
         """
         return self.container.thing
-
-
-
-class ExpressSurroundings(language.ItemizedList):
-    def concepts(self, observer):
-        return [iimaginary.IConcept(o)
-                for o in super(ExpressSurroundings, self).concepts(observer)
-                if o is not observer]
 
 
 
