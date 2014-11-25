@@ -358,7 +358,7 @@ class LookAt(TargetAction):
 
         @return: A list of the results of C{visualizeWithContents}.
 
-        @rtype: C{list} of L{IVisible}
+        @rtype: C{list} of L{IConcept}
 
         @raise eimaginary.ActionFailure: with an appropriate message if the
             target cannot be resolved for an identifiable reason.  See
