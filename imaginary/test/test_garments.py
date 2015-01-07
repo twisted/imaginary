@@ -10,8 +10,6 @@ from imaginary.eimaginary import ActionFailure
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
 from imaginary.world import ImaginaryWorld
-from imaginary.idea import Path
-from imaginary.idea import Link
 
 class WearIt(unittest.TestCase, commandutils.LanguageMixin):
 
