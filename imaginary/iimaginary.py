@@ -42,7 +42,8 @@ class IDescriptionContributor(Interface):
 
     All IDescriptionContributors which are powered up on a particular Object
     will be given a chance to add to the output of its
-    C{contributeDescriptionFrom} method.
+    L{contributeDescriptionFrom
+    <IDescriptionContributor.contributeDescriptionFrom>} method.
     """
 
     def contributeDescriptionFrom(paths):
