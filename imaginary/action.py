@@ -925,12 +925,12 @@ class Go(Action):
         providers that they can see and reach.
         """
         directionName = expandDirection(directionName)
-        return list(player.obtainOrReportWhyNot(
+        return player.obtainOrReportWhyNot(
             Proximity(
                 3.0,
                 Traversability(
                     Named(directionName,
-                          CanSee(ProviderOf(iimaginary.IExit)), player)))))
+                          CanSee(ProviderOf(iimaginary.IExit)), player))))
 
 
     def cantFind_direction(self, actor, directionName):
