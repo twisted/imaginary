@@ -29,7 +29,7 @@ from imaginary.language import Description
 
 from imaginary.idea import (
     Idea, Link, Proximity, ProviderOf, AlsoKnownAs, CanSee,
-    Vector, DelegatingRetriever)
+    Vector)
 
 
 class Points(item.Item):
