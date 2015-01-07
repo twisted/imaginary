@@ -6,7 +6,7 @@ Layered clothing.
 
 """
 
-from zope.interface import implements, implementer
+from zope.interface import implements
 
 from axiom import item, attributes
 
@@ -303,7 +303,6 @@ class Wearer(item.Item, Enhancement):
 
 
 
-@implementer(iimaginary.IElectromagneticMedium)
 class _WornBy(object):
     """
     This is an annotation, produced by L{Wearer} for containment relationships
@@ -312,6 +311,8 @@ class _WornBy(object):
     its own way and therefor shouldn't show up in the list of a person's
     contents.
     """
+    implements(iimaginary.IElectromagneticMedium)
+
 
     def __init__(self, wearer):
         """

@@ -369,14 +369,11 @@ class LookAt(TargetAction):
                               lambda path: isKnownTo(player, path, targetName))
 
 
-
     def cantFind_target(self, player, name):
         return "You don't see that."
 
-
     def targetRadius(self, player):
         return 3
-
 
     def do(self, player, line, target):
         if player.thing is not target:
