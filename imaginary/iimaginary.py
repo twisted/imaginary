@@ -601,9 +601,9 @@ class IVisible(Interface):
 
     def visualizeWithContents(pathsToContents):
         """
-        Return an IConcept which represents the visible aspects of this visible
-        thing, but with the given list of L{imaginary.idea.Path} objects
-        pointing at paths which continue on past this L{IVisible}.
+        @return: an L{IConcept} which represents the visible aspects of this
+            visible thing, but with the given list of L{imaginary.idea.Path}
+            objects pointing at paths which continue on past this L{IVisible}.
         """
 
 

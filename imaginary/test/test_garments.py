@@ -5,7 +5,7 @@ from twisted.trial import unittest
 
 from axiom import store
 
-from imaginary import iimaginary, objects, garments, language, action
+from imaginary import iimaginary, objects, garments, language, vision
 from imaginary.eimaginary import ActionFailure
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
@@ -54,9 +54,14 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
     def visualizeDaisy(self):
         """
-            
+        Present the description rendered when our protagonist, Daisy, looks at
+        herself.
+
+        @return: a concept representing Daisy's self-description, including all
+            her clothes.
+        @rtype: L{IConcept}
         """
-        [description] = action.visualizations(
+        [description] = vision.visualizations(
             self.daisy,
             lambda path: path.targetAs(iimaginary.IThing) is self.daisy)
         return description
