@@ -837,7 +837,6 @@ class Container(item.Item, Containment, _Enhancement):
     """
     A generic L{_Enhancement} that implements containment.
     """
-
     contentsTemplate = attributes.text(
         doc="""
         Define how the contents of this container are presented to observers.
