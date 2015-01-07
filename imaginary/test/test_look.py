@@ -101,7 +101,11 @@ class LookAroundTranscriptTests(CommandTestCaseMixin, TestCase):
 @implementer(iimaginary.ILitLink)
 @has_attributes(["bear"])
 class BlindToBears(object):
-    def isItLit(self, path, result):
+    def isItLit(self, path):
+        """
+        Any path that passes through a L{BlindToBears} link and terminates in a
+        bear is not lit.  An eldrich darkness consumes the bear.
+        """
         schroedingerBear = path.targetAs(iimaginary.IThing)
         actualBear = self.bear
         if schroedingerBear == actualBear:

@@ -62,7 +62,7 @@ class _VisiblePathSatisfiesPredicate(object):
             yielded.
         """
         for lighting in path.of(ILitLink):
-            if not lighting.isItLit(path, result):
+            if not lighting.isItLit(path):
                 tmwn = lighting.whyNotLit()
                 yield tmwn
 
@@ -184,7 +184,7 @@ def _isIlluminated(path):
     if not litlinks:
         return True
     for litlink in litlinks:
-        if litlink.isItLit(path, path.targetAs(IVisible)):
+        if litlink.isItLit(path):
             return True
         else:
             return False

@@ -84,9 +84,18 @@ class ILitLink(Interface):
     objects, for indicating that the link can apply lighting.
     """
 
-    def isItLit(path, result):
+    def isItLit(path):
         """
-        ???
+        Is the given C{path} well-lit enough for its target to be visible,
+        according to the lighting applied by this link?
+
+        @param path: a path containing the link that this L{ILitLink} is
+            annotating.
+        @type path: L{imaginary.idea.Path}
+
+        @return: L{True} if the target of the path should be lit, L{False} if
+            not.
+        @rtype: L{bool}
         """
 
     def applyLighting(litThing, eventualTarget, requestedInterface):

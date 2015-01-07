@@ -680,6 +680,6 @@ class CanSee(DelegatingRetriever):
         Object to paths which have L{ILitLink} annotations which are not lit.
         """
         for lighting in path.of(ILitLink):
-            if not lighting.isItLit(path, result):
+            if not lighting.isItLit(path):
                 tmwn = lighting.whyNotLit()
                 yield tmwn

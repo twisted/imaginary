@@ -1244,13 +1244,12 @@ class _PossiblyDark(structlike.record("lighting")):
         return "It's too dark to see."
 
 
-    def isItLit(self, path, result):
+    def isItLit(self, path):
         """
-        Determine if the given result, viewed via the given path, appears to be
-        lit.
+        Determine if the target of the given path, viewed via the given path,
+        appears to be lit.
 
         @return: L{True} if the result should be lit, L{False} if it is dark.
-
         @rtype: C{bool}
         """
         # XXX wrong, we need to examine this exactly the same way applyLighting
