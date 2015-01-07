@@ -873,7 +873,13 @@ class ExpressContents(language.Sentence):
 
     def __init__(self, original, paths):
         """
-        
+        @param original: the L{Container} whose contents we are describing.
+
+        @param paths: a collection of all paths to objects from this container
+            which L{ExpressContents} should describe.  some of them may be
+            contained within this container, and some of them may be components
+            of things contained within this container, so L{ExpressContents}
+            will present them appropriately.
         """
         super(ExpressContents, self).__init__(original)
         self.paths = paths
