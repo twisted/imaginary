@@ -172,7 +172,7 @@ class HiraganaMouse(item.Item):
     def stopChallenging(self):
         """
         Stop shouting hiragana.
-
+        
         @raises ChallengeVacuum: If this h-mouse is not currently challenging.
         """
         if not self.challenging:
