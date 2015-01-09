@@ -122,20 +122,56 @@ class BlindToBears(object):
         """
         return it
 
+
+
 class BearsWhyNot(object):
     """
-    
+    A reason you can't see something: it's a bear, and you're blind to bears,
+    that's why you can't see it.
     """
+
     def tellMeWhyNot(self):
+        """
+        An evocative message that the user probably won't see (since they can't
+        in fact see this bear).
+        """
         return u"IT'S A BEAR"
+
+
+
 interfaces = [iimaginary.ILinkAnnotator]
 @implementer(*interfaces)
 class BearBlindness(item.Item, Enhancement):
+    """
+    An enhancement for an actor which causes that actor to become unable to see
+    bears.
+
+    (This could be installed on something other than an actor, which would
+    cause all bears on the other side of whatever link it was to become
+    invisible to all.)
+    """
     powerupInterfaces = interfaces
-    thing = attributes.reference()
-    bear = attributes.reference()
+
+    thing = attributes.reference(
+        """
+        This is a reference to a Thing which is blind to bears.
+        """
+    )
+
+    bear = attributes.reference(
+        """
+        This is a reference to a Thing which is the one and only bear in the
+        universe, which you cannot see.
+
+        THERE CAN ONLY BE ONE.
+        """
+    )
 
     def annotationsFor(self, link, idea):
+        """
+        Yield an annotation for all links which causes bears on the opposite
+        side of you to be invisible to you.
+        """
         yield BlindToBears(bear=self.bear)
 
 
@@ -144,7 +180,8 @@ class LookAtTranscriptTests(CommandTestCaseMixin, TestCase):
     def test_bearBlindness(self):
         """
         If I cast a spell on you which makes you unable to see bears, you
-        should not see a bear when you look at the room around you.
+        should not see a bear in the room with you when you look at the room
+        around you.
         """
         bear = objects.Thing(store=self.store,
                              name=u"Bear",
