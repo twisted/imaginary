@@ -229,8 +229,6 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["Test Player jumps up and down"],
             ["Test Player jumps up and down"])
 
-    # TODO Add an "obtain" command to help debugging or something (replace the
-    # old search action we deleted)
 
     def testDescribe(self):
         self._test(
