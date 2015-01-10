@@ -48,8 +48,24 @@ class IDescriptionContributor(Interface):
 
     def contributeDescriptionFrom(paths):
         """
-        Contribute descriptions from the given paths.
+        Contribute a portion of the description of the thing that this
+        L{IDescriptionContributor} is powering up, based on the given
+        collection of L{imaginary.idea.Path}s which pass through that thing.
+
+        @param paths: paths which pass through the thing that this
+            L{IDescriptionContributor} may be powering up, that may be relevant
+            to the description that this contributor wants to contribute.  For
+            example, if a console has red, green, and blue lights on it, and
+            each is a separate path, an L{IDescriptionContributor} describing
+            the buttons may examine the paths here to ensure that the buttons
+            are all visible and look normal to the player before describing
+            them using some custom prose.
+        @type paths: L{list} of L{imaginary.idea.Path}
+
+        @return: a concept which presents a description to its observer.
+        @rtype: L{IConcept}
         """
+
 
 
 class INameable(Interface):
