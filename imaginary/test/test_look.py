@@ -97,14 +97,17 @@ class LookAroundTranscriptTests(CommandTestCaseMixin, TestCase):
 
 
 
-
 @implementer(iimaginary.ILitLink)
 @has_attributes(["bear"])
-class BlindToBears(object):
+class BearsHiddenBeyondThisLink(object):
+    """
+    An annotation for a link implementing L{BearBlindness}.
+    """
+
     def isItLit(self, path):
         """
-        Any path that passes through a L{BlindToBears} link and terminates in a
-        bear is not lit.  An eldrich darkness consumes the bear.
+        Any path that passes through a L{BearsHiddenBeyondThisLink} link and
+        terminates in a bear is shrouded in darkness.  The bear lies in wait.
         """
         schroedingerBear = path.targetAs(iimaginary.IThing)
         actualBear = self.bear
@@ -113,12 +116,21 @@ class BlindToBears(object):
         else:
             return True
 
+
     def whyNotLit(self):
+        """
+        The reason that a bear is obscured is L{BearsWhyNot}.
+        """
         return BearsWhyNot()
+
 
     def applyLighting(self, litThing, it, interface):
         """
-        Don't ever apply lighting (unless perhaps it's to a bear?).
+        L{iimaginary.ILitLink.applyLighting} can modify a target that has had
+        lighting applied to it; in the case of this annotation things are
+        either completely not lit at all (bears) or fully lit and appear normal
+        (everything else) so we just always return the thing itself and don't
+        modify it.
         """
         return it
 
@@ -172,7 +184,7 @@ class BearBlindness(item.Item, Enhancement):
         Yield an annotation for all links which causes bears on the opposite
         side of you to be invisible to you.
         """
-        yield BlindToBears(bear=self.bear)
+        yield BearsHiddenBeyondThisLink(bear=self.bear)
 
 
 
