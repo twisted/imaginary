@@ -9,6 +9,9 @@ from axiom import store
 from imaginary import iimaginary, eimaginary, objects
 from imaginary.test.commandutils import (
     CommandTestCaseMixin, E, createLocation, flatten)
+from imaginary.idea import Path
+from imaginary.idea import Link
+from imaginary.iimaginary import IThing
 from imaginary.language import ExpressList
 
 class ContainerTestCase(unittest.TestCase):
@@ -72,18 +75,33 @@ class ContainerTestCase(unittest.TestCase):
         self.assertIdentical(self.object.location, self.containmentCore)
 
 
+class Paths(object):
+    def shouldKeepGoing(self, path):
+        return True
+
+    def retrieve(self, path):
+        if path.targetAs(IThing) is not None:
+            return path
+
+    def objectionsTo(self, path, result):
+        return []
 
 class ExpressContentsTests(unittest.TestCase):
     """
     Tests for L{ExpressContents}.
     """
-    skip = "ExpressContents requires a list of paths now, let's get to that later."
+
     def setUp(self):
         self.store = store.Store()
+        self.room = objects.Thing(store=self.store, name=u'room')
+        roomContainer = objects.Container.createFor(self.room, capacity=456)
         self.box = objects.Thing(store=self.store, name=u"box")
         self.container = objects.Container.createFor(self.box, capacity=123)
-        self.concept = objects.ExpressContents(self.container)
         self.observer = objects.Thing(store=self.store, name=u"observer")
+        self.observer.moveTo(roomContainer)
+        self.box.moveTo(roomContainer)
+        self.concept = objects.ExpressContents(
+            self.container, list(self.observer.idea.obtain(Paths())))
 
 
     def addContents(self, names):
@@ -98,6 +116,11 @@ class ExpressContentsTests(unittest.TestCase):
             thing = objects.Thing(store=self.store, name=name, proper=True)
             thing.moveTo(self.container)
             things.append(thing)
+
+        self.concept = objects.ExpressContents(
+            self.container,
+            list(self.observer.idea.obtain(Paths()))
+        )
         return things
 
 
@@ -114,7 +137,7 @@ class ExpressContentsTests(unittest.TestCase):
         L{Container} the L{ExpressContents} instance is initialized with has no
         contents.
         """
-        contents = self.concept._contentConcepts(self.observer)
+        contents = list(self.concept._contentConcepts(self.observer))
         self.assertEqual([], contents)
 
 
@@ -126,7 +149,7 @@ class ExpressContentsTests(unittest.TestCase):
         """
         [something] = self.addContents([u"something"])
 
-        contents = self.concept._contentConcepts(self.observer)
+        contents = list(self.concept._contentConcepts(self.observer))
         self.assertEqual([something], contents)
 
 
@@ -136,10 +159,10 @@ class ExpressContentsTests(unittest.TestCase):
         include the observer, even if the observer is contained by the
         L{Container} the L{ExpressContents} instance is initialized with.
         """
-        [something] = self.addContents([u"something"])
         self.observer.moveTo(self.container)
+        [something] = self.addContents([u"something"])
 
-        concepts = self.concept._contentConcepts(self.observer)
+        concepts = list(self.concept._contentConcepts(self.observer))
         self.assertEqual([something], concepts)
 
 
@@ -152,7 +175,7 @@ class ExpressContentsTests(unittest.TestCase):
         objects.LocationLighting.createFor(self.box, candelas=0)
         [something] = self.addContents([u"something"])
 
-        concepts = self.concept._contentConcepts(self.observer)
+        concepts = list(self.concept._contentConcepts(self.observer))
         self.assertEqual([], concepts)
 
 

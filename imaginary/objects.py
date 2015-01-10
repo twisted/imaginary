@@ -902,7 +902,8 @@ class ExpressContents(language.Sentence):
                 continue
             if pathIndicatesContainmentIn(path, container):
                 if seer.shouldStillKeepGoing(path):
-                    yield target
+                    if not list(seer.moreObjectionsTo(path, None)):
+                        yield target
 
 
     @property
