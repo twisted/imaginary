@@ -724,6 +724,7 @@ class _ContainerEntrance(structlike.record('container')):
 
     @type container: L{Containment}
     """
+
     implements(iimaginary.IExit, iimaginary.INameable)
 
     @property
