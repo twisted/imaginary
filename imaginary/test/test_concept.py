@@ -246,6 +246,7 @@ class VT102Tests(NounTestCase, SharedTextyTests):
 
 
     def unparse(self, s):
+        print repr(s)
         return list(unc.parser(unc.tokenize(s)))
 
     def _assertECMA48Equality(self, a, b):
@@ -255,8 +256,7 @@ class VT102Tests(NounTestCase, SharedTextyTests):
                           unc.prettystring(b).splitlines()):
             errorLines.append('%-38s|%38s' % (la, lb))
 
-        self.assertEqual(a, b, '\nERROR!\n' + '\n'.join(errorLines))
-
+        self.assertEquals(a, b, '\nERROR!\n' + '\n'.join(errorLines))
 
     def test_missingDescription(self):
         """
