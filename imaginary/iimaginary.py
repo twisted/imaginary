@@ -41,13 +41,31 @@ class IDescriptionContributor(Interface):
     A powerup interface which can add text to the description of an object.
 
     All IDescriptionContributors which are powered up on a particular Object
-    will be given a chance to add to the output of its C{conceptualize} method.
+    will be given a chance to add to the output of its
+    L{contributeDescriptionFrom
+    <IDescriptionContributor.contributeDescriptionFrom>} method.
     """
 
-    def conceptualize():
+    def contributeDescriptionFrom(paths):
         """
-        Return an IConcept provider.
+        Contribute a portion of the description of the thing that this
+        L{IDescriptionContributor} is powering up, based on the given
+        collection of L{imaginary.idea.Path}s which pass through that thing.
+
+        @param paths: paths which pass through the thing that this
+            L{IDescriptionContributor} may be powering up, that may be relevant
+            to the description that this contributor wants to contribute.  For
+            example, if a console has red, green, and blue lights on it, and
+            each is a separate path, an L{IDescriptionContributor} describing
+            the buttons may examine the paths here to ensure that the buttons
+            are all visible and look normal to the player before describing
+            them using some custom prose.
+        @type paths: L{list} of L{imaginary.idea.Path}
+
+        @return: a concept which presents a description to its observer.
+        @rtype: L{IConcept}
         """
+
 
 
 class INameable(Interface):
@@ -81,6 +99,20 @@ class ILitLink(Interface):
     This interface is an annotation interface for L{imaginary.idea.Link}
     objects, for indicating that the link can apply lighting.
     """
+
+    def isItLit(path):
+        """
+        Is the given C{path} well-lit enough for its target to be visible,
+        according to the lighting applied by this link?
+
+        @param path: a path containing the link that this L{ILitLink} is
+            annotating.
+        @type path: L{imaginary.idea.Path}
+
+        @return: L{True} if the target of the path should be lit, L{False} if
+            not.
+        @rtype: L{bool}
+        """
 
     def applyLighting(litThing, eventualTarget, requestedInterface):
         """
@@ -321,6 +353,24 @@ class IExit(Interface):
         """
 
 
+    def shouldEvenAttemptTraversalFrom(fromLocation, potentialTraverser):
+        """
+        Is it plausible for the given thing to attempt a C{traverse} of this
+        L{IExit}?
+
+        @param fromLocation: The location from which the traversal might be
+            attempted.
+        @type fromLocation: L{IThing}
+
+        @param potentialTraverser: The thing which might attempt to traverse
+            the exit.
+        @type potentialTraverser: L{IThing}
+
+        @return: C{True} if so, C{False} if not.
+        """
+
+
+
 
 
 class IObstruction(Interface):
@@ -509,14 +559,27 @@ class IRetriever(Interface):
 
     def shouldKeepGoing(path):
         """
-        Inspect a L{Path}. True if it should be searched, False if not.
+        Inspect a L{Path}.  True if it should be searched, False if not.
+
+        @param path: A path to inspect.
+        @type path: L{Path}
+
+        @return: L{True} if retrieval should continue to the paths reachable
+            beyond C{path}, L{False} otherwise.
         """
 
 
     def objectionsTo(path, result):
         """
+        @param path: The path to a particular result.
+        @type path: L{Path}
+
+        @param result: An object previously returned by C{retrieve} which will
+            be retrieved if this method does not return any objections to it.
+        @type result: ???
+
         @return: an iterator of IWhyNot, if you object to this result being
-        yielded.
+            yielded.
         """
 
 
@@ -539,6 +602,12 @@ class IContainmentRelationship(Interface):
         that this L{IContainmentRelationship} annotates.
         """)
 
+    contained = Attribute(
+        """
+        A reference to the L{IThing} being contained.
+        """
+    )
+
 
 
 class IVisible(Interface):
@@ -546,11 +615,13 @@ class IVisible(Interface):
     A thing which can be seen.
     """
 
-    def visualize():
+    def visualizeWithContents(pathsToContents):
         """
-        Return an IConcept which represents the visible aspects of this
-        visible thing.
+        @return: an L{IConcept} which represents the visible aspects of this
+            visible thing, but with the given list of L{imaginary.idea.Path}
+            objects pointing at paths which continue on past this L{IVisible}.
         """
+
 
 
     def isViewOf(thing):
@@ -707,6 +778,7 @@ class IElectromagneticMedium(Interface):
         @param observer: The L{Thing} which has eyeballs which are shooting out
             electromagnetic radiation which could lead to reflected perceptrons
             to let the L{Thing} perceive a target.
+        @type observer: L{Thing}
 
         @note: This interface has a problem.  C{observer} should probably
             provide some kind of C{ISpectrum} interface and the implementation

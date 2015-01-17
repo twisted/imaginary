@@ -1,29 +1,21 @@
-
 """
 Tests for the conversion between abstract objects representing the world or
 changes in the world into concrete per-user-interface content.
 """
 
+from zope.interface import implementer
+from zope.interface.verify import verifyClass
+
 from twisted.trial import unittest
 
 from epsilon import structlike
 
-from imaginary import language, unc, text as T
+from imaginary import language, unc, text as T, iimaginary
 from imaginary.test import commandutils
 
 class FakeThing(object):
     def __init__(self, **kw):
         self.__dict__.update(kw)
-
-
-
-class FakeDescriptionContributor:
-    def __init__(self, description):
-        self.descr = description
-
-
-    def conceptualize(self):
-        return language.ExpressString(self.descr)
 
 
 
@@ -143,50 +135,110 @@ class SharedTextyTests(commandutils.LanguageMixin):
 
 
 
-class BasicConceptTestCasePlaintext(NounTestCase, SharedTextyTests):
+def _description(title=None, exits=(), description=None, components=None):
+    """
+
+    """
+    return language.Description(
+        title=title, exits=exits, description=description,
+        components=components)
+
+
+
+class PlaintextDescriptionTests(NounTestCase, SharedTextyTests):
 
     def format(self, concept):
         return self.flatten(concept.plaintext(self.observer))
 
 
-    def testMissingDescription(self):
-        self.thing.description = None
-        self.assertEquals(self.format(language.DescriptionConcept(self.thing.name, self.thing.description)),
-                          u'[ fake thing ]\n')
+    def test_missingDescription(self):
+        """
+        L{Description.plaintext} can be used with with a C{None} description.
+        """
+        self.assertEqual(
+            self.format(
+                _description(title=self.thing.name,
+                                  description=None)),
+            u'[ fake thing ]\n'
+        )
 
 
-    def testEmptyDescription(self):
-        self.thing.description = u''
-        self.assertEquals(self.format(language.DescriptionConcept(self.thing.name, self.thing.description)),
-                          u'[ fake thing ]\n')
+    def test_emptyDescription(self):
+        """
+        L{Description.plaintext} can be used with an empty string description.
+        """
+        self.assertEqual(
+            self.format(
+                _description(title=self.thing.name, description=u'')),
+            u'[ fake thing ]\n'
+        )
 
 
-    def testDescription(self):
-        self.assertEquals(self.format(language.DescriptionConcept(self.thing.name, self.thing.description)),
-                          u'[ fake thing ]\n'
-                          u'Fake Thing Description\n')
+    def test_description(self):
+        """
+        A non-empty description string is included in the result of
+        L{Description.plaintext}.
+        """
+        self.assertEqual(
+            self.format(
+                _description(title=self.thing.name,
+                                  description=self.thing.description)),
+            u'[ fake thing ]\n'
+            u'Fake Thing Description\n'
+        )
 
 
-    def testExitsDescription(self):
+    def test_exitsDescription(self):
+        """
+        A L{Description.plaintext} includes any exits.
+        """
         exits = [StubExit(name=u"north"), StubExit(name=u"west")]
-        self.assertEquals(self.format(language.DescriptionConcept(self.thing.name, self.thing.description, exits)),
-                          u'[ fake thing ]\n'
-                          u'( north west )\n'
-                          u'Fake Thing Description\n')
+        self.assertEqual(
+            self.format(
+                _description(title=self.thing.name,
+                                  description=self.thing.description,
+                                  exits=exits)),
+            u'[ fake thing ]\n'
+            u'( north west )\n'
+            u'Fake Thing Description\n'
+        )
 
 
-    def testDescriptionContributors(self):
-        a = FakeDescriptionContributor(u"first part")
-        b = FakeDescriptionContributor(u"last part")
-        self.assertEquals(self.format(language.DescriptionConcept(self.thing.name, self.thing.description, others=[a, b])),
-                          u'[ fake thing ]\n'
-                          u'Fake Thing Description\n' +
-                          a.descr + u"\n" +
-                          b.descr)
+    def test_components(self):
+        """
+        A L{Description.plaintext} includes any extra components.
+        """
+        a = language.ExpressString(u"first part")
+        b = language.ExpressString(u"last part")
+        self.assertEquals(
+            self.format(
+                _description(title=self.thing.name,
+                                  description=self.thing.description,
+                                  components=[a, b])),
+            u'[ fake thing ]\n'
+            u'Fake Thing Description\n' +
+            a.original + u"\n" +
+            b.original
+        )
 
 
+@implementer(iimaginary.IExit)
 class StubExit(structlike.record("name")):
-    pass
+    def shouldEvenAttemptTraversalFrom(self, where, thing):
+        """
+        Yes.
+        """
+        return True
+
+
+    def traverse(self, thing):
+        """
+        Don't go anywhere.
+        """
+
+
+
+verifyClass(iimaginary.IExit, StubExit)
 
 class VT102Tests(NounTestCase, SharedTextyTests):
     def format(self, concept):
@@ -206,40 +258,63 @@ class VT102Tests(NounTestCase, SharedTextyTests):
 
         self.assertEquals(a, b, '\nERROR!\n' + '\n'.join(errorLines))
 
-    def testMissingDescription(self):
+    def test_missingDescription(self):
+        """
+        L{Description.vt102} can be used with with a C{None} description.
+        """
         self.thing.description = None
         self._assertECMA48Equality(
-            self.format(language.DescriptionConcept(self.thing.name, self.thing.description)),
+            self.format(_description(title=self.thing.name,
+                                     description=self.thing.description)),
             self.flatten([T.bold, T.fg.green, u'[ ', [T.fg.normal, "fake thing"], u' ]\n']))
 
 
-    def testEmptyDescription(self):
+    def test_emptyDescription(self):
+        """
+        L{Description.vt102} can be used with an empty string description.
+        """
         self.thing.description = u''
         self._assertECMA48Equality(
-            self.format(language.DescriptionConcept(self.thing.name, self.thing.description)),
+            self.format(_description(title=self.thing.name,
+                                     description=self.thing.description)),
             self.flatten([T.bold, T.fg.green, u'[ ', [T.fg.normal, "fake thing"], u' ]\n']))
 
 
-    def testDescription(self):
+    def test_description(self):
+        """
+        A non-empty description string is included in the result of
+        L{Description.vt102}.
+        """
         self._assertECMA48Equality(
-            self.format(language.DescriptionConcept(self.thing.name, self.thing.description)),
+            self.format(_description(title=self.thing.name,
+                                     description=self.thing.description)),
             self.flatten([[T.bold, T.fg.green, u'[ ', [T.fg.normal, "fake thing"], u' ]\n'],
                           T.fg.green, u'Fake Thing Description\n']))
 
 
-    def testExitsDescription(self):
+    def test_exitsDescription(self):
+        """
+        A L{Description.vt102} includes any exits.
+        """
         exits = [StubExit(name=u"north"), StubExit(name=u"west")]
         self._assertECMA48Equality(
-            self.format(language.DescriptionConcept(self.thing.name, self.thing.description, exits)),
+            self.format(_description(title=self.thing.name,
+                                     description=self.thing.description,
+                                     exits=exits)),
             self.flatten([[T.bold, T.fg.green, u'[ ', [T.fg.normal, "fake thing"], u' ]\n'],
                           [T.bold, T.fg.green, u'( ', [T.fg.normal, T.fg.yellow, u'north west'], u' )', u'\n'],
                           T.fg.green, u'Fake Thing Description\n']))
 
 
-    def testDescriptionContributors(self):
-        a = FakeDescriptionContributor(u"first part")
-        b = FakeDescriptionContributor(u"last part")
+    def test_descriptionContributors(self):
+        """
+        A L{Description.vt102} includes any extra components.
+        """
+        a = language.ExpressString(u"first part")
+        b = language.ExpressString(u"last part")
         self._assertECMA48Equality(
-            self.format(language.DescriptionConcept(self.thing.name, self.thing.description, others=[a, b])),
+            self.format(_description(title=self.thing.name,
+                                     description=self.thing.description,
+                                     components=[a, b])),
             self.flatten([[[T.bold, T.fg.green, u'[ ', [T.fg.normal, "fake thing"], u' ]\n'],
-                          T.fg.green, u'Fake Thing Description\n'], a.descr + u"\n" + b.descr]))
+                           T.fg.green, u'Fake Thing Description\n'], a.original + u"\n" + b.original]))

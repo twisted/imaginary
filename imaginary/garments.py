@@ -10,10 +10,9 @@ from zope.interface import implements
 
 from axiom import item, attributes
 
-from imaginary import iimaginary, language, objects
+from imaginary import iimaginary, language
 from imaginary.eimaginary import ActionFailure
 from imaginary.events import ThatDoesntWork
-from imaginary.idea import Link
 from imaginary.creation import createCreator
 from imaginary.enhancement import Enhancement
 
@@ -110,7 +109,7 @@ class Garment(item.Item, Enhancement):
     wearLevel = attributes.integer(default=0)
 
 
-    def conceptualize(self):
+    def contributeDescriptionFrom(self, paths):
         return language.ExpressString(u'This can be worn.')
 
 
@@ -204,7 +203,6 @@ class Wearer(item.Item, Enhancement):
 
     _interfaces = (iimaginary.IClothingWearer,
                    iimaginary.IDescriptionContributor,
-                   iimaginary.ILinkContributor,
                    iimaginary.ILinkAnnotator,
                    )
 
@@ -275,20 +273,19 @@ class Wearer(item.Item, Enhancement):
 
 
     # IDescriptionContributor
-    def conceptualize(self):
+    def contributeDescriptionFrom(self, paths):
         """
         Describe the list of clothing.
         """
+        # This should respect paths instead of using getGarmentDict.  paths
+        # includes all of the garments that should be described (which may or
+        # may not be all of the garments this wearer is wearing).  Just
+        # describe those.  We probably also want a way to "claim" certain paths
+        # from the input to indicate that they've been described and other
+        # systems don't need to worry about them (so maybe mutate paths - or
+        # maybe do something better using an API that explicitly supports
+        # removing these things).
         return ExpressClothing(self.thing, self.getGarmentDict())
-
-
-    # ILinkContributor
-    def links(self):
-        for garmentThing in self.store.query(objects.Thing,
-                                  attributes.AND(
-                Garment.thing == objects.Thing.storeID,
-                Garment.wearer == self)):
-            yield Link(self.thing.idea, garmentThing.idea)
 
 
     # ILinkAnnotator

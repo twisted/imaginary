@@ -34,7 +34,7 @@ class DarknessTestCase(unittest.TestCase):
         """
         Assert that the given L{IVisible} provider is a dark room.
         """
-        descr = visible.visualize()
+        descr = visible.visualizeWithContents([])
         expressed = descr.plaintext(self.observer)
         lines = commandutils.flatten(expressed).splitlines()
 
@@ -335,7 +335,7 @@ class Rune(object):
 
     implements(iimaginary.IVisible, iimaginary.INameable)
 
-    def visualize(self):
+    def visualizeWithContents(self, paths):
         """
         Return an L{ExpressString} with a sample string that can be tested
         against.

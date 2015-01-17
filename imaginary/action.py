@@ -1,4 +1,6 @@
-# -*- test-case-name: imaginary.test.test_actions -*-
+# -*- test-case-name: imaginary.test -*-
+
+from __future__ import print_function
 
 import time, random, operator
 import pprint
@@ -14,10 +16,16 @@ from axiom.attributes import AND
 import imaginary.plugins
 from imaginary import (iimaginary, eimaginary, iterutils, events,
                        objects, text as T, language, pyparsing)
+
 from imaginary.world import ImaginaryWorld
+from imaginary.vision import visualizations
+
 from imaginary.idea import (
-    CanSee, Proximity, ProviderOf, Named, Traversability, Reachable
+    CanSee, Proximity, ProviderOf, Named, Traversability,
+    Reachable, isKnownTo
 )
+from imaginary.iimaginary import IThing
+
 
 ## Hacks because pyparsing doesn't have fantastic unicode support
 _quoteRemovingQuotedString = pyparsing.quotedString.copy()
@@ -296,11 +304,11 @@ def _getIt(player, thingName, iface, radius):
     @return: An iterable of L{iimaginary.IThing} providers which are found.
     """
     providerOf = ProviderOf(iface)
-    canSee = CanSee(providerOf)
+    canSee = CanSee(providerOf, player)
     named = Named(thingName, canSee, player)
     reachable = Reachable(named)
     proximity = Proximity(radius, reachable)
-    return player.obtainOrReportWhyNot(proximity)
+    return list(player.obtainOrReportWhyNot(proximity))
 
 
 
@@ -313,16 +321,15 @@ class LookAround(Action):
         ultimateLocation = player.thing.location
         while ultimateLocation.location is not None:
             ultimateLocation = ultimateLocation.location
-        for visible in player.thing.findProviders(iimaginary.IVisible, 1):
-            # XXX what if my location is furniture?  I want to see '( Foo,
-            # sitting in the Bar )', not '( Bar )'.
-            if visible.isViewOf(ultimateLocation):
-                concept = visible.visualize()
-                break
+        targets = visualizations(player.thing,
+                                 lambda viewTarget:
+                                 viewTarget.targetAs(IThing) is ultimateLocation)
+        if targets:
+            target = targets[0]
         else:
-            concept = u"You are floating in an empty, formless void."
+            target = u"You are floating in an empty, formless void."
         events.Success(actor=player.thing,
-                       actorMessage=concept).broadcast()
+                       actorMessage=target).broadcast()
 
 
 
@@ -349,19 +356,17 @@ class LookAt(TargetAction):
 
         @type targetName: C{unicode}
 
-        @return: A list of visible objects.
+        @return: A list of the results of C{visualizeWithContents}.
 
-        @rtype: C{list} of L{IVisible}
+        @rtype: C{list} of L{IConcept}
 
         @raise eimaginary.ActionFailure: with an appropriate message if the
             target cannot be resolved for an identifiable reason.  See
             L{imaginary.objects.Thing.obtainOrReportWhyNot} for a description
             of how such reasons may be identified.
         """
-        return player.obtainOrReportWhyNot(
-            Proximity(3.0, Named(targetName,
-                                 CanSee(ProviderOf(iimaginary.IVisible)),
-                                 player)))
+        return visualizations(player,
+                              lambda path: isKnownTo(player, path, targetName))
 
 
     def cantFind_target(self, player, name):
@@ -374,13 +379,18 @@ class LookAt(TargetAction):
         if player.thing is not target:
             evt = events.Success(
                 actor=player.thing,
-                target=target,
-                actorMessage=target.visualize(),
+                # sometimes 'target' is a thing you're looking at, and
+                # therefore a DescriptionWithContents, and therefore has a
+                # 'target' attribute; other times it's some random
+                # ExpressString instance and you are not actually broadcasting
+                # *to* anywhere.
+                target=getattr(target, "target", None),
+                actorMessage=target,
                 targetMessage=(player.thing, " looks at you."))
         else:
             evt = events.Success(
                 actor=player.thing,
-                actorMessage=target.visualize())
+                actorMessage=target)
         evt.broadcast()
 
 

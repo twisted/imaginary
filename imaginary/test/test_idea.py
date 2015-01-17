@@ -133,7 +133,7 @@ class IdeaTests(WonderlandSetupMixin, TestCase):
     """
     def test_objections(self):
         """
-        The L{IRetriver} passed to L{Idea.obtain} can object to certain results.
+        The L{IRetriever} passed to L{Idea.obtain} can object to certain results.
         This excludes them from the result returned by L{Idea.obtain}.
         """
         # XXX The last argument is the observer, and is supposed to be an

@@ -1,5 +1,4 @@
-# -*- test-case-name: imaginary.test.test_concept -*-
-
+# -*- test-case-name: imaginary.test.test_look.LookAtTranscriptTests.test_bearBlindness -*-
 """
 
 Textual formatting for game objects.
@@ -10,12 +9,12 @@ from string import Formatter
 
 from zope.interface import implements, implementer
 
+from characteristic import attributes
+
 from twisted.python.components import registerAdapter
 
-from epsilon import structlike
-
 from imaginary import iimaginary, iterutils, text as T
-
+from imaginary.iimaginary import IConcept, IExit
 
 class Gender(object):
     """
@@ -129,84 +128,99 @@ class BaseExpress(object):
 
 
 
-class DescriptionConcept(structlike.record('name description exits others',
-                                           description=u"", exits=(), others=())):
-    """
-    A concept which is expressed as the description of a Thing as well as
-    any concepts which power up that thing for IDescriptionContributor.
-
-    Concepts will be ordered by the C{preferredOrder} class attribute.
-    Concepts not named in this list will appear last in an unpredictable
-    order.
-
-    @ivar name: The name of the thing being described.
-
-    @ivar description: A basic description of the thing being described, the
-        first thing to show up.
-
-    @ivar exits: An iterable of L{IExit}, to be listed as exits in the
-        description.
-
-    @ivar others: An iterable of L{IDescriptionContributor} that will
-        supplement the description.
-    """
-    implements(iimaginary.IConcept)
-
-    # This may not be the most awesome solution to the ordering problem, but
-    # it is the best I can think of right now.  This is strictly a
-    # user-interface level problem.  Only the ordering in the string output
-    # send to the user should depend on this; nothing in the world should be
-    # affected.
-    preferredOrder = ['ExpressCondition',
-                      'ExpressClothing',
-                      'ExpressSurroundings',
-                      ]
+@implementer(IConcept)
+@attributes(["title", "exits", "description", "components", "target"],
+            defaults=dict(target=None))
+class Description(object):
 
     def plaintext(self, observer):
         return flattenWithoutColors(self.vt102(observer))
 
 
     def vt102(self, observer):
-        exits = u''
-        if self.exits:
-            exits = [T.bold, T.fg.green, u'( ',
-                     [T.fg.normal, T.fg.yellow,
-                      iterutils.interlace(u' ',
-                                          (exit.name for exit in self.exits))],
-                     u' )', u'\n']
+        title = [T.bold, T.fg.green, u'[ ',
+                 [T.fg.normal, IConcept(self.title).vt102(observer)],
+                 u' ]\n']
+        yield title
+        exits = list(
+            IConcept(exit.name).vt102(observer)
+            for exit in (self.exits or ())
+            if exit.shouldEvenAttemptTraversalFrom(self.target,
+                                                   observer))
+        if exits:
+            yield [
+                T.bold, T.fg.green, u'( ', [
+                    T.fg.normal, T.fg.yellow,
+                    iterutils.interlace(
+                        u' ', exits)],
+                    u' )', u'\n']
+        if self.description:
+            yield (T.fg.green, self.description, u'\n')
+        if self.components:
+            yield iterutils.interlace(
+                u"\n",
+                filter(None,
+                       (component.vt102(observer)
+                        for component in self.components)))
 
-        description = self.description or u""
-        if description:
-            description = (T.fg.green, self.description, u'\n')
+
+    @classmethod
+    def fromVisualization(cls, target, others):
+        """
+        Create a L{Description} from a L{Thing} and some L{Paths} visually
+        related to that L{Thing}.
+
+        @param target: The L{IThing} being described by this L{Description}.
+        @type target: L{IThing}
+
+        @param others: Paths to items that are visible as portions of the
+            target.
+        @type others: L{list} of L{Path <imaginary.idea.Path>}s.
+
+        @return: A L{Description} comprising C{target} and C{others}.
+        """
+        exits = []
+        for other in others:
+            # All of others are paths that go through target so just
+            # using targetAs won't accidentally include any exits that aren't
+            # for the target room except for the bug mentioned below.
+            #
+            # TODO: This might show too many exits.  There might be exits to
+            # rooms with exits to other rooms, they'll all show up as on some
+            # path here as IExit targets.  Check the exit's source to make sure
+            # it is target.
+            anExit = other.targetAs(IExit)
+            if anExit is not None:
+                exits.append(anExit)
+
+        exits.sort(key=lambda anExit: anExit.name)
 
         descriptionConcepts = []
 
-        for pup in self.others:
-            descriptionConcepts.append(pup.conceptualize())
+        for pup in target.powerupsFor(iimaginary.IDescriptionContributor):
+            descriptionConcepts.append(pup.contributeDescriptionFrom(others))
 
         def index(c):
+            # https://github.com/twisted/imaginary/issues/63
+            preferredOrder = [
+                'ExpressCondition',
+                'ExpressClothing',
+            ]
             try:
-                return self.preferredOrder.index(c.__class__.__name__)
+                return preferredOrder.index(c.__class__.__name__)
             except ValueError:
                 # Anything unrecognized goes after anything recognized.
-                return len(self.preferredOrder)
+                return len(preferredOrder)
 
         descriptionConcepts.sort(key=index)
 
-        descriptionComponents = []
-        for c in descriptionConcepts:
-            s = c.vt102(observer)
-            if s:
-                descriptionComponents.extend([s, u'\n'])
-
-        if descriptionComponents:
-            descriptionComponents.pop()
-
-        return [
-            [T.bold, T.fg.green, u'[ ', [T.fg.normal, self.name], u' ]\n'],
-            exits,
-            description,
-            descriptionComponents]
+        return cls(
+            title=Noun(target).shortName(),
+            exits=exits,
+            description=target.description,
+            components=descriptionConcepts,
+            target=target,
+        )
 
 
 
@@ -278,7 +292,7 @@ class ItemizedList(BaseExpress):
     implements(iimaginary.IConcept)
 
     def __init__(self, listOfConcepts):
-        self.listOfConcepts = listOfConcepts
+        self.listOfConcepts = list(listOfConcepts)
 
 
     def concepts(self, observer):
@@ -363,9 +377,12 @@ class ConceptTemplate(object):
                         fieldName, extra)
                 else:
                     if formatSpec:
-                        # A nice enhancement would be to delegate this logic to target
+                        # A nice enhancement would be to delegate this logic to
+                        # target
                         try:
-                            expander = getattr(self, '_expand_' + formatSpec.upper())
+                            expander = getattr(
+                                self, '_expand_' + formatSpec.upper()
+                            )
                         except AttributeError:
                             yield u"<'%s' unsupported by target '%s'>" % (
                                 formatSpec, fieldName)

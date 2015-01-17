@@ -266,7 +266,8 @@ class Idea(record("delegate linkers annotators")):
             # The annotators show up in a non-deterministic order, so in order
             # to facilitate a consistent view of the link in annotationsFor(),
             # all annotations are applied at the end.
-            allAnnotations.extend(annotator.annotationsFor(link, self))
+            annotations = list(annotator.annotationsFor(link, self))
+            allAnnotations.extend(annotations)
         link.annotate(allAnnotations)
 
 
@@ -602,6 +603,7 @@ class Named(DelegatingRetriever):
             return None
 
 
+
 def isKnownTo(observer, path, name):
     """
     Is the given path's target known to the given observer by the given name
@@ -678,6 +680,6 @@ class CanSee(DelegatingRetriever):
         Object to paths which have L{ILitLink} annotations which are not lit.
         """
         for lighting in path.of(ILitLink):
-            if not lighting.isItLit(path, result):
+            if not lighting.isItLit(path):
                 tmwn = lighting.whyNotLit()
                 yield tmwn

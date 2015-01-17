@@ -1,8 +1,11 @@
+
+from zope.interface import implementer
+
 from twisted.trial import unittest
 
 from axiom import store
 
-from imaginary import iimaginary, objects, garments, language
+from imaginary import iimaginary, objects, garments, language, vision
 from imaginary.eimaginary import ActionFailure
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
@@ -49,6 +52,21 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
                                                name=u"pair of lacy underwear")
 
 
+    def visualizeDaisy(self):
+        """
+        Present the description rendered when our protagonist, Daisy, looks at
+        herself.
+
+        @return: a concept representing Daisy's self-description, including all
+            her clothes.
+        @rtype: L{IConcept}
+        """
+        [description] = vision.visualizations(
+            self.daisy,
+            lambda path: path.targetAs(iimaginary.IThing) is self.daisy)
+        return description
+
+
     def _creationTest(self, garment):
         self.failUnless(
             iimaginary.IClothing.providedBy(iimaginary.IClothing(garment)))
@@ -73,7 +91,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))
 
-        description = self.daisy.visualize()
+        description = self.visualizeDaisy()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u'[ daisy ]\n'
@@ -86,7 +104,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
             iimaginary.IClothing(self.dukes))
         iimaginary.IClothingWearer(self.daisy).takeOff(
             iimaginary.IClothing(self.dukes))
-        description = self.daisy.visualize()
+        description = self.visualizeDaisy()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u'[ daisy ]\n'
@@ -103,7 +121,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         wearer.putOn(iimaginary.IClothing(self.dukes))
         wearer.takeOff(iimaginary.IClothing(self.dukes))
         wearer.takeOff(iimaginary.IClothing(self.undies))
-        description = self.daisy.visualize()
+        description = self.visualizeDaisy()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u'[ daisy ]\n'
@@ -146,12 +164,12 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
     def testPersonWearsPantsAndShirt(self):
-        description = self.daisy.visualize()
-
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.blouse))
+
+        description = self.visualizeDaisy()
 
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
@@ -161,12 +179,12 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
     def testPersonWearsUnderpantsAndPants(self):
-        description = self.daisy.visualize()
-
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.undies))
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))
+
+        description = self.visualizeDaisy()
 
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
@@ -176,21 +194,12 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
     def testPersonWearsPantsAndFailsAtPuttingOnUnderpants(self):
-        description = self.daisy.visualize()
-
         iimaginary.IClothingWearer(self.daisy).putOn(
             iimaginary.IClothing(self.dukes))
         self.assertRaises(garments.TooBulky,
                           iimaginary.IClothingWearer(self.daisy).putOn,
                           iimaginary.IClothing(self.undies))
 
-    def testWornClothingIsFindable(self):
-        iimaginary.IClothingWearer(self.daisy).putOn(
-            iimaginary.IClothing(self.dukes))
-        dukes = list(self.daisy.findProviders(
-            iimaginary.IClothing, 0))
-        self.assertEquals(len(dukes), 1)
-        self.assertIdentical(dukes[0].thing, self.dukes)
 
 
 class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
@@ -304,3 +313,44 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
     def testNoEquipment(self):
         self._test("equipment",
                    ["You aren't wearing any equipment."])
+
+
+
+class ContainmentInteractionTests(unittest.TestCase):
+    def test_locationConceptExcludesWorn(self):
+        """
+        An L{IClothing} provider worn by an L{IClothingWearer} provider which
+        is contained by a L{IContainer} provider is not included in the concept
+        for the L{IContainer} provider.
+        """
+        db = store.Store()
+
+        observer = objects.Thing(store=db, name=u"observer")
+
+        clothing = garments.Garment.createFor(
+            objects.Thing(store=db, name=u"hat"),
+            garmentDescription=u"a boring hat",
+            garmentSlots=[garments.GarmentSlot.CROWN])
+        wearer = garments.Wearer.createFor(
+            objects.Thing(store=db, name=u"wearer"))
+        location = objects.Container.createFor(
+            objects.Thing(store=db, name=u"somewhere"),
+            contentsTemplate=u"Contents: {contents}")
+
+        wearer.putOn(clothing)
+        location.add(wearer.thing)
+        @implementer(iimaginary.IRetriever)
+        class ThePathItself(object):
+            def retrieve(self, path):
+                return path
+            def objectionsTo(self, path, result):
+                return []
+            def shouldKeepGoing(self, path):
+                return True
+
+        concept = location.contributeDescriptionFrom(
+            location.thing.idea.obtain(ThePathItself())
+        )
+        self.assertEqual(
+            u"Contents: a wearer",
+            u"".join(list(concept.plaintext(observer))))

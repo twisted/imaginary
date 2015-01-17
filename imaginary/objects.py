@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_objects,imaginary.test.test_actions -*-
+# -*- test-case-name: imaginary.test -*-
 
 """
 This module contains the core, basic objects in Imaginary.
@@ -12,7 +12,7 @@ from __future__ import division
 
 import math
 
-from zope.interface import implements
+from zope.interface import implements, implementer
 
 from twisted.python import reflect, components
 
@@ -25,9 +25,11 @@ from imaginary import iimaginary, eimaginary, text as T, events, language
 
 from imaginary.enhancement import Enhancement as _Enhancement
 
+from imaginary.language import Description
+
 from imaginary.idea import (
-    Idea, Link, Proximity, Reachable, ProviderOf, Named, AlsoKnownAs, CanSee,
-    Vector, DelegatingRetriever)
+    Idea, Link, Proximity, ProviderOf, AlsoKnownAs, CanSee,
+    Vector)
 
 
 class Points(item.Item):
@@ -333,26 +335,11 @@ class Thing(item.Item):
         return False
 
 
-    # IVisible
-    def visualize(self):
+    def visualizeWithContents(self, paths):
         """
-        Implement L{IVisible.visualize} to return a
-        L{language.DescriptionConcept} that describes this L{Thing}, including
-        all its L{iimaginary.IDescriptionContributor} powerups.
+        Visualize this L{Thing} via L{Description.fromVisualization}.
         """
-        container = iimaginary.IContainer(self, None)
-        if container is not None:
-            exits = list(container.getExits())
-        else:
-            exits = ()
-
-        return language.DescriptionConcept(
-            self.name,
-            self.description,
-            exits,
-            # Maybe we should listify this or something; see
-            # http://divmod.org/trac/ticket/2905
-            self.powerupsFor(iimaginary.IDescriptionContributor))
+        return Description.fromVisualization(self, paths)
 
 
     def isViewOf(self, thing):
@@ -561,16 +548,25 @@ class Exit(item.Item):
         yield l
 
 
-    def conceptualize(self):
-        return language.ExpressList(
-            [u'the exit to ', language.Noun(self.toLocation).nounPhrase()])
+    def shouldEvenAttemptTraversalFrom(self, where, observer):
+        """
+        Normal (i.e. room-to-room) L{Exit}s appear traversable to observers
+        located inside the location that they lead away from.
+        """
+        return (self.fromLocation is where)
 
-components.registerAdapter(lambda exit: exit.conceptualize(),
-                           Exit, iimaginary.IConcept)
+
+
+def _exitAsConcept(exit):
+    return language.ExpressList(
+        [u'the exit to ', language.Noun(exit.toLocation).nounPhrase()])
+
+
+components.registerAdapter(_exitAsConcept, Exit, iimaginary.IConcept)
 
 
 
-class ContainmentRelationship(structlike.record("containedBy")):
+class ContainmentRelationship(structlike.record("containedBy contained")):
     """
     Implementation of L{iimaginary.IContainmentRelationship}.  The interface
     specifies no methods or attributes.  See its documentation for more
@@ -661,7 +657,7 @@ class Containment(object):
         if not self.closed:
             for ob in self.getContents():
                 content = Link(self.thing.idea, ob.idea)
-                content.annotate([ContainmentRelationship(self)])
+                content.annotate([ContainmentRelationship(self, ob)])
                 yield content
         yield Link(self.thing.idea, self._entranceIdea)
         if self.thing.location is not None:
@@ -689,50 +685,33 @@ class Containment(object):
 
 
     # IDescriptionContributor
-    def conceptualize(self):
+    def contributeDescriptionFrom(self, paths):
         """
         Implement L{IDescriptionContributor} to enumerate the contents of this
         containment.
 
-        @return: an L{ExpressSurroundings} with an iterable of all visible
-        contents of this container.
+        @return: an L{ExpressContents} with an iterable of all visible contents
+            of this container.
         """
-        return ExpressContents(self)
+        return ExpressContents(self, paths)
 
 
 
-class _ContainedBy(DelegatingRetriever):
+def pathIndicatesContainmentIn(path, container):
     """
-    An L{iimaginary.IRetriever} which discovers only things present in a given
-    container.  Currently used only for discovering the list of things to list
-    in a container's description.
-
-    @ivar retriever: a retriever to delegate to.
-
-    @type retriever: L{iimaginary.IRetriever}
-
-    @ivar container: the container to test containment by
-
-    @type container: L{IThing}
+    Does the given L{Path} indicate containment in the given container?
     """
-
-    implements(iimaginary.IRetriever)
-
-    def __init__(self, retriever, container):
-        DelegatingRetriever.__init__(self, retriever)
-        self.container = container
-
-
-    def resultRetrieved(self, path, result):
-        """
-        If this L{_ContainedBy}'s container contains the last L{IThing} target
-        of the given path, return the result of this L{_ContainedBy}'s
-        retriever retrieving from the given C{path}, otherwise C{None}.
-        """
-        containments = list(path.of(iimaginary.IContainmentRelationship))
-        if containments:
-            if containments[-1].containedBy is self.container:
-                return result
+    containments = list(path.of(iimaginary.IContainmentRelationship))
+    if containments:
+        # TODO: need direct tests for checking all these attributes; paths that
+        # lead away from containers via any other kind of link still look like
+        # they indicate containment without checking the '.contained'
+        # attribute.
+        if (containments[-1].containedBy is container and
+            containments[-1].contained is
+            path.targetAs(iimaginary.IThing)):
+            return True
+    return False
 
 
 
@@ -771,6 +750,27 @@ class _ContainerEntrance(structlike.record('container')):
         L{_ContainerEntrance}'s container's thing.
         """
         return self.container.thing.knownTo(observer, name)
+
+
+    def shouldEvenAttemptTraversalFrom(self, where, observer):
+        """
+        Container entrances (currently) never appear as though they're an
+        obvious route for traversal to any observer.
+
+        (In the future, this should probably be based on the capacity of the
+        container, whether it's open or closed, and the location of the
+        observer.)
+        """
+        return False
+
+
+    @property
+    def fromLocation(self):
+        """
+        Container entrances are exits from the container's location into the
+        container, so this property returns the container.
+        """
+        return self.container.thing.location
 
 
 
@@ -812,12 +812,25 @@ class _ContainerExit(structlike.record('container')):
         return (observer.location == self.container.thing) and (name == 'out')
 
 
+    def shouldEvenAttemptTraversalFrom(self, where, observer):
+        """
+        Container exits (currently) never appear as though they're an obvious
+        route for traversal to any observer.
 
-class ExpressSurroundings(language.ItemizedList):
-    def concepts(self, observer):
-        return [iimaginary.IConcept(o)
-                for o in super(ExpressSurroundings, self).concepts(observer)
-                if o is not observer]
+        (In the future, this should probably be based on the location of the
+        observer; observers in an open container should generally be able to
+        exit it.)
+        """
+        return False
+
+
+    @property
+    def fromLocation(self):
+        """
+        Container exits are exits from the container itself, so this property
+        reflects the container's L{IThing}.
+        """
+        return self.container.thing
 
 
 
@@ -858,6 +871,20 @@ class ExpressContents(language.Sentence):
     """
     _CONDITION = CanSee(ProviderOf(iimaginary.IThing))
 
+    def __init__(self, original, paths):
+        """
+        @param original: the L{Container} whose contents we are describing.
+
+        @param paths: a collection of all paths to objects from this container
+            which L{ExpressContents} should describe.  some of them may be
+            contained within this container, and some of them may be components
+            of things contained within this container, so L{ExpressContents}
+            will present them appropriately.
+        """
+        super(ExpressContents, self).__init__(original)
+        self.paths = paths
+
+
     def _contentConcepts(self, observer):
         """
         Get concepts for the contents of the thing wrapped by this concept.
@@ -869,12 +896,15 @@ class ExpressContents(language.Sentence):
             C{observer}.
         """
         container = self.original
-        idea = container.thing.idea
-        return [
-            concept
-            for concept
-            in idea.obtain(_ContainedBy(self._CONDITION, container))
-            if concept is not observer]
+        seer = CanSee(ProviderOf(iimaginary.IThing))
+        for path in self.paths:
+            target = path.targetAs(iimaginary.IThing)
+            if target is None:
+                continue
+            if pathIndicatesContainmentIn(path, container):
+                if seer.shouldStillKeepGoing(path):
+                    if not list(seer.moreObjectionsTo(path, None)):
+                        yield target
 
 
     @property
@@ -889,7 +919,7 @@ class ExpressContents(language.Sentence):
         return template
 
 
-    def expand(self, template, observer):
+    def _expand(self, template, observer, concepts):
         """
         Expand the given template using the wrapped container's L{Thing} as the
         subject.
@@ -901,7 +931,7 @@ class ExpressContents(language.Sentence):
         """
         return language.ConceptTemplate(template).expand(dict(
                 subject=self.original.thing,
-                contents=language.ItemizedList(self._contentConcepts(observer))))
+                contents=language.ItemizedList(concepts)))
 
 
     def concepts(self, observer):
@@ -909,8 +939,9 @@ class ExpressContents(language.Sentence):
         Return a L{list} of L{IConcept} providers which express the contents of
         the wrapped container.
         """
-        if self._contentConcepts(observer):
-            return list(self.expand(self.template, observer))
+        concepts = list(self._contentConcepts(observer))
+        if concepts:
+            return list(self._expand(self.template, observer, concepts))
         return []
 
 
@@ -950,7 +981,7 @@ class Actable(object):
 
 
     # IDescriptionContributor
-    def conceptualize(self):
+    def contributeDescriptionFrom(self, paths):
         return ExpressCondition(self)
 
 
@@ -1148,13 +1179,17 @@ class _DarkLocationProxy(structlike.record('thing')):
 
     implements(iimaginary.IVisible)
 
-    def visualize(self):
+    def visualizeWithContents(self, paths):
         """
-        Return a L{DescriptionConcept} that tells the player they can't see.
+        Return a L{language.Description} that tells the player they can't see.
         """
-        return language.DescriptionConcept(
-            u"Blackness",
-            u"You cannot see anything because it is very dark.")
+        return language.Description(
+            title=u"Blackness",
+            exits=None,
+            description=u"You cannot see anything because it is very dark.",
+            components=None
+        )
+
 
 
     def isViewOf(self, thing):
@@ -1215,13 +1250,12 @@ class _PossiblyDark(structlike.record("lighting")):
         return "It's too dark to see."
 
 
-    def isItLit(self, path, result):
+    def isItLit(self, path):
         """
-        Determine if the given result, viewed via the given path, appears to be
-        lit.
+        Determine if the target of the given path, viewed via the given path,
+        appears to be lit.
 
         @return: L{True} if the result should be lit, L{False} if it is dark.
-
         @rtype: C{bool}
         """
         # XXX wrong, we need to examine this exactly the same way applyLighting
@@ -1231,8 +1265,8 @@ class _PossiblyDark(structlike.record("lighting")):
             return True
         litThing = list(path.eachTargetAs(iimaginary.IThing))[-1]
         if _eventuallyContains(self.lighting.thing, litThing):
-            val = litThing is self.lighting.thing
             #print 'checking if', litThing, 'is lit:', val
+            val = litThing is self.lighting.thing
             return val
         else:
             return True
