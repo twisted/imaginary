@@ -10,8 +10,11 @@ from twisted.trial import unittest
 
 from epsilon import structlike
 
+from axiom import item, attributes
+
 from imaginary import language, unc, text as T, iimaginary
 from imaginary.test import commandutils
+from imaginary import objects
 
 class FakeThing(object):
     def __init__(self, **kw):
@@ -221,6 +224,47 @@ class PlaintextDescriptionTests(NounTestCase, SharedTextyTests):
             b.original
         )
 
+@implementer(iimaginary.IDescriptionContributor)
+class beforeDescription(item.Item):
+    desc = u"before"
+    comesBefore = []
+    comesAfter = []
+    myattr = attributes.integer(default=0)
+    powerupInterfaces = [iimaginary.IDescriptionContributor]
+    def contributeDescriptionFrom(self, paths):
+        return language.ExpressString(self.desc)
+
+@implementer(iimaginary.IDescriptionContributor)
+class afterDescription(item.Item):
+    desc = u"after"
+    comesBefore = []
+    comesAfter = [beforeDescription]
+    myattr = attributes.integer(default=0)
+    powerupInterfaces = [iimaginary.IDescriptionContributor]
+    def contributeDescriptionFrom(self, paths):
+        return language.ExpressString(self.desc)
+
+class VisualizationTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
+
+    def test_twoItemOrdering(self):
+        viewedThing = objects.Thing(
+            store=self.store,
+            location=self.player.location,
+            name=u"viewed")
+
+        # Apply with wrong priorities!
+        viewedThing.powerUp(
+            beforeDescription(store=self.store),
+            priority=item.POWERUP_AFTER)
+        viewedThing.powerUp(
+            afterDescription(store=self.store),
+            priority=item.POWERUP_BEFORE)
+
+        self.assertCommandOutput(
+            "look at viewed",
+            [commandutils.E(u"[ viewed ]"),
+            beforeDescription.desc,
+            afterDescription.desc])
 
 @implementer(iimaginary.IExit)
 class StubExit(structlike.record("name")):
