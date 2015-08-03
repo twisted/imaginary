@@ -869,7 +869,6 @@ class ExpressContents(language.Sentence):
     A concept representing the things contained by another thing - excluding
     the observer of the concept.
     """
-    _CONDITION = CanSee(ProviderOf(iimaginary.IThing))
 
     def __init__(self, original, paths):
         """
