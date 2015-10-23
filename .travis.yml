@@ -1,4 +1,10 @@
+sudo: false
+
 language: "python"
+
+branches:
+  only:
+    - master
 
 matrix:
   include:
@@ -13,11 +19,11 @@ install:
   - |
     pip install coveralls coverage
 
-  # Work-around the fact that Imaginary's setup.py requires Epsilon in order to
-  # actually be imported. :/ Most likely we should just give up and use
-  # setuptools at this point.
+  # Pin to an older version of Cryptography until Travis is on PyPy 2.6+
   - |
-    pip install epsilon
+    if [ ${TRAVIS_PYTHON_VERSION} == "pypy" ]; then
+        pip install "cryptography<1.0"
+    fi
 
   # An "editable" install - which really just means a tweak to the environment
   # that makes the packages in the source checkout discoverable by the Python
@@ -42,8 +48,7 @@ script:
         # Skip coverage on pypy so the build doesn't take 15 minutes.
         $(type -p trial) --testmodule=imaginary/__init__.py
     else
-        coverage run --branch --source=imaginary --omit=imaginary/pyparsing.py $(type -p trial) --testmodule=imaginary/__init__.py
-        coverage report -m
+        coverage run --branch --source=imaginary --omit=imaginary/pyparsing.py $(type -p trial) --testmodule=imaginary/__init__.py && coverage report -m
     fi
 
 after_success:
