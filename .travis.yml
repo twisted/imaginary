@@ -13,12 +13,6 @@ install:
   - |
     pip install coveralls coverage
 
-  # Work-around the fact that Imaginary's setup.py requires Epsilon in order to
-  # actually be imported. :/ Most likely we should just give up and use
-  # setuptools at this point.
-  - |
-    pip install epsilon
-
   # An "editable" install - which really just means a tweak to the environment
   # that makes the packages in the source checkout discoverable by the Python
   # import machinery.  It might eventually make sense to test an install which
