@@ -39,10 +39,6 @@ distobj = setup(
         "epsilon>=0.7.0",
         "characteristic>=0.1.0",
         "axiom>=0.7.1",
-
-        # PyCrypto has a history of breaking Conch in new releases so pin it.
-        "PyCrypto==2.6",
-
         "mantissa>=0.7.0",
         ],
     extras_require={
