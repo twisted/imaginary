@@ -1,4 +1,4 @@
-from epsilon.setuphelper import autosetup
+from setuptools import setup, find_packages
 
 import versioneer
 versioneer.vcs = "git"
@@ -10,7 +10,7 @@ versioneer.parentdir_prefix = "Imaginary-"
 with open("README.rst") as fObj:
     readme = fObj.read()
 
-distobj = autosetup(
+distobj = setup(
     name="Imaginary",
     version=versioneer.get_version(),
     maintainer="Divmod, Inc.",
@@ -33,22 +33,14 @@ distobj = autosetup(
         "Topic :: Games/Entertainment :: Role-Playing",
         "Topic :: Games/Entertainment :: Simulation",
         "Topic :: Terminals"],
+    packages=find_packages() + ['axiom.plugins', 'xmantissa.plugins'],
     install_requires=[
         "twisted>=14.0.0",
         "epsilon>=0.7.0",
         "characteristic>=0.1.0",
         "axiom>=0.7.1",
 
-        # Nevow is a dependency via Mantissa but Mantissa doesn't declare it in
-        # `install_requires`.  So we'll declare it here to make things go more
-        # smoothly until Mantissa gets fixed.
-        "nevow>=0.10.0",
-
-        # Likewise.
-        "pytz", "pyasn1>=0.1.7",
-
-        # Likewise.  PyCrypto has a history of breaking Conch in new releases
-        # so pin it.
+        # PyCrypto has a history of breaking Conch in new releases so pin it.
         "PyCrypto==2.6",
 
         "mantissa>=0.7.0",
