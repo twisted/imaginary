@@ -42,8 +42,7 @@ script:
         # Skip coverage on pypy so the build doesn't take 15 minutes.
         $(type -p trial) --testmodule=imaginary/__init__.py
     else
-        coverage run --branch --source=imaginary --omit=imaginary/pyparsing.py $(type -p trial) --testmodule=imaginary/__init__.py
-        coverage report -m
+        coverage run --branch --source=imaginary --omit=imaginary/pyparsing.py $(type -p trial) --testmodule=imaginary/__init__.py && coverage report -m
     fi
 
 after_success:
