@@ -14,17 +14,7 @@ prepared to participate heavily in its development.
 Imaginary can be used to build both single-player interactive fiction, text
 adventures for small groups of friends, or large multiplayer games.
 
-To get it installed, you will need to install some dependencies.  Due to a
-series of unfortunate events, you need to run ``pip`` manually a couple of
-times, rather than simply installing the package directly.  (We're working on
-fixing this.)
-
-.. code-block:: console
-
-   $ pip install twisted
-   $ pip install epsilon
-
-At this point, you may just do:
+To get it installed, you can simply use pip:
 
 .. code-block:: console
 
