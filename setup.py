@@ -39,7 +39,7 @@ distobj = setup(
         "epsilon>=0.7.0",
         "characteristic>=0.1.0",
         "axiom>=0.7.1",
-        "mantissa>=0.7.0",
+        "mantissa>=0.8.0",
         ],
     extras_require={
         "doc": ["sphinx>=1.2.2"],
