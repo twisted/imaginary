@@ -58,11 +58,11 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
     def visualizeMannequin(self):
         """
-        Present the description rendered when our protagonist, Mannequin, looks
-        at itself.
+        Present the description rendered when our protagonist, the mannequin,
+        looks at itself.
 
         @return: a concept representing Mannequin's self-description, including
-            all her clothes.
+            all its clothes.
         @rtype: L{IConcept}
         """
         [description] = vision.visualizations(
