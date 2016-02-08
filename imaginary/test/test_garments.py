@@ -42,8 +42,9 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
     def setUp(self):
         self.store = store.Store()
         self.world = ImaginaryWorld(store=self.store)
-        self.mannequin = self.world.create(u"mannequin", gender=language.Gender.FEMALE)
-        self.observer = self.world.create(u"NONDESCRIPT", gender=language.Gender.MALE)
+        self.mannequin = self.world.create(u"mannequin",
+                                           gender=language.Gender.NEUTER)
+        self.observer = self.world.create(u"NONDESCRIPT")
         self.dukes = garments.createPants(store=self.store,
                                           name=u'pair of Daisy Dukes')
         self.blouse = garments.createShirt(store=self.store,
@@ -96,7 +97,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
             self.flatten(description.plaintext(self.observer)),
             u'[ mannequin ]\n'
             u'mannequin is great.\n'
-            u'She is wearing a pair of Daisy Dukes.')
+            u'It is wearing a pair of Daisy Dukes.')
 
 
     def testPersonRemovesPants(self):
@@ -109,8 +110,8 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
             self.flatten(description.plaintext(self.observer)),
             u'[ mannequin ]\n'
             u'mannequin is great.\n'
-            u'She is naked.\n'
-            u'She is carrying a pair of Daisy Dukes.'
+            u'It is naked.\n'
+            u'It is carrying a pair of Daisy Dukes.'
             )
         self.assertIdentical(self.dukes.location, self.mannequin)
 
@@ -126,8 +127,8 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
             self.flatten(description.plaintext(self.observer)),
             u'[ mannequin ]\n'
             u'mannequin is great.\n'
-            u'She is naked.\n'
-            u'She is carrying a pair of Daisy Dukes and a pair of lacy '
+            u'It is naked.\n'
+            u'It is carrying a pair of Daisy Dukes and a pair of lacy '
             u'underwear.'
             )
         self.assertIdentical(self.dukes.location, self.mannequin)
@@ -175,7 +176,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
             self.flatten(description.plaintext(self.observer)),
             u"[ mannequin ]\n"
             u"mannequin is great.\n"
-            u"She is wearing a blue blouse and a pair of Daisy Dukes.")
+            u"It is wearing a blue blouse and a pair of Daisy Dukes.")
 
 
     def testPersonWearsUnderpantsAndPants(self):
@@ -190,7 +191,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
             self.flatten(description.plaintext(self.observer)),
             u"[ mannequin ]\n"
             u"mannequin is great.\n"
-            u"She is wearing a pair of Daisy Dukes.")
+            u"It is wearing a pair of Daisy Dukes.")
 
 
     def testPersonWearsPantsAndFailsAtPuttingOnUnderpants(self):
@@ -203,6 +204,8 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
 class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
+
+    genderForTest = language.Gender.NEUTER
 
     def createPants(self):
         """
@@ -257,7 +260,7 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self._test("look me",
                    [E("[ Test Player ]"),
                     E("Test Player is great."),
-                    E("She is wearing a pair of daisy dukes.")])
+                    E("It is wearing a pair of daisy dukes.")])
 
 
     def testTooBulky(self):
@@ -274,8 +277,8 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self._test("look me",
                    [E("[ Test Player ]"),
                     E("Test Player is great."),
-                    E("She is wearing a pair of overalls."),
-                    E("She is carrying a pair of daisy dukes."),
+                    E("It is wearing a pair of overalls."),
+                    E("It is carrying a pair of daisy dukes."),
                     ])
 
 
@@ -292,7 +295,7 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
                    ["Test Player puts on a pair of daisy dukes."])
         self._test("remove 'pair of lace panties'",
                    [E("You cannot take off the pair of lace panties because you are wearing a pair of daisy dukes.")],
-                   ["Test Player gets a dumb look on her face."])
+                   ["Test Player gets a dumb look on its face."])
 
 
     def testEquipment(self):

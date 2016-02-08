@@ -38,6 +38,9 @@ class CommandTestCaseMixin:
     @ivar observer: The L{Thing} representing the observer who sees the main
         player's actions.
     """
+
+    genderForTest = language.Gender.FEMALE
+
     def setUp(self):
         """
         Set up a store with a location, a player and an observer.
@@ -48,7 +51,7 @@ class CommandTestCaseMixin:
         self.location = locContainer.thing
         self.world = ImaginaryWorld(store=self.store, origin=self.location)
         self.player = self.world.create(
-            u"Test Player", gender=language.Gender.FEMALE)
+            u"Test Player", gender=self.genderForTest)
         self.playerContainer = iimaginary.IContainer(self.player)
         self.playerWrapper = player.Player(self.player)
 
