@@ -297,7 +297,7 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
                    ["You put on the pair of blue pants."],
                    ["Test Player puts on a pair of blue pants."])
         self._test("remove 'pair of polka dot underwear'",
-                   [E("You cannot take off the pair of polka dot underwear"
+                   [E("You cannot take off the pair of polka dot underwear "
                       "because you are wearing a pair of blue pants.")],
                    ["Test Player gets a dumb look on its face."])
 
