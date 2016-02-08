@@ -45,8 +45,11 @@ class ImaginaryWorld(Item):
             self.origin = Thing(store=self.store, name=u"The Place")
             Container.createFor(self.origin, capacity=1000)
 
+        if 'proper' not in kw:
+            kw['proper'] = True
+
         character = Thing(store=self.store, weight=100,
-                          name=name, proper=True, **kw)
+                          name=name, **kw)
         Container.createFor(
             character, capacity=10,
             contentsTemplate=u"{subject:pronoun} is carrying {contents}.")
