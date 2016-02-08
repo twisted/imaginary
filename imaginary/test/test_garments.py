@@ -44,7 +44,8 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         self.store = store.Store()
         self.world = ImaginaryWorld(store=self.store)
         self.mannequin = self.world.create(u"mannequin",
-                                           gender=language.Gender.NEUTER)
+                                           gender=language.Gender.NEUTER,
+                                           proper=False)
         self.observer = self.world.create(u"NONDESCRIPT")
         self.underwear = garments.createPants(store=self.store,
                                               name=u'pair of blue pants')
@@ -98,7 +99,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u'[ mannequin ]\n'
-            u'mannequin is great.\n'
+            u'the mannequin is great.\n'
             u'It is wearing a pair of blue pants.')
 
 
@@ -111,7 +112,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u'[ mannequin ]\n'
-            u'mannequin is great.\n'
+            u'the mannequin is great.\n'
             u'It is naked.\n'
             u'It is carrying a pair of blue pants.'
             )
@@ -128,7 +129,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u'[ mannequin ]\n'
-            u'mannequin is great.\n'
+            u'the mannequin is great.\n'
             u'It is naked.\n'
             u'It is carrying a pair of blue pants and a pair of polka dot '
             u'underwear.'
@@ -177,7 +178,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u"[ mannequin ]\n"
-            u"mannequin is great.\n"
+            u"the mannequin is great.\n"
             u"It is wearing a blue blouse and a pair of blue pants.")
 
 
@@ -192,7 +193,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
             u"[ mannequin ]\n"
-            u"mannequin is great.\n"
+            u"the mannequin is great.\n"
             u"It is wearing a pair of blue pants.")
 
 
