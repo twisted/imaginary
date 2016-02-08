@@ -42,7 +42,7 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
     def setUp(self):
         self.store = store.Store()
         self.world = ImaginaryWorld(store=self.store)
-        self.daisy = self.world.create(u"daisy", gender=language.Gender.FEMALE)
+        self.mannequin = self.world.create(u"mannequin", gender=language.Gender.FEMALE)
         self.observer = self.world.create(u"NONDESCRIPT", gender=language.Gender.MALE)
         self.dukes = garments.createPants(store=self.store,
                                           name=u'pair of Daisy Dukes')
@@ -52,18 +52,18 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
                                                name=u"pair of lacy underwear")
 
 
-    def visualizeDaisy(self):
+    def visualizeMannequin(self):
         """
-        Present the description rendered when our protagonist, Daisy, looks at
+        Present the description rendered when our protagonist, Mannequin, looks at
         herself.
 
-        @return: a concept representing Daisy's self-description, including all
+        @return: a concept representing Mannequin's self-description, including all
             her clothes.
         @rtype: L{IConcept}
         """
         [description] = vision.visualizations(
-            self.daisy,
-            lambda path: path.targetAs(iimaginary.IThing) is self.daisy)
+            self.mannequin,
+            lambda path: path.targetAs(iimaginary.IThing) is self.mannequin)
         return description
 
 
@@ -84,53 +84,53 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
     def testPersonIsAWearer(self):
         self.failUnless(iimaginary.IClothingWearer.providedBy(
-            iimaginary.IClothingWearer(self.daisy)))
+            iimaginary.IClothingWearer(self.mannequin)))
 
 
     def testPersonWearsPants(self):
-        iimaginary.IClothingWearer(self.daisy).putOn(
+        iimaginary.IClothingWearer(self.mannequin).putOn(
             iimaginary.IClothing(self.dukes))
 
-        description = self.visualizeDaisy()
+        description = self.visualizeMannequin()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
-            u'[ daisy ]\n'
-            u'daisy is great.\n'
+            u'[ mannequin ]\n'
+            u'mannequin is great.\n'
             u'She is wearing a pair of Daisy Dukes.')
 
 
     def testPersonRemovesPants(self):
-        iimaginary.IClothingWearer(self.daisy).putOn(
+        iimaginary.IClothingWearer(self.mannequin).putOn(
             iimaginary.IClothing(self.dukes))
-        iimaginary.IClothingWearer(self.daisy).takeOff(
+        iimaginary.IClothingWearer(self.mannequin).takeOff(
             iimaginary.IClothing(self.dukes))
-        description = self.visualizeDaisy()
+        description = self.visualizeMannequin()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
-            u'[ daisy ]\n'
-            u'daisy is great.\n'
+            u'[ mannequin ]\n'
+            u'mannequin is great.\n'
             u'She is naked.\n'
             u'She is carrying a pair of Daisy Dukes.'
             )
-        self.assertIdentical(self.dukes.location, self.daisy)
+        self.assertIdentical(self.dukes.location, self.mannequin)
 
 
     def testPersonRemovesPantsAndUnderwear(self):
-        wearer = iimaginary.IClothingWearer(self.daisy)
+        wearer = iimaginary.IClothingWearer(self.mannequin)
         wearer.putOn(iimaginary.IClothing(self.undies))
         wearer.putOn(iimaginary.IClothing(self.dukes))
         wearer.takeOff(iimaginary.IClothing(self.dukes))
         wearer.takeOff(iimaginary.IClothing(self.undies))
-        description = self.visualizeDaisy()
+        description = self.visualizeMannequin()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
-            u'[ daisy ]\n'
-            u'daisy is great.\n'
+            u'[ mannequin ]\n'
+            u'mannequin is great.\n'
             u'She is naked.\n'
             u'She is carrying a pair of Daisy Dukes and a pair of lacy '
             u'underwear.'
             )
-        self.assertIdentical(self.dukes.location, self.daisy)
+        self.assertIdentical(self.dukes.location, self.mannequin)
 
 
     def test_cantDropSomethingYouAreWearing(self):
@@ -139,23 +139,23 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         drop it until you first take it off.  After taking it off, however, you
         can move it around just fine.
         """
-        wearer = iimaginary.IClothingWearer(self.daisy)
+        wearer = iimaginary.IClothingWearer(self.mannequin)
         wearer.putOn(iimaginary.IClothing(self.undies))
         af = self.assertRaises(ActionFailure, self.undies.moveTo,
-                               self.daisy.location)
+                               self.mannequin.location)
         self.assertEquals(
-            u''.join(af.event.plaintext(self.daisy)),
+            u''.join(af.event.plaintext(self.mannequin)),
             u"You can't move the pair of lacy underwear "
             u"without removing it first.\n")
 
         wearer.takeOff(iimaginary.IClothing(self.undies))
-        self.undies.moveTo(self.daisy.location)
-        self.assertEquals(self.daisy.location, self.undies.location)
+        self.undies.moveTo(self.mannequin.location)
+        self.assertEquals(self.mannequin.location, self.undies.location)
 
 
     def testTakeOffUnderwearBeforePants(self):
         # TODO - underwear removal skill
-        wearer = iimaginary.IClothingWearer(self.daisy)
+        wearer = iimaginary.IClothingWearer(self.mannequin)
         wearer.putOn(iimaginary.IClothing(self.undies))
         wearer.putOn(iimaginary.IClothing(self.dukes))
 
@@ -164,40 +164,40 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
 
     def testPersonWearsPantsAndShirt(self):
-        iimaginary.IClothingWearer(self.daisy).putOn(
+        iimaginary.IClothingWearer(self.mannequin).putOn(
             iimaginary.IClothing(self.dukes))
-        iimaginary.IClothingWearer(self.daisy).putOn(
+        iimaginary.IClothingWearer(self.mannequin).putOn(
             iimaginary.IClothing(self.blouse))
 
-        description = self.visualizeDaisy()
+        description = self.visualizeMannequin()
 
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
-            u"[ daisy ]\n"
-            u"daisy is great.\n"
+            u"[ mannequin ]\n"
+            u"mannequin is great.\n"
             u"She is wearing a blue blouse and a pair of Daisy Dukes.")
 
 
     def testPersonWearsUnderpantsAndPants(self):
-        iimaginary.IClothingWearer(self.daisy).putOn(
+        iimaginary.IClothingWearer(self.mannequin).putOn(
             iimaginary.IClothing(self.undies))
-        iimaginary.IClothingWearer(self.daisy).putOn(
+        iimaginary.IClothingWearer(self.mannequin).putOn(
             iimaginary.IClothing(self.dukes))
 
-        description = self.visualizeDaisy()
+        description = self.visualizeMannequin()
 
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
-            u"[ daisy ]\n"
-            u"daisy is great.\n"
+            u"[ mannequin ]\n"
+            u"mannequin is great.\n"
             u"She is wearing a pair of Daisy Dukes.")
 
 
     def testPersonWearsPantsAndFailsAtPuttingOnUnderpants(self):
-        iimaginary.IClothingWearer(self.daisy).putOn(
+        iimaginary.IClothingWearer(self.mannequin).putOn(
             iimaginary.IClothing(self.dukes))
         self.assertRaises(garments.TooBulky,
-                          iimaginary.IClothingWearer(self.daisy).putOn,
+                          iimaginary.IClothingWearer(self.mannequin).putOn,
                           iimaginary.IClothing(self.undies))
 
 
