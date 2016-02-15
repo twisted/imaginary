@@ -23,6 +23,7 @@ class Gender(object):
     MALE = 1
     FEMALE = 2
     NEUTER = 3
+    INDETERMINATE = 4
 
 
 
