@@ -161,9 +161,9 @@ class DeclensionTests(TestCase):
         """
         alice = Thing(name=u"alice", gender=Gender.FEMALE)
         bob = Thing(name=u"bob", gender=Gender.MALE)
-        'pat = Thing(name=u"pat", gender=Gender.INDETERMINATE)'
+        pat = Thing(name=u"pat", gender=Gender.INDETERMINATE)
         killbot9000 = Thing(name=u"killbot", gender=Gender.NEUTER)
         self.assertEqual(heShe(alice), u"she")
         self.assertEqual(heShe(bob), u"he")
         self.assertEqual(heShe(killbot9000), u"it")
-        'self.assertEqual(heShe(pat), u"they")'
+        self.assertEqual(heShe(pat), u"they")
