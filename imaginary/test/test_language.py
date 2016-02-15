@@ -9,7 +9,7 @@ Tests for L{imaginary.language}.
 from twisted.trial.unittest import SynchronousTestCase as TestCase
 
 from imaginary.objects import Thing
-from imaginary.language import Gender, ConceptTemplate, ExpressList
+from imaginary.language import Gender, ConceptTemplate, ExpressList, Noun
 from imaginary.test.commandutils import flatten
 
 class ConceptTemplateTests(TestCase):
@@ -128,3 +128,42 @@ class ConceptTemplateTests(TestCase):
         self.assertEqual(
             u"<'glorbex' unsupported by target 'c'> wins.",
             self.expandToText(template, dict(c=self.thing)))
+
+
+
+def textNounForm(nounFormMethod):
+    """
+    Create a function for rendering the given noun-form method on L{Noun} to
+    text.
+
+    @param nounFormMethod: the name of the noun-form method in question
+    @type nounFormMethod: native L{str}
+
+    @return: a function that takes a L{Thing} and returns some text
+    @rtype: function(L{Thing}) -> L{unicode}
+    """
+    def function(thing):
+        return flatten(getattr(Noun(thing), nounFormMethod)().plaintext(None))
+    return function
+
+heShe = textNounForm("heShe")
+
+
+
+class DeclensionTests(TestCase):
+    """
+    Tests for the declension of various noun forms.
+    """
+
+    def test_personalPronoun(self):
+        """
+        L{Noun.heShe} returns a gender-appropriate personal pronoun.
+        """
+        alice = Thing(name=u"alice", gender=Gender.FEMALE)
+        bob = Thing(name=u"bob", gender=Gender.MALE)
+        'pat = Thing(name=u"pat", gender=Gender.INDETERMINATE)'
+        killbot9000 = Thing(name=u"killbot", gender=Gender.NEUTER)
+        self.assertEqual(heShe(alice), u"she")
+        self.assertEqual(heShe(bob), u"he")
+        self.assertEqual(heShe(killbot9000), u"it")
+        'self.assertEqual(heShe(pat), u"they")'
