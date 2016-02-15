@@ -1,3 +1,5 @@
+# Copyright (c) Twisted Matrix Laboratories.
+# See LICENSE for details.
 
 from twisted.trial.unittest import SynchronousTestCase as TestCase
 
