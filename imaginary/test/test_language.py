@@ -1,5 +1,10 @@
 # Copyright (c) Twisted Matrix Laboratories.
 # See LICENSE for details.
+# -*- test-case-name: imaginary.test.test_language -*-
+
+"""
+Tests for L{imaginary.language}.
+"""
 
 from twisted.trial.unittest import SynchronousTestCase as TestCase
 
@@ -19,6 +24,13 @@ class ConceptTemplateTests(TestCase):
         """
         Expand the given L{ConceptTemplate} with the given values and flatten
         the result into a L{unicode} string.
+
+        @param template: a L{ConceptTemplate} with some markup in it
+
+        @param values: the values to interpolate into C{template}
+
+        @return: the text resulting from rendering the given template
+        @rtype: L{unicode}
         """
         return flatten(ExpressList(template.expand(values)).plaintext(None))
 
