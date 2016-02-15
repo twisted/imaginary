@@ -84,7 +84,8 @@ class Noun(object):
         Return the personal pronoun for the wrapped thing.
         """
         x = {Gender.MALE: u'he',
-             Gender.FEMALE: u'she'
+             Gender.FEMALE: u'she',
+             Gender.INDETERMINATE: u'they',
              }.get(self.thing.gender, u'it')
         return ExpressString(x)
 
