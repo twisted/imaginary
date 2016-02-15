@@ -147,6 +147,24 @@ def textNounForm(nounFormMethod):
     return function
 
 heShe = textNounForm("heShe")
+himHer = textNounForm("himHer")
+hisHer = textNounForm("hisHer")
+hisHers = textNounForm("hisHers")
+
+def fourForms(function):
+    """
+    Generate four noun declensions for the given L{textNounForm} function.
+
+    @rtype: four noun declensions in the order female, male, indeterminate, and
+        neuter/impersonal gender.
+
+    @rtype: a 4-L{tuple} of L{unicode}
+    """
+    alice = Thing(name=u"alice", gender=Gender.FEMALE)
+    bob = Thing(name=u"bob", gender=Gender.MALE)
+    pat = Thing(name=u"pat", gender=Gender.INDETERMINATE)
+    killbot9000 = Thing(name=u"killbot", gender=Gender.NEUTER)
+    return tuple(map(function, [alice, bob, killbot9000, pat]))
 
 
 
@@ -155,15 +173,31 @@ class DeclensionTests(TestCase):
     Tests for the declension of various noun forms.
     """
 
-    def test_personalPronoun(self):
+    def test_subjectivePronoun(self):
         """
-        L{Noun.heShe} returns a gender-appropriate personal pronoun.
+        L{Noun.heShe} returns a gender-appropriate subjective personal pronoun.
         """
-        alice = Thing(name=u"alice", gender=Gender.FEMALE)
-        bob = Thing(name=u"bob", gender=Gender.MALE)
-        pat = Thing(name=u"pat", gender=Gender.INDETERMINATE)
-        killbot9000 = Thing(name=u"killbot", gender=Gender.NEUTER)
-        self.assertEqual(heShe(alice), u"she")
-        self.assertEqual(heShe(bob), u"he")
-        self.assertEqual(heShe(killbot9000), u"it")
-        self.assertEqual(heShe(pat), u"they")
+        self.assertEqual(fourForms(heShe), (u"she", u"he", u"it", u"they"))
+
+
+    def test_objectivePronoun(self):
+        """
+        L{Noun.himHer} returns a gender-appropriate objective pronoun.
+        """
+        self.assertEqual(fourForms(himHer), (u"her", u"him", u"it", u"them"))
+
+
+    def test_possessiveAdjective(self):
+        """
+        L{Noun.hisHer} returns a gender-appropriate possessive adjective.
+        """
+        self.assertEqual(fourForms(hisHer), (u"her", u"his", u"its", u"their"))
+
+
+    def test_hisHers(self):
+        """
+        L{Noun.hisHers} returns a gender-appropriate substantival possessive
+        pronoun.
+        """
+        self.assertEqual(fourForms(hisHers),
+                         (u"hers", u"his", u"its", u"theirs"))

@@ -94,23 +94,33 @@ class Noun(object):
         """
         Return the objective pronoun for the wrapped thing.
         """
-        x = {Gender.MALE: u'him',
-             Gender.FEMALE: u'her'
-             }.get(self.thing.gender, u'it')
-        return ExpressString(x)
+        return ExpressString({
+            Gender.MALE: u'him',
+            Gender.FEMALE: u'her',
+            Gender.INDETERMINATE: u'them',
+        }.get(self.thing.gender, u'it'))
 
 
     def hisHer(self):
         """
-        Return a possessive pronoun that cannot be used after 'is'.
+        Return a possessive adjective for the wrapped thing.
         """
-        x = {Gender.MALE: u'his',
-             Gender.FEMALE: u'her' # <-- OMG! hers!
-             }.get(self.thing.gender, u'its')
-        return ExpressString(x)
+        return ExpressString({
+            Gender.MALE: u'his',
+            Gender.FEMALE: u'her',
+            Gender.INDETERMINATE: u'their',
+        }.get(self.thing.gender, u'its'))
 
 
-    #FIXME: add his/hers LATER
+    def hisHers(self):
+        """
+        Return a possessive adjective for the wrapped thing.
+        """
+        return ExpressString({
+            Gender.MALE: u'his',
+            Gender.FEMALE: u'hers',
+            Gender.INDETERMINATE: u'theirs',
+        }.get(self.thing.gender, u'its'))
 
 
 
