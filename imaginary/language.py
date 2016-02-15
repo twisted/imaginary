@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_look.LookAtTranscriptTests.test_bearBlindness -*-
+# -*- test-case-name: imaginary.test.test_look.LookAtTranscriptTests -*-
 """
 
 Textual formatting for game objects.
