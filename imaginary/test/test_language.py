@@ -1,5 +1,5 @@
 
-from twisted.trial.unittest import TestCase
+from twisted.trial.unittest import SynchronousTestCase as TestCase
 
 from imaginary.objects import Thing
 from imaginary.language import Gender, ConceptTemplate, ExpressList
