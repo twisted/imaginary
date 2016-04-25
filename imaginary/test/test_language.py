@@ -1,8 +1,15 @@
+# Copyright (c) Twisted Matrix Laboratories.
+# See LICENSE for details.
+# -*- test-case-name: imaginary.test.test_language -*-
 
-from twisted.trial.unittest import TestCase
+"""
+Tests for L{imaginary.language}.
+"""
+
+from twisted.trial.unittest import SynchronousTestCase as TestCase
 
 from imaginary.objects import Thing
-from imaginary.language import Gender, ConceptTemplate, ExpressList
+from imaginary.language import Gender, ConceptTemplate, ExpressList, Noun
 from imaginary.test.commandutils import flatten
 
 class ConceptTemplateTests(TestCase):
@@ -17,6 +24,13 @@ class ConceptTemplateTests(TestCase):
         """
         Expand the given L{ConceptTemplate} with the given values and flatten
         the result into a L{unicode} string.
+
+        @param template: a L{ConceptTemplate} with some markup in it
+
+        @param values: the values to interpolate into C{template}
+
+        @return: the text resulting from rendering the given template
+        @rtype: L{unicode}
         """
         return flatten(ExpressList(template.expand(values)).plaintext(None))
 
@@ -114,3 +128,76 @@ class ConceptTemplateTests(TestCase):
         self.assertEqual(
             u"<'glorbex' unsupported by target 'c'> wins.",
             self.expandToText(template, dict(c=self.thing)))
+
+
+
+def textNounForm(nounFormMethod):
+    """
+    Create a function for rendering the given noun-form method on L{Noun} to
+    text.
+
+    @param nounFormMethod: the name of the noun-form method in question
+    @type nounFormMethod: native L{str}
+
+    @return: a function that takes a L{Thing} and returns some text
+    @rtype: function(L{Thing}) -> L{unicode}
+    """
+    def function(thing):
+        return flatten(getattr(Noun(thing), nounFormMethod)().plaintext(None))
+    return function
+
+heShe = textNounForm("heShe")
+himHer = textNounForm("himHer")
+hisHer = textNounForm("hisHer")
+hisHers = textNounForm("hisHers")
+
+def fourForms(function):
+    """
+    Generate four noun declensions for the given L{textNounForm} function.
+
+    @rtype: four noun declensions in the order female, male, indeterminate, and
+        neuter/impersonal gender.
+
+    @rtype: a 4-L{tuple} of L{unicode}
+    """
+    alice = Thing(name=u"alice", gender=Gender.FEMALE)
+    bob = Thing(name=u"bob", gender=Gender.MALE)
+    pat = Thing(name=u"pat", gender=Gender.INDETERMINATE)
+    killbot9000 = Thing(name=u"killbot", gender=Gender.NEUTER)
+    return tuple(map(function, [alice, bob, killbot9000, pat]))
+
+
+
+class DeclensionTests(TestCase):
+    """
+    Tests for the declension of various noun forms.
+    """
+
+    def test_subjectivePronoun(self):
+        """
+        L{Noun.heShe} returns a gender-appropriate subjective personal pronoun.
+        """
+        self.assertEqual(fourForms(heShe), (u"she", u"he", u"it", u"they"))
+
+
+    def test_objectivePronoun(self):
+        """
+        L{Noun.himHer} returns a gender-appropriate objective pronoun.
+        """
+        self.assertEqual(fourForms(himHer), (u"her", u"him", u"it", u"them"))
+
+
+    def test_possessiveAdjective(self):
+        """
+        L{Noun.hisHer} returns a gender-appropriate possessive adjective.
+        """
+        self.assertEqual(fourForms(hisHer), (u"her", u"his", u"its", u"their"))
+
+
+    def test_hisHers(self):
+        """
+        L{Noun.hisHers} returns a gender-appropriate substantival possessive
+        pronoun.
+        """
+        self.assertEqual(fourForms(hisHers),
+                         (u"hers", u"his", u"its", u"theirs"))
