@@ -22,9 +22,7 @@ install:
   # Pin to an older version of Cryptography until Travis is on PyPy 2.6+
   - |
     if [ ${TRAVIS_PYTHON_VERSION} == "pypy" ]; then
-        brew update;
-        brew upgrade;
-        brew install pypy;
+        pip install "cryptography<1.0" "pyOpenSSL<16.0.0"
     fi
 
   # An "editable" install - which really just means a tweak to the environment
