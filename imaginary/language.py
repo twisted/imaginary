@@ -123,7 +123,7 @@ class Noun(object):
 
     def hisHer(self):
         """
-        Return a possessive adjective for the wrapped thing.
+        Return a possessive determiner for the wrapped thing.
         """
         return self._declension(u'his', u'her', u'their', u'its')
 
