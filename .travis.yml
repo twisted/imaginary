@@ -8,22 +8,35 @@ branches:
 
 matrix:
   include:
-    - python: "pypy"
     - python: "2.7"
     - python: "pypy"
-      env: "SPHINX_TARGET=html"
+      env: "PYENV_PYTHON=pypy-5.1"
+    - python: "pypy"
+      env: "SPHINX_TARGET=html" "PYENV_PYTHON=pypy-5.1"
 
 install:
+  # Upgrade PyPy to a recent version via pyenv, since the version on Travis is
+  # often ancient.
+  - |
+    if [[ -n "${PYENV_PYTHON}" ]]; then
+        if [[ "$DARWIN" == "true" ]]; then
+            brew update;
+            brew install pyenv || brew upgrade pyenv;
+        else
+            git clone https://github.com/yyuu/pyenv.git ~/.pyenv;
+            PYENV_ROOT="$HOME/.pyenv";
+            PATH="$PYENV_ROOT/bin:$PATH";
+        fi
+        eval "$(pyenv init -)";
+        pyenv install "${PYENV_PYTHON}";
+        pyenv global "${PYENV_PYTHON}";
+        pyenv rehash;
+    fi
+
   # Install some tools for measuring code coverage and sending the results
   # to coveralls.
   - |
     pip install coveralls coverage
-
-  # Pin to an older version of Cryptography until Travis is on PyPy 2.6+
-  - |
-    if [ ${TRAVIS_PYTHON_VERSION} == "pypy" ]; then
-        pip install "cryptography<1.0" "pyOpenSSL<16.0.0"
-    fi
 
   # An "editable" install - which really just means a tweak to the environment
   # that makes the packages in the source checkout discoverable by the Python
