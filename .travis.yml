@@ -12,7 +12,7 @@ matrix:
     - python: "pypy"
       env: "PYENV_PYTHON=pypy-5.1"
     - python: "pypy"
-      env: "SPHINX_TARGET=html" "PYENV_PYTHON=pypy-5.1"
+      env: "SPHINX_TARGET=html PYENV_PYTHON=pypy-5.1"
 
 install:
   # Upgrade PyPy to a recent version via pyenv, since the version on Travis is
