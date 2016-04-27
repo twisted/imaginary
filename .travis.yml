@@ -54,6 +54,7 @@ install:
 
 script:
   - |
+    python --version
     if [ -v SPHINX_TARGET ]; then
         # This is a documentation-related build.
         make --directory=doc html
