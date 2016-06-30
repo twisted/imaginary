@@ -12,19 +12,23 @@ from imaginary.iimaginary import IRetriever
 from imaginary.iimaginary import ILitLink
 from imaginary.idea import Path
 from imaginary.iimaginary import IThing
+from imaginary.idea import CanSee
+from imaginary.idea import DelegatingRetriever
+from imaginary.idea import ProviderOf
 from imaginary.iimaginary import IVisible
 
 @implementer(IRetriever)
-class _VisiblePathSatisfiesPredicate(object):
+class _PathSatisfiesPredicate(DelegatingRetriever):
     """
     Retrieve the paths that satisfy the given predicate.
     """
 
-    def __init__(self, predicate):
+    def __init__(self, predicate, retriever):
         """
         Create a L{PathSatisfiesPredicate} with the given predicate.
         """
         self.predicate = predicate
+        super(_PathSatisfiesPredicate, self).__init__(retriever)
 
 
     def retrieve(self, path):
@@ -37,34 +41,6 @@ class _VisiblePathSatisfiesPredicate(object):
         """
         if self.predicate(path):
             return path
-
-
-    def shouldKeepGoing(self, path):
-        """
-        Always keep going (rely on the predicate to end traversal).
-
-        @param path: See L{IRetriever.shouldKeepGoing}
-
-        @return: See L{IRetriever.shouldKeepGoing}
-        """
-        return True
-
-
-    def objectionsTo(self, path, result):
-        """
-        Object to unlit paths.
-
-        @param path: See L{IRetriever.objectionsTo}
-
-        @param result: See L{IRetriever.objectionsTo}
-
-        @return: an iterator of IWhyNot, if you object to this result being
-            yielded.
-        """
-        for lighting in path.of(ILitLink):
-            if not lighting.isItLit(path):
-                tmwn = lighting.whyNotLit()
-                yield tmwn
 
 
 
@@ -103,9 +79,12 @@ def visualizations(viewingThing, predicate, withinDistance=3.0):
     # First, get all the things meeting the predicate's criteria that we can
     # see.
     startPaths = viewingThing.obtainOrReportWhyNot(
-        Proximity(
-            withinDistance,
-            _VisiblePathSatisfiesPredicate(predicate)
+        _PathSatisfiesPredicate(
+            predicate,
+            Proximity(withinDistance,
+                      CanSee(ProviderOf(IVisible),
+                             viewingThing)
+            )
         )
     )
 
@@ -144,8 +123,10 @@ def visualizations(viewingThing, predicate, withinDistance=3.0):
             # define "related to" for the purposes of the vision system and
             # replace this Proximity with them somehow.
             subPaths = visualTargetIdea.obtain(
-                Proximity(withinDistance,
-                          _VisiblePathSatisfiesPredicate(lambda p: True))
+                _PathSatisfiesPredicate(
+                    lambda p: True,
+                    Proximity(withinDistance, ProviderOf(IVisible))
+                )
             )
 
             # However, since visual obstructions which may obscure or transform

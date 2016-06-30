@@ -869,7 +869,6 @@ class ExpressContents(language.Sentence):
     A concept representing the things contained by another thing - excluding
     the observer of the concept.
     """
-    _CONDITION = CanSee(ProviderOf(iimaginary.IThing))
 
     def __init__(self, original, paths):
         """
@@ -951,8 +950,8 @@ class ExpressCondition(language.BaseExpress):
 
     def vt102(self, observer):
         return [
-            [T.bold, T.fg.yellow, language.Noun(
-                    self.original.thing).shortName().plaintext(observer)],
+            [T.bold, T.fg.yellow, language.Noun(self.original.thing)
+             .definiteNounPhrase().plaintext(observer)],
             u" is ",
             [T.bold, T.fg.red, self.original._condition(), u"."]]
 

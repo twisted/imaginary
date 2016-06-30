@@ -17,7 +17,8 @@ class WearIt(unittest.TestCase, commandutils.LanguageMixin):
         self.store = store.Store()
 
         self.dummy = objects.Thing(store=self.store, name=u'dummy')
-        self.dummyContainer = objects.Container.createFor(self.dummy, capacity=100)
+        self.dummyContainer = objects.Container.createFor(self.dummy,
+                                                          capacity=100)
 
         self.shirt = objects.Thing(store=self.store, name=u'shirt')
         self.shirtGarment = garments.Garment.createFor(
@@ -42,28 +43,31 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
     def setUp(self):
         self.store = store.Store()
         self.world = ImaginaryWorld(store=self.store)
-        self.daisy = self.world.create(u"daisy", gender=language.Gender.FEMALE)
-        self.observer = self.world.create(u"NONDESCRIPT", gender=language.Gender.MALE)
-        self.dukes = garments.createPants(store=self.store,
-                                          name=u'pair of Daisy Dukes')
+        self.mannequin = self.world.create(u"mannequin",
+                                           gender=language.Gender.NEUTER,
+                                           proper=False)
+        self.observer = self.world.create(u"NONDESCRIPT")
+        self.underwear = garments.createPants(store=self.store,
+                                              name=u'pair of blue pants')
         self.blouse = garments.createShirt(store=self.store,
                                            name=u"blue blouse")
-        self.undies = garments.createUnderwear(store=self.store,
-                                               name=u"pair of lacy underwear")
+        self.undies = garments.createUnderwear(
+            store=self.store, name=u"pair of polka dot underwear"
+        )
 
 
-    def visualizeDaisy(self):
+    def visualizeMannequin(self):
         """
-        Present the description rendered when our protagonist, Daisy, looks at
-        herself.
+        Present the description rendered when our protagonist, the mannequin,
+        looks at itself.
 
-        @return: a concept representing Daisy's self-description, including all
-            her clothes.
+        @return: a concept representing Mannequin's self-description, including
+            all its clothes.
         @rtype: L{IConcept}
         """
         [description] = vision.visualizations(
-            self.daisy,
-            lambda path: path.targetAs(iimaginary.IThing) is self.daisy)
+            self.mannequin,
+            lambda path: path.targetAs(iimaginary.IThing) is self.mannequin)
         return description
 
 
@@ -84,53 +88,53 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
 
     def testPersonIsAWearer(self):
         self.failUnless(iimaginary.IClothingWearer.providedBy(
-            iimaginary.IClothingWearer(self.daisy)))
+            iimaginary.IClothingWearer(self.mannequin)))
 
 
     def testPersonWearsPants(self):
-        iimaginary.IClothingWearer(self.daisy).putOn(
-            iimaginary.IClothing(self.dukes))
+        iimaginary.IClothingWearer(self.mannequin).putOn(
+            iimaginary.IClothing(self.underwear))
 
-        description = self.visualizeDaisy()
+        description = self.visualizeMannequin()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
-            u'[ daisy ]\n'
-            u'daisy is great.\n'
-            u'She is wearing a pair of Daisy Dukes.')
+            u'[ mannequin ]\n'
+            u'the mannequin is great.\n'
+            u'It is wearing a pair of blue pants.')
 
 
     def testPersonRemovesPants(self):
-        iimaginary.IClothingWearer(self.daisy).putOn(
-            iimaginary.IClothing(self.dukes))
-        iimaginary.IClothingWearer(self.daisy).takeOff(
-            iimaginary.IClothing(self.dukes))
-        description = self.visualizeDaisy()
+        iimaginary.IClothingWearer(self.mannequin).putOn(
+            iimaginary.IClothing(self.underwear))
+        iimaginary.IClothingWearer(self.mannequin).takeOff(
+            iimaginary.IClothing(self.underwear))
+        description = self.visualizeMannequin()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
-            u'[ daisy ]\n'
-            u'daisy is great.\n'
-            u'She is naked.\n'
-            u'She is carrying a pair of Daisy Dukes.'
+            u'[ mannequin ]\n'
+            u'the mannequin is great.\n'
+            u'It is naked.\n'
+            u'It is carrying a pair of blue pants.'
             )
-        self.assertIdentical(self.dukes.location, self.daisy)
+        self.assertIdentical(self.underwear.location, self.mannequin)
 
 
     def testPersonRemovesPantsAndUnderwear(self):
-        wearer = iimaginary.IClothingWearer(self.daisy)
+        wearer = iimaginary.IClothingWearer(self.mannequin)
         wearer.putOn(iimaginary.IClothing(self.undies))
-        wearer.putOn(iimaginary.IClothing(self.dukes))
-        wearer.takeOff(iimaginary.IClothing(self.dukes))
+        wearer.putOn(iimaginary.IClothing(self.underwear))
+        wearer.takeOff(iimaginary.IClothing(self.underwear))
         wearer.takeOff(iimaginary.IClothing(self.undies))
-        description = self.visualizeDaisy()
+        description = self.visualizeMannequin()
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
-            u'[ daisy ]\n'
-            u'daisy is great.\n'
-            u'She is naked.\n'
-            u'She is carrying a pair of Daisy Dukes and a pair of lacy '
+            u'[ mannequin ]\n'
+            u'the mannequin is great.\n'
+            u'It is naked.\n'
+            u'It is carrying a pair of blue pants and a pair of polka dot '
             u'underwear.'
             )
-        self.assertIdentical(self.dukes.location, self.daisy)
+        self.assertIdentical(self.underwear.location, self.mannequin)
 
 
     def test_cantDropSomethingYouAreWearing(self):
@@ -139,86 +143,88 @@ class GarmentPluginTestCase(commandutils.LanguageMixin, unittest.TestCase):
         drop it until you first take it off.  After taking it off, however, you
         can move it around just fine.
         """
-        wearer = iimaginary.IClothingWearer(self.daisy)
+        wearer = iimaginary.IClothingWearer(self.mannequin)
         wearer.putOn(iimaginary.IClothing(self.undies))
         af = self.assertRaises(ActionFailure, self.undies.moveTo,
-                               self.daisy.location)
+                               self.mannequin.location)
         self.assertEquals(
-            u''.join(af.event.plaintext(self.daisy)),
-            u"You can't move the pair of lacy underwear "
+            u''.join(af.event.plaintext(self.mannequin)),
+            u"You can't move the pair of polka dot underwear "
             u"without removing it first.\n")
 
         wearer.takeOff(iimaginary.IClothing(self.undies))
-        self.undies.moveTo(self.daisy.location)
-        self.assertEquals(self.daisy.location, self.undies.location)
+        self.undies.moveTo(self.mannequin.location)
+        self.assertEquals(self.mannequin.location, self.undies.location)
 
 
     def testTakeOffUnderwearBeforePants(self):
         # TODO - underwear removal skill
-        wearer = iimaginary.IClothingWearer(self.daisy)
+        wearer = iimaginary.IClothingWearer(self.mannequin)
         wearer.putOn(iimaginary.IClothing(self.undies))
-        wearer.putOn(iimaginary.IClothing(self.dukes))
+        wearer.putOn(iimaginary.IClothing(self.underwear))
 
         self.assertRaises(garments.InaccessibleGarment,
                           wearer.takeOff, iimaginary.IClothing(self.undies))
 
 
     def testPersonWearsPantsAndShirt(self):
-        iimaginary.IClothingWearer(self.daisy).putOn(
-            iimaginary.IClothing(self.dukes))
-        iimaginary.IClothingWearer(self.daisy).putOn(
+        iimaginary.IClothingWearer(self.mannequin).putOn(
+            iimaginary.IClothing(self.underwear))
+        iimaginary.IClothingWearer(self.mannequin).putOn(
             iimaginary.IClothing(self.blouse))
 
-        description = self.visualizeDaisy()
+        description = self.visualizeMannequin()
 
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
-            u"[ daisy ]\n"
-            u"daisy is great.\n"
-            u"She is wearing a blue blouse and a pair of Daisy Dukes.")
+            u"[ mannequin ]\n"
+            u"the mannequin is great.\n"
+            u"It is wearing a blue blouse and a pair of blue pants.")
 
 
     def testPersonWearsUnderpantsAndPants(self):
-        iimaginary.IClothingWearer(self.daisy).putOn(
+        iimaginary.IClothingWearer(self.mannequin).putOn(
             iimaginary.IClothing(self.undies))
-        iimaginary.IClothingWearer(self.daisy).putOn(
-            iimaginary.IClothing(self.dukes))
+        iimaginary.IClothingWearer(self.mannequin).putOn(
+            iimaginary.IClothing(self.underwear))
 
-        description = self.visualizeDaisy()
+        description = self.visualizeMannequin()
 
         self.assertEquals(
             self.flatten(description.plaintext(self.observer)),
-            u"[ daisy ]\n"
-            u"daisy is great.\n"
-            u"She is wearing a pair of Daisy Dukes.")
+            u"[ mannequin ]\n"
+            u"the mannequin is great.\n"
+            u"It is wearing a pair of blue pants.")
 
 
     def testPersonWearsPantsAndFailsAtPuttingOnUnderpants(self):
-        iimaginary.IClothingWearer(self.daisy).putOn(
-            iimaginary.IClothing(self.dukes))
+        iimaginary.IClothingWearer(self.mannequin).putOn(
+            iimaginary.IClothing(self.underwear))
         self.assertRaises(garments.TooBulky,
-                          iimaginary.IClothingWearer(self.daisy).putOn,
+                          iimaginary.IClothingWearer(self.mannequin).putOn,
                           iimaginary.IClothing(self.undies))
 
 
 
 class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
+    genderForTest = language.Gender.NEUTER
+
     def createPants(self):
         """
-        Create a pair of Daisy Dukes for the test player to wear.
+        Create a pair of blue pants for the test player to wear.
         """
-        self._test("create pants named 'pair of daisy dukes'",
-                   ["You create a pair of daisy dukes."],
-                   ["Test Player creates a pair of daisy dukes."])
+        self._test("create pants named 'pair of blue pants'",
+                   ["You create a pair of blue pants."],
+                   ["Test Player creates a pair of blue pants."])
 
 
 
     def testWearIt(self):
         self.createPants()
-        self._test("wear 'pair of daisy dukes'",
-                   ["You put on the pair of daisy dukes."],
-                   ["Test Player puts on a pair of daisy dukes."])
+        self._test("wear 'pair of blue pants'",
+                   ["You put on the pair of blue pants."],
+                   ["Test Player puts on a pair of blue pants."])
 
 
     def test_takeItOff(self):
@@ -227,37 +233,37 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
         I{remove} action.
         """
         self.createPants()
-        self._test("wear 'pair of daisy dukes'",
-                   ["You put on the pair of daisy dukes."],
-                   ["Test Player puts on a pair of daisy dukes."])
-        self._test("take off 'pair of daisy dukes'",
-                   ["You take off the pair of daisy dukes."],
-                   ["Test Player takes off a pair of daisy dukes."])
+        self._test("wear 'pair of blue pants'",
+                   ["You put on the pair of blue pants."],
+                   ["Test Player puts on a pair of blue pants."])
+        self._test("take off 'pair of blue pants'",
+                   ["You take off the pair of blue pants."],
+                   ["Test Player takes off a pair of blue pants."])
 
-        self._test("wear 'pair of daisy dukes'",
-                   ["You put on the pair of daisy dukes."],
-                   ["Test Player puts on a pair of daisy dukes."])
-        self._test("remove 'pair of daisy dukes'",
-                   ["You take off the pair of daisy dukes."],
-                   ["Test Player takes off a pair of daisy dukes."])
+        self._test("wear 'pair of blue pants'",
+                   ["You put on the pair of blue pants."],
+                   ["Test Player puts on a pair of blue pants."])
+        self._test("remove 'pair of blue pants'",
+                   ["You take off the pair of blue pants."],
+                   ["Test Player takes off a pair of blue pants."])
 
 
     def testProperlyDressed(self):
         self.createPants()
-        self._test("create underwear named 'pair of lace panties'",
-                   ["You create a pair of lace panties."],
-                   ["Test Player creates a pair of lace panties."])
-        self._test("wear 'pair of lace panties'",
-                   ["You put on the pair of lace panties."],
-                   ["Test Player puts on a pair of lace panties."])
+        self._test("create underwear named 'pair of polka dot underwear'",
+                   ["You create a pair of polka dot underwear."],
+                   ["Test Player creates a pair of polka dot underwear."])
+        self._test("wear 'pair of polka dot underwear'",
+                   ["You put on the pair of polka dot underwear."],
+                   ["Test Player puts on a pair of polka dot underwear."])
 
-        self._test("wear 'pair of daisy dukes'",
-                   ["You put on the pair of daisy dukes."],
-                   ["Test Player puts on a pair of daisy dukes."])
+        self._test("wear 'pair of blue pants'",
+                   ["You put on the pair of blue pants."],
+                   ["Test Player puts on a pair of blue pants."])
         self._test("look me",
                    [E("[ Test Player ]"),
                     E("Test Player is great."),
-                    E("She is wearing a pair of daisy dukes.")])
+                    E("It is wearing a pair of blue pants.")])
 
 
     def testTooBulky(self):
@@ -268,46 +274,49 @@ class FunSimulationStuff(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self._test("wear 'pair of overalls'",
                    ["You put on the pair of overalls."],
                    ["Test Player puts on a pair of overalls."])
-        self._test("wear 'pair of daisy dukes'",
-                   ["The pair of overalls you are already wearing is too bulky for you to do that."],
+        self._test("wear 'pair of blue pants'",
+                   ["The pair of overalls you are already wearing is too "
+                    "bulky for you to do that."],
                    ["Test Player wrestles with basic personal problems."])
         self._test("look me",
                    [E("[ Test Player ]"),
                     E("Test Player is great."),
-                    E("She is wearing a pair of overalls."),
-                    E("She is carrying a pair of daisy dukes."),
+                    E("It is wearing a pair of overalls."),
+                    E("It is carrying a pair of blue pants."),
                     ])
 
 
     def testInaccessibleGarment(self):
         self.createPants()
-        self._test("create underwear named 'pair of lace panties'",
-                   ["You create a pair of lace panties."],
-                   ["Test Player creates a pair of lace panties."])
-        self._test("wear 'pair of lace panties'",
-                   ["You put on the pair of lace panties."],
-                   ["Test Player puts on a pair of lace panties."])
-        self._test("wear 'pair of daisy dukes'",
-                   ["You put on the pair of daisy dukes."],
-                   ["Test Player puts on a pair of daisy dukes."])
-        self._test("remove 'pair of lace panties'",
-                   [E("You cannot take off the pair of lace panties because you are wearing a pair of daisy dukes.")],
-                   ["Test Player gets a dumb look on her face."])
+        self._test("create underwear named 'pair of polka dot underwear'",
+                   ["You create a pair of polka dot underwear."],
+                   ["Test Player creates a pair of polka dot underwear."])
+        self._test("wear 'pair of polka dot underwear'",
+                   ["You put on the pair of polka dot underwear."],
+                   ["Test Player puts on a pair of polka dot underwear."])
+        self._test("wear 'pair of blue pants'",
+                   ["You put on the pair of blue pants."],
+                   ["Test Player puts on a pair of blue pants."])
+        self._test("remove 'pair of polka dot underwear'",
+                   [E("You cannot take off the pair of polka dot underwear "
+                      "because you are wearing a pair of blue pants.")],
+                   ["Test Player gets a dumb look on its face."])
 
 
     def testEquipment(self):
         self.createPants()
-        self._test("create underwear named 'pair of lace panties'",
-                   ["You create a pair of lace panties."],
-                   ["Test Player creates a pair of lace panties."])
-        self._test("wear 'pair of lace panties'",
-                   ["You put on the pair of lace panties."],
-                   ["Test Player puts on a pair of lace panties."])
-        self._test("wear 'pair of daisy dukes'",
-                   ["You put on the pair of daisy dukes."],
-                   ["Test Player puts on a pair of daisy dukes."])
+        self._test("create underwear named 'pair of polka dot underwear'",
+                   ["You create a pair of polka dot underwear."],
+                   ["Test Player creates a pair of polka dot underwear."])
+        self._test("wear 'pair of polka dot underwear'",
+                   ["You put on the pair of polka dot underwear."],
+                   ["Test Player puts on a pair of polka dot underwear."])
+        self._test("wear 'pair of blue pants'",
+                   ["You put on the pair of blue pants."],
+                   ["Test Player puts on a pair of blue pants."])
         self._test("equipment",
-                   ["You are wearing a pair of daisy dukes and a pair of lace panties."]),
+                   ["You are wearing a pair of blue pants and a pair of "
+                    "polka dot underwear."]),
 
 
     def testNoEquipment(self):

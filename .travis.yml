@@ -1,23 +1,42 @@
+sudo: false
+
 language: "python"
+
+branches:
+  only:
+    - master
 
 matrix:
   include:
-    - python: "pypy"
     - python: "2.7"
     - python: "pypy"
-      env: "SPHINX_TARGET=html"
+      env: "PYENV_PYTHON=pypy-5.1"
+    - python: "pypy"
+      env: "SPHINX_TARGET=html PYENV_PYTHON=pypy-5.1"
 
 install:
+  # Upgrade PyPy to a recent version via pyenv, since the version on Travis is
+  # often ancient.
+  - |
+    if [[ -n "${PYENV_PYTHON}" ]]; then
+        if [[ "$DARWIN" == "true" ]]; then
+            brew update;
+            brew install pyenv || brew upgrade pyenv;
+        else
+            git clone https://github.com/yyuu/pyenv.git ~/.pyenv;
+            PYENV_ROOT="$HOME/.pyenv";
+            PATH="$PYENV_ROOT/bin:$PATH";
+        fi
+        eval "$(pyenv init -)";
+        pyenv install "${PYENV_PYTHON}";
+        pyenv global "${PYENV_PYTHON}";
+        pyenv rehash;
+    fi
+
   # Install some tools for measuring code coverage and sending the results
   # to coveralls.
   - |
     pip install coveralls coverage
-
-  # Work-around the fact that Imaginary's setup.py requires Epsilon in order to
-  # actually be imported. :/ Most likely we should just give up and use
-  # setuptools at this point.
-  - |
-    pip install epsilon
 
   # An "editable" install - which really just means a tweak to the environment
   # that makes the packages in the source checkout discoverable by the Python
@@ -34,6 +53,7 @@ install:
     fi
 
 script:
+  - python --version
   - |
     if [ -v SPHINX_TARGET ]; then
         # This is a documentation-related build.
@@ -42,8 +62,7 @@ script:
         # Skip coverage on pypy so the build doesn't take 15 minutes.
         $(type -p trial) --testmodule=imaginary/__init__.py
     else
-        coverage run --branch --source=imaginary --omit=imaginary/pyparsing.py $(type -p trial) --testmodule=imaginary/__init__.py
-        coverage report -m
+        coverage run --branch --source=imaginary --omit=imaginary/pyparsing.py $(type -p trial) --testmodule=imaginary/__init__.py && coverage report -m
     fi
 
 after_success:

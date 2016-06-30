@@ -1,4 +1,4 @@
-# -*- test-case-name: imaginary.test.test_look.LookAtTranscriptTests.test_bearBlindness -*-
+# -*- test-case-name: imaginary.test.test_language -*-
 """
 
 Textual formatting for game objects.
@@ -23,6 +23,7 @@ class Gender(object):
     MALE = 1
     FEMALE = 2
     NEUTER = 3
+    INDETERMINATE = 4
 
 
 
@@ -78,37 +79,60 @@ class Noun(object):
         return u'the '
 
 
+    def _declension(self, male, female, indeterminate, neuter):
+        """
+        Produce a declension based on the grammatical gender of the wrapped
+        L{Thing}.
+
+        @param male: the male declension of the specified pronoun
+        @type male: L{unicode}
+
+        @param female: the female declension of the specified pronoun
+        @type female: L{unicode}
+
+        @param indeterminate: the indeterminate declension of the specified
+            pronoun
+        @type indeterminate: L{unicode}
+
+        @param neuter: the neuter declension of the specified pronoun
+        @type neuter: L{unicode}
+
+        @return: one of the parameters
+        @rtype: L{unicode}
+        """
+        return ExpressString({
+            Gender.MALE: male,
+            Gender.FEMALE: female,
+            Gender.INDETERMINATE: indeterminate,
+        }.get(self.thing.gender, neuter))
+
+
     def heShe(self):
         """
         Return the personal pronoun for the wrapped thing.
         """
-        x = {Gender.MALE: u'he',
-             Gender.FEMALE: u'she'
-             }.get(self.thing.gender, u'it')
-        return ExpressString(x)
+        return self._declension(u'he', u'she', u'they', u'it')
 
 
     def himHer(self):
         """
         Return the objective pronoun for the wrapped thing.
         """
-        x = {Gender.MALE: u'him',
-             Gender.FEMALE: u'her'
-             }.get(self.thing.gender, u'it')
-        return ExpressString(x)
+        return self._declension(u'him', u'her', u'them', u'it')
 
 
     def hisHer(self):
         """
-        Return a possessive pronoun that cannot be used after 'is'.
+        Return a possessive determiner for the wrapped thing.
         """
-        x = {Gender.MALE: u'his',
-             Gender.FEMALE: u'her' # <-- OMG! hers!
-             }.get(self.thing.gender, u'its')
-        return ExpressString(x)
+        return self._declension(u'his', u'her', u'their', u'its')
 
 
-    #FIXME: add his/hers LATER
+    def hisHers(self):
+        """
+        Return a substantival possessive pronoun for the wrapped thing.
+        """
+        return self._declension(u'his', u'hers', u'theirs', u'its')
 
 
 
