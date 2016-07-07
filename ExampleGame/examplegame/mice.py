@@ -6,6 +6,7 @@ from zope.interface import implements
 
 from axiom import item, attributes
 
+from imaginary.idea import find
 from imaginary import iimaginary, events, objects, action, language
 from examplegame import japanese
 
@@ -117,10 +118,10 @@ class HiraganaMouse(item.Item):
         h-mouse's location. PRIVATE.
         """
         actor = self._actor()
-        numDudes = len([actor
-                        for dude
-                        in actor.thing.findProviders(iimaginary.IActor, 1)
-                        if dude is not actor])
+        numDudes = sum(
+            1 for dude in find(actor.thing.idea, iimaginary.IActor)
+            if dude is not actor
+        )
         return numDudes
 
 
