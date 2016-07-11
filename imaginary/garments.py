@@ -15,6 +15,8 @@ from imaginary.eimaginary import ActionFailure
 from imaginary.events import ThatDoesntWork
 from imaginary.creation import createCreator
 from imaginary.enhancement import Enhancement
+from imaginary.action import TargetAction, targetString
+from imaginary import pyparsing, eimaginary, events
 
 
 class Unwearable(Exception):
@@ -78,6 +80,42 @@ class GarmentSlot:
 for gslot in GARMENT_SLOTS:
     gslotname = gslot.upper().replace(" ", "_").encode('ascii')
     setattr(GarmentSlot, gslotname, gslot)
+
+
+
+class Wear(TargetAction):
+    expr = (pyparsing.Literal("wear") +
+            pyparsing.White() +
+            targetString("target"))
+
+    targetInterface = iimaginary.IClothing
+    actorInterface = iimaginary.IClothingWearer
+
+    def do(self, player, line, target):
+        from imaginary import garments
+        try:
+            player.putOn(target)
+        except garments.TooBulky as e:
+            raise eimaginary.ActionFailure(events.ThatDoesntWork(
+                actor=player.thing,
+                target=target.thing,
+                actorMessage=language.Sentence([
+                    language.Noun(e.wornGarment.thing).definiteNounPhrase(),
+                    u" you are already wearing is too bulky for you to do"
+                    u" that."]),
+                otherMessage=language.Sentence([
+                    player.thing,
+                    u" wrestles with basic personal problems."])))
+
+        evt = events.Success(
+            actor=player.thing,
+            target=target.thing,
+            actorMessage=(u"You put on ",
+                          language.Noun(target.thing).definiteNounPhrase(),
+                          "."),
+            otherMessage=language.Sentence([
+                player.thing, " puts on ", target.thing, "."]))
+        evt.broadcast()
 
 
 

@@ -609,42 +609,6 @@ class Remove(TargetAction):
 
 
 
-class Wear(TargetAction):
-    expr = (pyparsing.Literal("wear") +
-            pyparsing.White() +
-            targetString("target"))
-
-    targetInterface = iimaginary.IClothing
-    actorInterface = iimaginary.IClothingWearer
-
-    def do(self, player, line, target):
-        from imaginary import garments
-        try:
-            player.putOn(target)
-        except garments.TooBulky, e:
-            raise eimaginary.ActionFailure(events.ThatDoesntWork(
-                actor=player.thing,
-                target=target.thing,
-                actorMessage=language.Sentence([
-                    language.Noun(e.wornGarment.thing).definiteNounPhrase(),
-                    u" you are already wearing is too bulky for you to do"
-                    u" that."]),
-                otherMessage=language.Sentence([
-                    player.thing,
-                    u" wrestles with basic personal problems."])))
-
-        evt = events.Success(
-            actor=player.thing,
-            target=target.thing,
-            actorMessage=(u"You put on ",
-                          language.Noun(target.thing).definiteNounPhrase(),
-                          "."),
-            otherMessage=language.Sentence([
-                player.thing, " puts on ", target.thing, "."]))
-        evt.broadcast()
-
-
-
 class Equipment(Action):
     expr = pyparsing.Literal("equipment")
 
