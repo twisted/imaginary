@@ -683,3 +683,49 @@ class CanSee(DelegatingRetriever):
             if not lighting.isItLit(path):
                 tmwn = lighting.whyNotLit()
                 yield tmwn
+
+
+
+def find(source, interface=IThing, distance=1.0, name=None, onlyReachable=True,
+         onlyVisible=True, observer=None):
+    """
+    Find a provider of a given interface, within a given distance, known by the
+    given name, that may or may not be visible or reachable to the source.
+
+    @param source: The origin point for the search.
+    @type source: L{Idea}
+
+    @param interface: The type of interface to return.
+    @type interface: L{IInterface}
+
+    @param distance: The maximum distance, in meters, from C{source} to find
+        objects.
+    @type distance: L{float}
+
+    @param name: only return objects named C{name}.
+    @type name: L{unicode}
+
+    @param onlyReachable: Only return items that the source can reach.
+    @type onlyReachable: L{bool}
+
+    @param onlyVisible: Only return items that the source can see.
+    @type onlyVisible: L{bool}
+
+    @param observer: the observer from whose perspective to do the query; if
+        unspecified, the same as C{source}.
+    @type observer: L{Idea}
+
+    @return: a generator yielding providers of C{interface}
+    """
+    if observer is None:
+        observer = source
+    retriever = ProviderOf(interface)
+    if onlyVisible:
+        retriever = CanSee(retriever, observer)
+    if distance is not None:
+        retriever = Proximity(distance, retriever)
+    if name is not None:
+        retriever = Named(name, retriever, observer)
+    if onlyReachable:
+        retriever = Reachable(retriever)
+    return source.obtain(retriever)

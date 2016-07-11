@@ -174,13 +174,6 @@ class IThing(Interface):
         thing. If not specified (or None), no event will be broadcast.
         """
 
-    def findProviders(interface, distance):
-        """
-        Retrieve all game objects which provide C{interface} within C{distance}.
-
-        @return: A generator of providers of C{interface}.
-        """
-
 
 
 class IMovementRestriction(Interface):
