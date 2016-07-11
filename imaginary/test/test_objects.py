@@ -236,7 +236,7 @@ components.registerAdapter(lambda o: (unexpected, o), objects.Thing, IFoo)
 
 
 
-class FindProvidersTestCase(unittest.TestCase):
+class KnownToTestCase(unittest.TestCase):
     def setUp(self):
         self.store = store.Store()
         self.retained = []
@@ -248,14 +248,6 @@ class FindProvidersTestCase(unittest.TestCase):
         self.room = room
 
 
-    def tearDown(self):
-        """
-        Allow the items retained with L{FindProvidersTestCase.retain} to be
-        garbage collected.
-        """
-        del self.retained
-
-
     def retain(self, o):
         """
         Keep the given object in memory until the end of the test, so that its
@@ -264,81 +256,7 @@ class FindProvidersTestCase(unittest.TestCase):
         self.retained.append(o)
 
 
-    def testFindObjects(self):
-        """
-        Assert that searching for the most basic object interface, L{IObject},
-        returns the only two objects available in our test object graph: both
-        the location upon which the search was issued and the object which it
-        contains.
-        """
-        self.assertEquals(
-            list(self.room.findProviders(iimaginary.IThing, 1)),
-            [self.room, self.obj])
-
-
-    def testFindContainers(self):
-        """
-        Very much like testFindObjects, but searching for L{IContainer}, which
-        only the location provides, and so only the location should be
-        returned.
-        """
-        self.assertEquals(
-            list(self.room.findProviders(iimaginary.IContainer, 1)),
-            [iimaginary.IContainer(self.room)])
-
-
-    def testFindNothing(self):
-        """
-        Again, similar to testFindObjects, but search for an interface that
-        nothing provides, and assert that nothing is found.
-        """
-        class IUnprovidable(Interface):
-            """
-            Test-only interface that nothing provides.
-            """
-
-        self.assertEquals(
-            list(self.room.findProviders(IUnprovidable, 1)),
-            [])
-
-
-    def testFindOutward(self):
-        """
-        Conduct a search for all objects on our test graph, but start the
-        search on the contained object rather than the container and assert
-        that the same results come back, though in a different order: the
-        searched upon Thing always comes first.
-        """
-        self.assertEquals(
-            list(self.obj.findProviders(iimaginary.IThing, 1)),
-            [self.obj, self.room])
-
-
-    def testFindContainersOutward(self):
-        """
-        Combination of testFindOutward and testFindContainers.
-        """
-        self.assertEquals(
-            list(self.obj.findProviders(iimaginary.IContainer, 1)),
-            [iimaginary.IContainer(self.room)])
-
-
-
-    def testFindingArbitraryInterface(self):
-        """
-        Demonstration of the Thing -> IFoo adapter registered earlier in this
-        module.  If this test fails then some other tests are probably buggy
-        too, even if they pass.
-
-        Thing must be adaptable to IFoo or the tests which assert that certain
-        Things are B{not} present in result sets may incorrectly pass.
-        """
-        self.assertEquals(
-            list(self.obj.findProviders(IFoo, 1)),
-            [(unexpected, self.obj), (unexpected, self.room)])
-
-
-    def test_exactlyKnownAs(self):
+    def test_exactlyKnownTo(self):
         """
         L{Thing.knownTo} returns C{True} when called with exactly the things
         own name.
@@ -346,7 +264,7 @@ class FindProvidersTestCase(unittest.TestCase):
         self.assertTrue(self.obj.knownTo(self.obj, self.obj.name))
 
 
-    def test_caseInsensitivelyKnownAs(self):
+    def test_caseInsensitivelyKnownTo(self):
         """
         L{Thing.knownTo} returns C{True} when called with a string which
         differs from its name only in case.
@@ -355,7 +273,7 @@ class FindProvidersTestCase(unittest.TestCase):
         self.assertTrue(self.obj.knownTo(self.obj, self.obj.name.title()))
 
 
-    def test_wholeWordSubstringKnownAs(self):
+    def test_wholeWordSubstringKnownTo(self):
         """
         L{Thing.knownTo} returns C{True} when called with a string which
         appears in the thing's name delimited by spaces.
@@ -366,7 +284,7 @@ class FindProvidersTestCase(unittest.TestCase):
         self.assertTrue(self.obj.knownTo(self.obj, u"three"))
 
 
-    def test_notKnownAs(self):
+    def test_notKnownTo(self):
         """
         L{Thing.knownTo} returns C{False} when called with a string which
         doesn't satisfy one of the above positive cases.

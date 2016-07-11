@@ -227,15 +227,6 @@ class Thing(item.Item):
         return idea
 
 
-    def findProviders(self, interface, distance):
-        """
-        Temporary emulation of the old way of doing things so that I can
-        surgically replace findProviders.
-        """
-        return self.idea.obtain(
-            Proximity(distance, CanSee(ProviderOf(interface))))
-
-
     def obtainOrReportWhyNot(self, retriever):
         """
         Invoke L{Idea.obtain} on C{self.idea} with the given C{retriever}.

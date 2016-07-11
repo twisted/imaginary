@@ -1,11 +1,10 @@
-import weakref
-
 from twisted.internet import task
 from twisted.trial import unittest
 
 from axiom import store
 
 from imaginary import iimaginary, objects, events, action
+from imaginary.idea import find
 
 from imaginary.test import commandutils
 
@@ -461,11 +460,7 @@ class HiraganaMouseCommandTestCase(commandutils.CommandTestCaseMixin, unittest.T
             [commandutils.E(u"You create " + self.mouseName + u".")],
             [commandutils.E(u"Test Player creates %s." % (self.mouseName,))])
 
-        for thing in self.location.findProviders(iimaginary.IThing, 0):
-            if thing.name == self.mouseName:
-                break
-        else:
-            self.fail("Could not find the mouse!  Test bug.")
+        [thing] = find(self.location.idea, distance=0, name=self.mouseName)
 
         clock = task.Clock()
         jimhood = iimaginary.IActor(thing).getIntelligence()

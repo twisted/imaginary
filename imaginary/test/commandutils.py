@@ -10,6 +10,7 @@ from twisted.test.proto_helpers import StringTransport
 
 from axiom import store, item, attributes
 
+from imaginary.idea import find
 from imaginary import iimaginary, objects, text, language
 from imaginary.wiring import player
 from imaginary.world import ImaginaryWorld
@@ -149,10 +150,7 @@ class CommandTestCaseMixin:
 
 
     def find(self, name):
-        return [
-            th
-            for th in self.player.findProviders(iimaginary.IThing, 1)
-            if th.name == name][0]
+        return next(iter(find(self.player.idea, name=name)))
 
 
 
