@@ -84,6 +84,10 @@ for gslot in GARMENT_SLOTS:
 
 
 class Wear(TargetAction):
+    """
+    The 'wear' action, whereby a player can wear a garment, filling any
+    clothing slots that the garment is responsible for.
+    """
     expr = (pyparsing.Literal("wear") +
             pyparsing.White() +
             targetString("target"))
