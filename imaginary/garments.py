@@ -111,15 +111,14 @@ class Wear(TargetAction):
                     player.thing,
                     u" wrestles with basic personal problems."])))
 
-        evt = events.Success(
+        events.Success(
             actor=player.thing,
             target=target.thing,
             actorMessage=(u"You put on ",
                           language.Noun(target.thing).definiteNounPhrase(),
                           "."),
             otherMessage=language.Sentence([
-                player.thing, " puts on ", target.thing, "."]))
-        evt.broadcast()
+                player.thing, " puts on ", target.thing, "."])).broadcast()
 
 
 
