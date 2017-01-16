@@ -35,7 +35,7 @@ distobj = setup(
         "Topic :: Terminals"],
     packages=find_packages() + ['axiom.plugins', 'xmantissa.plugins'],
     install_requires=[
-        "twisted>=14.0.0,<16.4.0",
+        "twisted>=14.0.0",
         "epsilon>=0.7.0",
         "characteristic>=0.1.0",
         "axiom>=0.7.1",
