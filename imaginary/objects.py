@@ -89,7 +89,8 @@ class Thing(item.Item):
 
     A L{Thing} is also the object which serves as the persistent nexus of
     powerups that define behavior.  An L{_Enhancement} is a powerup for a
-    L{Thing}.  L{Thing}s can be powered up for a number of different interfaces:
+    L{Thing}.  L{Thing}s can be powered up for a number of different
+    interfaces:
 
         - L{iimaginary.IMovementRestriction}, for preventing the L{Thing} from
           moving around,
@@ -100,9 +101,9 @@ class Thing(item.Item):
         - L{iimaginary.ILinkAnnotator}, which can provide annotations on links
           incoming to or outgoing from the L{Thing}'s L{Idea},
 
-        - L{iimaginary.ILocationLinkAnnotator}, which can provide annotations on
-          links to or from any L{Thing}'s L{Idea} which is ultimately located
-          within the powered-up L{Thing}.
+        - L{iimaginary.ILocationLinkAnnotator}, which can provide annotations
+          on links to or from any L{Thing}'s L{Idea} which is ultimately
+          located within the powered-up L{Thing}.
 
         - L{iimaginary.IDescriptionContributor}, which provide components of
           the L{Thing}'s description when viewed with the L{Look} action.

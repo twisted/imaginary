@@ -22,23 +22,24 @@ class NoSuchCommand(ImaginaryError):
 
 class AmbiguousArgument(ImaginaryError):
     """
-    One or more of the inputs specified can not be narrowed down to
-    just one thing.  This can be due to the presence of multiple
-    things with similar names, or due to the absence of anything named
-    similarly to the given input.
+    One or more of the inputs specified can not be narrowed down to just one
+    thing.  This can be due to the presence of multiple things with similar
+    names, or due to the absence of anything named similarly to the given
+    input.
 
     @ivar action: The action which was being processed when an ambiguity was
-    found.
+        found.
 
+    @ivar part: The part of the command which was ambiguous.  Typically
+        something like 'target' or 'tool'.
     @type part: C{str}
-    @ivar part: The part of the command which was ambiguous.
-    Typically something like 'target' or 'tool'.
 
+    @ivar partValue: The string which was supplied by the user for the
+        indicated part.
     @type partValue: C{str}
-    @ivar partValue: The string which was supplied by the user for the indicated part.
 
-    @type objects: C{list} of C{IThing}
     @ivar objects: The objects which were involved in the ambiguity.
+    @type objects: C{list} of C{IThing}
     """
 
     def __init__(self, action, part, partValue, objects):

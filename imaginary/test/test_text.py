@@ -323,7 +323,7 @@ class AsynchronousIncrementalUTF8DecoderTestCase(unittest.TestCase):
 
 
 
-class UTF8TerminalBuffer(helper.TerminalBuffer):
+class UTF8TerminalBuffer(helper.TerminalBuffer, object):
     # An unfortunate hack'n'paste of
     # helper.TerminalBuffer.insertAtCursor
     def insertAtCursor(self, b):
@@ -341,6 +341,17 @@ class UTF8TerminalBuffer(helper.TerminalBuffer):
             else:
                 self.lines[self.y][self.x] = ch
             self.x += 1
+
+
+    def __str__(self):
+        """
+        Workaround for https://twistedmatrix.com/trac/ticket/8843
+        """
+        supered = super(UTF8TerminalBuffer, self)
+        maybeBytes = getattr(supered, "__bytes__")
+        if maybeBytes:
+            return maybeBytes()
+        return supered.__str__()
 
 
 
