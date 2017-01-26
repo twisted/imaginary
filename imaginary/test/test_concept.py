@@ -10,8 +10,11 @@ from twisted.trial import unittest
 
 from epsilon import structlike
 
+from axiom import item, attributes
+
 from imaginary import language, unc, text as T, iimaginary
 from imaginary.test import commandutils
+from imaginary import objects
 
 class FakeThing(object):
     def __init__(self, **kw):
@@ -221,6 +224,62 @@ class PlaintextDescriptionTests(NounTestCase, SharedTextyTests):
             b.original
         )
 
+@implementer(iimaginary.IDescriptionContributor)
+class beforeDescription(item.Item):
+    desc = u"before"
+    comesBefore = attributes.inmemory()
+    comesAfter = attributes.inmemory()
+    myattr = attributes.integer(default=0)
+    powerupInterfaces = [iimaginary.IDescriptionContributor]
+    def contributeDescriptionFrom(self, paths):
+        return language.ExpressString(self.desc)
+
+@implementer(iimaginary.IDescriptionContributor)
+class afterDescription(item.Item):
+    desc = u"after"
+    comesBefore = attributes.inmemory()
+    comesAfter = attributes.inmemory()
+    myattr = attributes.integer(default=0)
+    powerupInterfaces = [iimaginary.IDescriptionContributor]
+    def contributeDescriptionFrom(self, paths):
+        return language.ExpressString(self.desc)
+
+class VisualizationTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
+
+    def test_twoComponentOrdering(self):
+        viewedThing = objects.Thing(
+            store=self.store,
+            location=self.player.location,
+            name=u"viewed")
+
+        bd = beforeDescription(store=self.store)
+        ad = afterDescription(store=self.store)
+
+        bd.comesAfter = []
+        ad.comesAfter = [beforeDescription]
+
+        # Apply with wrong priorities!
+        viewedThing.powerUp(
+            bd,
+            priority=item.POWERUP_AFTER)
+        viewedThing.powerUp(
+            ad,
+            priority=item.POWERUP_BEFORE)
+
+        self.assertCommandOutput(
+            "look at viewed",
+            [commandutils.E(u"[ viewed ]"),
+            bd.desc,
+            ad.desc])
+
+        ad.comesAfter = []
+        bd.comesAfter = [afterDescription]
+
+        self.assertCommandOutput(
+            "look at viewed",
+            [commandutils.E(u"[ viewed ]"),
+            ad.desc,
+            bd.desc])
 
 @implementer(iimaginary.IExit)
 class StubExit(structlike.record("name")):
