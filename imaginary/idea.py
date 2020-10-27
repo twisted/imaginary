@@ -9,11 +9,9 @@ It also implements several basic retrievers related to visibility and physical
 reachability.
 """
 
+import attr
+
 from zope.interface import implements
-
-from characteristic import with_cmp, with_init, attributes
-
-from epsilon.structlike import record
 
 from imaginary.iimaginary import (
     INameable, ILitLink, IThing, IObstruction, IElectromagneticMedium,
@@ -21,27 +19,24 @@ from imaginary.iimaginary import (
 
 
 
-@attributes(["source", "target", "annotations"], create_init=False)
+@attr.s
 class Link(object):
     """
     A L{Link} is a connection between two L{Idea}s in a L{Path}.
+
+    @ivar source: the idea that this L{Link} originated from.
+    @type source: L{Idea}
+
+    @ivar target: the idea that this L{Link} refers to.
+    @type target: L{Idea}
 
     @ivar annotations: The domain-specific simulation annotations that apply to
         this link.
     @type annotations: L{list}
     """
-
-    def __init__(self, source, target):
-        """
-        @param source: the idea that this L{Link} originated from.
-        @type source: L{Idea}
-
-        @param target: the idea that this L{Link} refers to.
-        @type target: L{Idea}
-        """
-        self.source = source
-        self.target = target
-        self.annotations = []
+    source = attr.ib()
+    target = attr.ib()
+    annotations = attr.ib(default=attr.Factory(list))
 
 
     def annotate(self, annotations):
@@ -62,8 +57,7 @@ class Link(object):
 
 
 
-@with_cmp(["links"])
-@with_init(["links"])
+@attr.s(repr=False)
 class Path(object):
     """
     A list of L{Link}s.
@@ -73,6 +67,7 @@ class Path(object):
         source of the subsequent link.
     @type links: L{list} of L{Link}s
     """
+    links = attr.ib()
 
     def of(self, interface):
         """
@@ -166,7 +161,8 @@ class Path(object):
 
 
 
-class Idea(record("delegate linkers annotators")):
+@attr.s
+class Idea(object):
     """
     Consider a person's activities with the world around them as having two
     layers.  One is a physical layer, out in the world, composed of matter and
@@ -233,10 +229,9 @@ class Idea(record("delegate linkers annotators")):
     @ivar annotators: a L{list} of L{ILinkAnnotator}s which are used to annotate
         L{Link}s gathered from this L{Idea} via the C{linkers} list.
     """
-
-    def __init__(self, delegate):
-        super(Idea, self).__init__(delegate, [], [])
-
+    delegate = attr.ib()
+    linkers = attr.ib(default=attr.Factory(list))
+    annotators = attr.ib(default=attr.Factory(list))
 
     def _allLinks(self):
         """
@@ -323,8 +318,8 @@ class Idea(record("delegate linkers annotators")):
                     yield obtained
 
 
-
-class ObtainResult(record("idea retriever")):
+@attr.s
+class ObtainResult(object):
     """
     The result of L{Idea.obtain}, this provides an iterable of results.
 
@@ -341,8 +336,9 @@ class ObtainResult(record("idea retriever")):
     @ivar retriever: The L{IRetriever} that L{Idea.obtain} was invoked with.
     @type retriever: L{IRetriever}
     """
-
-    reasonsWhyNot = None
+    idea = attr.ib()
+    retriever = attr.ib()
+    reasonsWhyNot = attr.ib(default=None)
 
     def __iter__(self):
         """
@@ -356,6 +352,7 @@ class ObtainResult(record("idea retriever")):
 
 
 
+@attr.s
 class DelegatingRetriever(object):
     """
     A delegating retriever, so that retrievers can be easily composed.
@@ -365,14 +362,9 @@ class DelegatingRetriever(object):
     @ivar retriever: A retriever to delegate most operations to.
     @type retriever: L{IRetriever}
     """
-
     implements(IRetriever)
 
-    def __init__(self, retriever):
-        """
-        Create a delegator with a retriever to delegate to.
-        """
-        self.retriever = retriever
+    retriever = attr.ib()
 
 
     def moreObjectionsTo(self, path, result):
@@ -500,8 +492,8 @@ class Traversability(DelegatingRetriever):
         return True
 
 
-
-class Vector(record('distance direction')):
+@attr.s
+class Vector(object):
     """
     A L{Vector} is a link annotation which remembers a distance and a
     direction; for example, a link through a 'north' exit between rooms will
@@ -511,9 +503,12 @@ class Vector(record('distance direction')):
 
     implements(IDistance)
 
+    distance = attr.ib()
+    direction = attr.ib()
 
 
-class ProviderOf(record("interface")):
+@attr.s
+class ProviderOf(object):
     """
     L{ProviderOf} is a retriever which will retrieve the facet which provides
     its C{interface}, if any exists at the terminus of the path.
@@ -524,6 +519,8 @@ class ProviderOf(record("interface")):
     """
 
     implements(IRetriever)
+
+    interface = attr.ib()
 
     def retrieve(self, path):
         """
@@ -553,7 +550,8 @@ class ProviderOf(record("interface")):
 
 
 
-class AlsoKnownAs(record('name')):
+@attr.s
+class AlsoKnownAs(object):
     """
     L{AlsoKnownAs} is an annotation that indicates that the link it annotates
     is known as a particular name.
@@ -564,6 +562,8 @@ class AlsoKnownAs(record('name')):
     """
 
     implements(INameable)
+
+    name = attr.ib()
 
     def knownTo(self, observer, name):
         """
