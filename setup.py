@@ -38,6 +38,7 @@ distobj = setup(
         "twisted>=14.0.0",
         "epsilon>=0.7.0",
         "characteristic>=0.1.0",
+        "attrs",
         "axiom>=0.7.1",
         "mantissa>=0.8.0",
         ],
