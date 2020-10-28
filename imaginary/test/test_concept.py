@@ -3,12 +3,12 @@ Tests for the conversion between abstract objects representing the world or
 changes in the world into concrete per-user-interface content.
 """
 
+import attr
+
 from zope.interface import implementer
 from zope.interface.verify import verifyClass
 
 from twisted.trial import unittest
-
-from epsilon import structlike
 
 from imaginary import language, unc, text as T, iimaginary
 from imaginary.test import commandutils
@@ -222,8 +222,11 @@ class PlaintextDescriptionTests(NounTestCase, SharedTextyTests):
         )
 
 
+@attr.s
 @implementer(iimaginary.IExit)
-class StubExit(structlike.record("name")):
+class StubExit(object):
+    name = attr.ib()
+
     def shouldEvenAttemptTraversalFrom(self, where, thing):
         """
         Yes.
