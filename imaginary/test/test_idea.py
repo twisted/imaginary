@@ -19,7 +19,7 @@ from imaginary.idea import (
     Reachable, CanSee)
 
 
-@attr.s
+@attr.s(repr=False)
 class Reprable(object):
     repr = attr.ib()
 
