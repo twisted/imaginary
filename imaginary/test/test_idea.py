@@ -4,11 +4,11 @@ Some basic unit tests for L{imaginary.idea} (but many tests for this code are in
 other modules instead).
 """
 
+import attr
+
 from zope.interface import implements, implementer
 
 from twisted.trial.unittest import TestCase
-
-from epsilon.structlike import record
 
 from imaginary.iimaginary import (
     IWhyNot, INameable, ILinkContributor, IObstruction, ILinkAnnotator,
@@ -19,7 +19,10 @@ from imaginary.idea import (
     Reachable, CanSee)
 
 
-class Reprable(record('repr')):
+@attr.s
+class Reprable(object):
+    repr = attr.ib()
+
     def __repr__(self):
         return self.repr
 
@@ -64,8 +67,11 @@ class PathTests(TestCase):
 
 
 
-class OneLink(record('link')):
+@attr.s
+class OneLink(object):
     implements(ILinkContributor)
+
+    link = attr.ib()
 
     def links(self):
         return [self.link]
@@ -159,8 +165,11 @@ class Closed(object):
 
 
 
-class ConstantAnnotation(record('annotation')):
+@attr.s
+class ConstantAnnotation(object):
     implements(ILinkAnnotator)
+
+    annotation = attr.ib()
 
     def annotationsFor(self, link, idea):
         return [self.annotation]
