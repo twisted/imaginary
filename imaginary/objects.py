@@ -1234,7 +1234,7 @@ class LightSource(item.Item, _Enhancement):
 
 
 
-@attr.s
+@attr.s(frozen=True)
 class _PossiblyDark(object):
     """
     A L{_PossiblyDark} is a link annotation which specifies that the target of
