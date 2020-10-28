@@ -12,11 +12,12 @@ from __future__ import division
 
 import math
 
+import attr
+
 from zope.interface import implements, implementer
 
 from twisted.python import reflect, components
 
-from epsilon import structlike
 from epsilon.remember import remembered
 
 from axiom import item, attributes
@@ -557,14 +558,17 @@ def _exitAsConcept(exit):
 components.registerAdapter(_exitAsConcept, Exit, iimaginary.IConcept)
 
 
-
-class ContainmentRelationship(structlike.record("containedBy contained")):
+@attr.s
+class ContainmentRelationship(object):
     """
     Implementation of L{iimaginary.IContainmentRelationship}.  The interface
     specifies no methods or attributes.  See its documentation for more
     information.
     """
     implements(iimaginary.IContainmentRelationship)
+
+    containedBy = attr.ib()
+    contained = attr.ib()
 
 
 
@@ -707,7 +711,8 @@ def pathIndicatesContainmentIn(path, container):
 
 
 
-class _ContainerEntrance(structlike.record('container')):
+@attr.s
+class _ContainerEntrance(object):
     """
     A L{_ContainerEntrance} is the implicit entrance to a container from its
     location.  If a container is open, and big enough, it can be entered.
@@ -718,6 +723,8 @@ class _ContainerEntrance(structlike.record('container')):
     """
 
     implements(iimaginary.IExit, iimaginary.INameable)
+
+    container = attr.ib()
 
     @property
     def name(self):
@@ -766,7 +773,8 @@ class _ContainerEntrance(structlike.record('container')):
 
 
 
-class _ContainerExit(structlike.record('container')):
+@attr.s
+class _ContainerExit(object):
     """
     A L{_ContainerExit} is the exit from a container, or specifically, a
     L{Containment}; an exit by which actors may move to the container's
@@ -778,6 +786,8 @@ class _ContainerExit(structlike.record('container')):
     """
 
     implements(iimaginary.IExit, iimaginary.INameable)
+
+    container = attr.ib()
 
     @property
     def name(self):
@@ -1163,12 +1173,15 @@ class LocationLighting(item.Item, _Enhancement):
 
 
 
-class _DarkLocationProxy(structlike.record('thing')):
+@attr.s
+class _DarkLocationProxy(object):
     """
     An L{IVisible} implementation for darkened locations.
     """
 
     implements(iimaginary.IVisible)
+
+    thing = attr.ib()
 
     def visualizeWithContents(self, paths):
         """
@@ -1221,7 +1234,8 @@ class LightSource(item.Item, _Enhancement):
 
 
 
-class _PossiblyDark(structlike.record("lighting")):
+@attr.s
+class _PossiblyDark(object):
     """
     A L{_PossiblyDark} is a link annotation which specifies that the target of
     the link may be affected by lighting.
@@ -1232,6 +1246,8 @@ class _PossiblyDark(structlike.record("lighting")):
     """
 
     implements(iimaginary.IWhyNot, iimaginary.ILitLink)
+
+    lighting = attr.ib()
 
     def tellMeWhyNot(self):
         """
