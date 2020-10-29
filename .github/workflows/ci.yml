@@ -1,0 +1,45 @@
+name: "CI"
+
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+
+jobs:
+  unit-tests:
+    runs-on: "${{ matrix.os }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - "linux-latest"
+        python-version:
+          - "2.7"
+
+    steps:
+      - name: "Check out sources"
+        uses: "actions/checkout@v2"
+
+      - name: "Set up Python ${{ matrix.python-version }}"
+        uses: "actions/setup-python@v1"
+        with:
+          python-version: "${{ matrix.python-version }}"
+
+      - name: "Install Python packages"
+        run: |
+          pip install --upgrade pip setuptools
+          pip install --editable .
+          pip install --editable ExampleGame
+          pip list
+
+      - name: "Run Tests"
+        run: |
+          cd /tmp
+          python -m coverage run --branch --source=imaginary --omit=imaginary/pyparsing.py -m twisted.trial imaginary
+          coverage report -m
+
+      - name: "Upload Coverage Results"
+        run: |
+          pip install coveralls
+          coveralls
