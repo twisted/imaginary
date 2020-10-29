@@ -2,7 +2,7 @@
 branch = True
 parallel = True
 
-source =
+source_pkgs =
        imaginary
 
 omit =
