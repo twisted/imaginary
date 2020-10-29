@@ -42,4 +42,4 @@ jobs:
       - name: "Upload Coverage Results"
         run: |
           pip install coveralls
-          coveralls
+          COVERALLS_REPO_TOKEN=1oyBvUgwFpx0lZfqAXiqM8LPmgKk2Y7OL coveralls
