@@ -29,18 +29,19 @@ jobs:
       - name: "Install Python packages"
         run: |
           pip install --upgrade pip setuptools coverage
-          pip install --editable .
-          pip install --editable ExampleGame
+          pip install . ExampleGame
           pip list
+
+          # Get rid of the importable `imaginary` source tree.  We want to use
+          # the installed version.
+          rm -rv imaginary
 
       - name: "Run Tests"
         run: |
-          cd /tmp
           python -m coverage run --branch --source=imaginary --omit=imaginary/pyparsing.py -m twisted.trial imaginary
           coverage report -m
 
       - name: "Upload Coverage Results"
         run: |
-          cd /tmp
           pip install coveralls
           COVERALLS_REPO_TOKEN=1oyBvUgwFpx0lZfqAXiqM8LPmgKk2Y7OL coveralls
