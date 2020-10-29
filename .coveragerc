@@ -6,7 +6,8 @@ source_pkgs =
        imaginary
 
 omit =
-     imaginary/pyparsing.py
+     # Vendored source file, don't worry about its coverage.
+     */imaginary/pyparsing.py
 
 [paths]
 source =
