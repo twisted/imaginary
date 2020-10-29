@@ -10,4 +10,4 @@ omit =
 
 [paths]
 source =
-       site-packages/imaginary/
+       */site-packages/
