@@ -32,10 +32,6 @@ jobs:
           pip install . ./ExampleGame
           pip list
 
-          # Get rid of the importable `imaginary` source tree.  We want to use
-          # the installed version.
-          rm -rv imaginary
-
       - name: "Run Tests"
         run: |
           python -m coverage run -m twisted.trial imaginary

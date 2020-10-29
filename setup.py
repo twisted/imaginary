@@ -33,7 +33,8 @@ distobj = setup(
         "Topic :: Games/Entertainment :: Role-Playing",
         "Topic :: Games/Entertainment :: Simulation",
         "Topic :: Terminals"],
-    packages=find_packages() + ['axiom.plugins', 'xmantissa.plugins'],
+    packages=find_packages("src") + ['axiom.plugins', 'xmantissa.plugins'],
+    package_dir={"": "src"},
     install_requires=[
         "twisted[conch]>=14.0.0",
         "epsilon>=0.7.0",
