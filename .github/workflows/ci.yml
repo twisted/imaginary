@@ -8,6 +8,16 @@ on:
 
 jobs:
   documentation:
+    runs-on: "${{ matrix.os }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - "ubuntu-latest"
+        python-version:
+          - "2.7"
+
+    steps:
       - name: "Check out sources"
         uses: "actions/checkout@v2"
 
