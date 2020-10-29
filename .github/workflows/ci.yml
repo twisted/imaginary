@@ -29,7 +29,7 @@ jobs:
       - name: "Install Python packages"
         run: |
           pip install --upgrade pip setuptools coverage
-          pip install . ExampleGame
+          pip install . ./ExampleGame
           pip list
 
           # Get rid of the importable `imaginary` source tree.  We want to use
