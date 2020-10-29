@@ -36,7 +36,13 @@ jobs:
         run: |
           make --directory=doc html
 
-  unit-tests:
+      - name: "Upload Documentation"
+        uses: "actions/upload-artifact@v2"
+        with:
+          name: "documentation"
+          path: "doc/"
+
+    unit-tests:
     runs-on: "${{ matrix.os }}"
     strategy:
       fail-fast: false
