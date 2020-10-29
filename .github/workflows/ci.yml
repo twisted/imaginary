@@ -38,7 +38,7 @@ jobs:
 
       - name: "Run Tests"
         run: |
-          python -m coverage run --branch --source=imaginary --omit=imaginary/pyparsing.py -m twisted.trial imaginary
+          python -m coverage run -m twisted.trial imaginary
           coverage report -m
 
       - name: "Upload Coverage Results"

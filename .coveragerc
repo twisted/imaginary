@@ -1,0 +1,13 @@
+[run]
+branch = True
+parallel = True
+
+source =
+       imaginary
+
+omit =
+     imaginary/pyparsing.py
+
+[paths]
+source =
+       site-packages/imaginary/
