@@ -39,6 +39,7 @@ jobs:
       - name: "Run Tests"
         run: |
           python -m coverage run -m twisted.trial imaginary
+          coverage combine
           coverage report -m
 
       - name: "Upload Coverage Results"
