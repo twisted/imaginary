@@ -36,7 +36,11 @@ jobs:
         run: |
           python -m coverage run -m twisted.trial imaginary
           coverage combine
-          coverage report -m
+          # --ignore-errors is required here because the path resolution can't
+          # --figure out the right place to find Twisted dropin source files.
+          # --Without --ignore-errors the report fails when it fails to read
+          # --these sources.
+          coverage report --show-missing --ignore-errors
 
       - name: "Upload Coverage Results"
         run: |
