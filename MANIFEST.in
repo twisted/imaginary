@@ -4,5 +4,6 @@ include NEWS.txt
 include LICENSE
 graft imaginary
 graft axiom
+graft imaginary/resources
 include versioneer.py
 include imaginary/_version.py

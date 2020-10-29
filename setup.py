@@ -44,4 +44,7 @@ distobj = setup(
     extras_require={
         "doc": ["sphinx>=1.2.2"],
         },
-    )
+    package_data={
+        "imaginary": ["resources/*", "resources/help/*"],
+    },
+)
