@@ -42,7 +42,7 @@ jobs:
           name: "documentation"
           path: "doc/"
 
-    unit-tests:
+  unit-tests:
     runs-on: "${{ matrix.os }}"
     strategy:
       fail-fast: false
