@@ -78,7 +78,11 @@ class ImpassableExit(Item, Enhancement):
 
 
 def world(store):
-    foyer = Thing(store=store, name="Foyer")
+    foyer = Thing(
+        store=store,
+        name="Foyer",
+        description="This is the foyer of a majestic opera house.",
+    )
     Container.createFor(foyer, capacity=1000)
 
     nowhere = Thing(store=store, name="nowhere")
