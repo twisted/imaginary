@@ -44,19 +44,22 @@ class CloakOfDarkness(Item, Enhancement):
 
     def annotationsFor(self, link, idea):
         if link.target.delegate == self.thing:
-            yield _CloakOfDarkness(self.cloak)
+            # The link is pointing towards the item we are intended to
+            # conceal.
+
+            # XXX wearer not on IClothing but needed
+            if IClothing(self.cloak).wearer is not None:
+                # The cloak is worn!  The effect is active.
+                yield Darkness()
 
 
 @implementer(ILitLink)
-@attr.s
-class _CloakOfDarkness(object):
-    cloak = attr.ib()
-
+class Darkness(object):
     def isItLit(self, path):
-        # XXX wearer not on IClothing but needed
-        if IClothing(self.cloak).wearer is None:
-            return True
         return False
+
+    def applyLighting(self, litThing, eventualTarget, requestedInterface):
+        return None
 
     # XXX whyNotLit not on ILitLink but used
     def whyNotLit(self):
