@@ -7,6 +7,8 @@ from __future__ import unicode_literals
 
 from zope.interface import implementer
 
+import attr
+
 from axiom.item import Item
 from axiom.attributes import reference
 
@@ -14,23 +16,52 @@ from imaginary.world import ImaginaryWorld
 from imaginary.events import Success
 from imaginary.objects import Thing, Container, Exit
 from imaginary.garments import createShirt
-from imaginary.iimaginary import IClothing, IClothingWearer, IWhyNot, ILitLink, IMovementRestriction
+from imaginary.iimaginary import (
+    IClothing,
+    IClothingWearer,
+    IWhyNot,
+    ILitLink,
+    IMovementRestriction,
+    ILinkAnnotator,
+)
 from imaginary.enhancement import Enhancement
 
 
 # XXX Make this an ILinkAnnotator instead (additionally?)
-@implementer(IWhyNot, ILitLink)
+@implementer(ILinkAnnotator)
 class CloakOfDarkness(Item, Enhancement):
+    """
+    A cloak of darkness cloaks an item in darkness as long as the cloak is
+    worn.  Notably, the thing cloaked in darkness is independent of who wears
+    the cloak.
+    """
+    powerupInterfaces = [ILinkAnnotator]
+
+    # The target of the cloak of darkness.
     thing = reference()
-    message = reference()
 
-    powerupInterfaces = [ILitLink]
+    # The cloak itself.
+    cloak = reference()
 
-    def tellMeWhyNot(self):
-        return "You are overcome by the impression of disturbing things in the dark."
+    def annotationsFor(self, link, idea):
+        if link.target.delegate == self.thing:
+            yield _CloakOfDarkness(self.cloak)
+
+
+@implementer(ILitLink)
+@attr.s
+class _CloakOfDarkness(object):
+    cloak = attr.ib()
 
     def isItLit(self, path):
-        return True
+        # XXX wearer not on IClothing but needed
+        if IClothing(self.cloak).wearer is None:
+            return True
+        return False
+
+    # XXX whyNotLit not on ILitLink but used
+    def whyNotLit(self):
+        return None
 
 
 @implementer(IMovementRestriction)
@@ -58,11 +89,8 @@ def world(store):
         origin=foyer,
     )
 
-    message = Thing(store=store, name="message", location=foyer)
-
     protagonist = world.create("Protagonist")
     cloak = createShirt(store=store, name="cloak", location=protagonist)
-    CloakOfDarkness.createFor(cloak, message=message)
     wearer = IClothingWearer(protagonist)
     wearer.putOn(IClothing(cloak))
 
@@ -75,4 +103,6 @@ def world(store):
     hook = Thing(store=store, name="hook", location=cloakroom, portable=False)
     Exit.link(foyer, cloakroom, "west")
 
+    message = Thing(store=store, name="message", location=foyer)
+    CloakOfDarkness.createFor(message, cloak=cloak)
     return world
