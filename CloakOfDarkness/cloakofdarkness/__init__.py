@@ -27,7 +27,6 @@ from imaginary.iimaginary import (
 from imaginary.enhancement import Enhancement
 
 
-# XXX Make this an ILinkAnnotator instead (additionally?)
 @implementer(ILinkAnnotator)
 class CloakOfDarkness(Item, Enhancement):
     """
