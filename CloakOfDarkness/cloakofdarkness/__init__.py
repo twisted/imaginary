@@ -68,13 +68,16 @@ class Darkness(object):
 
 @implementer(IMovementRestriction)
 class ImpassableExit(Item, Enhancement):
+    powerupInterfaces = [IMovementRestriction]
+
     thing = reference()
     target = reference()
 
-    powerupInterfaces = [IMovementRestriction]
-
     def movementImminent(self, movee, destination):
-        return None
+        # XXX This stops the movement but the "Go" action doesn't handle it
+        # very well.  Need to expand the handling of exception cases in "Go"
+        # so it's possible to express the failure however we like.
+        raise Exception("The way seems strangely inaccessible.")
 
 
 def world(store):
@@ -88,7 +91,6 @@ def world(store):
     nowhere = Thing(store=store, name="nowhere")
     Container.createFor(nowhere, capacity=1000)
     Exit.link(foyer, nowhere, "north")
-    ImpassableExit.createFor(foyer, target=nowhere)
 
     world = ImaginaryWorld(
         store=store,
@@ -108,6 +110,9 @@ def world(store):
     Container.createFor(cloakroom, capacity=1000)
     hook = Thing(store=store, name="hook", location=cloakroom, portable=False)
     Exit.link(foyer, cloakroom, "west")
+
+    # Make the exit to the north non-traversable.
+    ImpassableExit.createFor(protagonist, target=nowhere)
 
     message = Thing(store=store, name="message", location=foyer)
     CloakOfDarkness.createFor(message, cloak=cloak)
