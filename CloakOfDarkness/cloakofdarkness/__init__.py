@@ -30,6 +30,9 @@ from imaginary.eimaginary import (
 from imaginary.events import (
     ThatDoesntWork,
 )
+from imaginary.language import (
+    Gender,
+)
 from imaginary.enhancement import Enhancement
 
 
@@ -108,7 +111,11 @@ def world(store):
         origin=foyer,
     )
 
-    protagonist = world.create("Protagonist")
+    protagonist = world.create(
+        "Protagonist",
+        proper=True,
+        gender=Gender.FEMALE,
+    )
     cloak = createShirt(store=store, name="cloak", location=protagonist)
     wearer = IClothingWearer(protagonist)
     wearer.putOn(IClothing(cloak))
