@@ -24,6 +24,12 @@ from imaginary.iimaginary import (
     IMovementRestriction,
     ILinkAnnotator,
 )
+from imaginary.eimaginary import (
+    ActionFailure,
+)
+from imaginary.events import (
+    ThatDoesntWork,
+)
 from imaginary.enhancement import Enhancement
 
 
@@ -74,10 +80,15 @@ class ImpassableExit(Item, Enhancement):
     target = reference()
 
     def movementImminent(self, movee, destination):
-        # XXX This stops the movement but the "Go" action doesn't handle it
-        # very well.  Need to expand the handling of exception cases in "Go"
-        # so it's possible to express the failure however we like.
-        raise Exception("The way seems strangely inaccessible.")
+        if destination == self.target:
+            raise ActionFailure(
+                ThatDoesntWork(
+                    actor=movee,
+                    actorMessage=[
+                        "The way seems strangely inaccessible.",
+                    ],
+                ),
+            )
 
 
 def world(store):
