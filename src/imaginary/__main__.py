@@ -135,9 +135,10 @@ def makeTextServer(reactor, world=None):
         world = ImaginaryWorld(store=store)
         actorThing = world.create("player")
 
-    tsb = ConsoleTextServer(Player(actorThing), sys.__stdin__.fileno())
+    fd = sys.__stdin__.fileno()
+    tsb = ConsoleTextServer(Player(actorThing), fd)
     def winchAccess(signum, frame):
-        reactor.callFromThread(tsb.terminalSize, *getTerminalSize()[::-1])
+        reactor.callFromThread(tsb.terminalSize, *getTerminalSize(fd)[::-1])
     signal.signal(signal.SIGWINCH, winchAccess)
     return tsb
 
@@ -200,4 +201,3 @@ def main(argv):
     startLogging(file('imaginary-debug.log', 'w'))
     withSavedTerminalSettings(sys.__stdin__.fileno(),
                               lambda: react(runTextServer, argv))
-
