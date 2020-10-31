@@ -6,6 +6,8 @@ These tests are not particularly good at the moment.  They are, however, a
 minor step up from nothing.
 """
 
+import attr
+
 from zope.interface.verify import verifyObject
 
 from twisted.trial.unittest import TestCase
@@ -26,13 +28,13 @@ from xmantissa.plugins.imaginaryoff import imaginaryOffering
 from twisted.test.proto_helpers import StringTransport
 from twisted.conch.insults.insults import ServerProtocol
 
-from characteristic import attributes
-
-@attributes("proto world".split())
+@attr.s
 class TestWorld(object):
     """
     A fixture for testing a terminal protcol.
     """
+    proto = attr.ib()
+    world = attr.ib()
 
 
 
