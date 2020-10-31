@@ -12,7 +12,6 @@ Twisted==15.5.0
 Vertex==0.3.1
 alabaster==0.7.7
 cffi==1.5.0
-characteristic==14.3.0
 chardet==2.3.0
 cryptography==1.2.2
 cssutils==1.0.1
