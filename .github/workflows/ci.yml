@@ -1,0 +1,83 @@
+name: "CI"
+
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+
+jobs:
+  documentation:
+    runs-on: "${{ matrix.os }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - "ubuntu-latest"
+        python-version:
+          - "2.7"
+
+    steps:
+      - name: "Check out sources"
+        uses: "actions/checkout@v2"
+
+      - name: "Set up Python ${{ matrix.python-version }}"
+        uses: "actions/setup-python@v1"
+        with:
+          python-version: "${{ matrix.python-version }}"
+
+      - name: "Install Python packages"
+        run: |
+          pip install --upgrade pip setuptools
+          pip install .[doc]
+          pip list
+
+      - name: "Build Documentation"
+        run: |
+          make --directory=doc html
+
+      - name: "Upload Documentation"
+        uses: "actions/upload-artifact@v2"
+        with:
+          name: "documentation"
+          path: "doc/"
+
+  unit-tests:
+    runs-on: "${{ matrix.os }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - "ubuntu-latest"
+        python-version:
+          - "2.7"
+
+    steps:
+      - name: "Check out sources"
+        uses: "actions/checkout@v2"
+
+      - name: "Set up Python ${{ matrix.python-version }}"
+        uses: "actions/setup-python@v1"
+        with:
+          python-version: "${{ matrix.python-version }}"
+
+      - name: "Install Python packages"
+        run: |
+          pip install --upgrade pip setuptools coverage
+          pip install . ./ExampleGame
+          pip list
+
+      - name: "Run Tests"
+        run: |
+          python -m coverage run -m twisted.trial imaginary
+          coverage combine
+          # --ignore-errors is required here because the path resolution can't
+          # --figure out the right place to find Twisted dropin source files.
+          # --Without --ignore-errors the report fails when it fails to read
+          # --these sources.
+          coverage report --show-missing --ignore-errors
+
+      - name: "Upload Coverage Results"
+        run: |
+          pip install coveralls
+          COVERALLS_REPO_TOKEN=1oyBvUgwFpx0lZfqAXiqM8LPmgKk2Y7OL coveralls
