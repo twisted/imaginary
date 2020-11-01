@@ -126,29 +126,54 @@ def findActorThing(store):
 
 
 
-def makeTextServer(reactor, world=None):
+def makeOrLoadWorld(reactor, worldName=None):
     store = Store()
-    if world is not None:
-        world = loadWorld(world, store)
-        actorThing = findActorThing(store)
-    else:
+    if worldName is None:
         world = ImaginaryWorld(store=store)
-        actorThing = world.create("player")
+        world.create("player")
+    else:
+        world = loadWorld(worldName, store)
+    return store
 
-    fd = sys.__stdin__.fileno()
-    tsb = ConsoleTextServer(Player(actorThing), fd)
+
+
+def makeTextServer(reactor, terminal_fd, player):
+    """
+    Make an ``ITerminalProtocol`` for running an Imaginary session.
+
+    :param int terminal_fd: The file descriptor of the terminal the server is
+        connected to.  This is used to determine the display size so elements
+        can be fit to it.  It is not used for other input or output.
+
+    :param Player player: The player operating the session.  This is used to
+        interpret input.
+
+    :return: An object providing ``ITerminalProtocol`` which can handle text
+        input and generate text output to facilitate an Imaginary session.
+    """
+    tsb = ConsoleTextServer(player, terminal_fd)
     def winchAccess(signum, frame):
-        reactor.callFromThread(tsb.terminalSize, *getTerminalSize(fd)[::-1])
+        reactor.callFromThread(
+            tsb.terminalSize,
+            *getTerminalSize(terminal_fd)[::-1]
+        )
     signal.signal(signal.SIGWINCH, winchAccess)
     return tsb
 
 
 
-def runTextServer(reactor, *argv):
+def runTextServer(reactor, terminal_fd, *argv):
     """
-    Run a L{ConsoleTextServer}.
+    Run a text-based Imaginary session.
+
+    :param terminal_fd: See ``makeTextServer``.
+
+    :param *: Additional positional arguments to use to initialize the
+        Imaginary world.
     """
-    textServer = makeTextServer(reactor, *argv)
+    store = makeOrLoadWorld(reactor, *argv)
+    actor = findActorThing(store)
+    textServer = makeTextServer(reactor, terminal_fd, Player(actor))
     StandardIO(ServerProtocol(lambda: textServer))
     return textServer.done
 
@@ -199,5 +224,8 @@ def main(argv):
     Start logging to a temporary file and then run the main loop.
     """
     startLogging(file('imaginary-debug.log', 'w'))
-    withSavedTerminalSettings(sys.__stdin__.fileno(),
-                              lambda: react(runTextServer, argv))
+    terminal_fd = sys.__stdin__.fileno()
+    withSavedTerminalSettings(
+        terminal_fd,
+        lambda: react(runTextServer, terminal_fd, argv),
+    )

@@ -9,19 +9,27 @@ import tty
 import struct
 import termios
 
+import attr
+
+from zope.interface import implementer
+
 from axiom.store import Store
 
 from twisted.trial.unittest import TestCase
 
-from twisted.internet.defer import Deferred
 from twisted.test.proto_helpers import StringTransport
 from twisted.conch.insults.insults import ServerProtocol
 
+from imaginary.iimaginary import IEventObserver
 from imaginary.world import ImaginaryWorld
 from imaginary.wiring.player import Player
 from imaginary.__main__ import withSavedTerminalSettings
 from imaginary.__main__ import CLEAR_SCREEN
-from imaginary.__main__ import getTerminalSize, ConsoleTextServer
+from imaginary.__main__ import (
+    getTerminalSize,
+    ConsoleTextServer,
+    makeTextServer,
+)
 
 
 def makeTerminal(testCase):
@@ -114,3 +122,49 @@ class WindowSizing(TestCase):
         newattrs = termios.tcgetattr(follower)
         attributesEqual(newattrs, attrs)
         self.assertEqual(os.read(leader, 1024), b"HELLO" + CLEAR_SCREEN)
+
+
+
+@implementer(IEventObserver)
+@attr.s
+class SomeObserver(object):
+    parsed = attr.ib(init=False, default=attr.Factory(list))
+
+    # TODO: setProtocol, parse, and disconnect are the APIs that the text
+    # server actually uses from the observer but they're not part of any
+    # interface.
+    def setProtocol(self, protocol):
+        pass
+
+    def parse(self, line):
+        self.parsed.append(line)
+
+    def disconnect(self):
+        pass
+
+    # Here's the IEventObserver implementation but the tests currently don't
+    # do anything that relies on it.
+    def prepare(self, concept):
+        pass
+
+
+
+class MakeTextServerTests(TestCase):
+    """
+    Tests for L{makeTextServer}.
+    """
+    def test_inputDelivered(self):
+        """
+        When a line of input is received by the result of ``makeTextServer`` it is
+        passed on to the event observer's ``parse`` method.
+        """
+        leader, follower = makeTerminal(self)
+        observer = SomeObserver()
+
+        text_protocol = makeTextServer(follower, observer)
+        terminal_protocol = ServerProtocol(lambda: text_protocol)
+        transport = StringTransport()
+        terminal_protocol.makeConnection(transport)
+
+        terminal_protocol.dataReceived(b"hello\n")
+        self.assertEqual(observer.parsed, [b"hello"])
