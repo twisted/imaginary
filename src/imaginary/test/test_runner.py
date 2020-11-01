@@ -9,13 +9,18 @@ import pty
 import tty
 import struct
 import termios
-
+from textwrap import (
+    dedent,
+)
 import attr
 
 from zope.interface import implementer
 
 from axiom.store import Store
 
+from twisted.python.filepath import (
+    FilePath,
+)
 from twisted.internet.interfaces import IReactorFromThreads
 from twisted.trial.unittest import TestCase
 
@@ -31,6 +36,8 @@ from imaginary.__main__ import (
     getTerminalSize,
     ConsoleTextServer,
     makeTextServer,
+    makeOrLoadWorld,
+    findActorThing,
 )
 
 
@@ -226,3 +233,40 @@ class MakeTextServerTests(TestCase):
 
         self.assertEqual(text_protocol.height, 123)
         self.assertEqual(text_protocol.width, 456)
+
+
+
+class MakeOrLoadWorldTests(TestCase):
+    """
+    Tests for ``makeOrLoadWorld``.
+    """
+    def test_make(self):
+        """
+        When called without a ``worldName``, ``makeOrLoadWorld`` returns a
+        ``Store`` that contains an ``Actor``.
+        """
+        store = makeOrLoadWorld()
+        actor = findActorThing(store)
+        self.assertEqual(actor.store, store)
+
+
+    def test_load(self):
+        """
+        When called with a ``worldName``, ``makeOrLoadWorld`` treats it as a path,
+        evaluates the Python source it contains, and returns a ``Store``
+        containing whatever results.
+        """
+        testworld = FilePath(self.mktemp())
+        testworld.setContent(dedent(
+            """
+            from imaginary.world import ImaginaryWorld
+
+            def world(store):
+                world = ImaginaryWorld(store=store)
+                world.create(u"testworld-actorname")
+                return world
+            """,
+        ))
+        store = makeOrLoadWorld(testworld.path)
+        actor = findActorThing(store)
+        self.assertEqual(actor.name, u"testworld-actorname")
