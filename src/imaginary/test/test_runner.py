@@ -3,6 +3,7 @@ Test running an Imaginary world
 """
 
 import os
+import signal
 import fcntl
 import pty
 import tty
@@ -15,6 +16,7 @@ from zope.interface import implementer
 
 from axiom.store import Store
 
+from twisted.internet.interfaces import IReactorFromThreads
 from twisted.trial.unittest import TestCase
 
 from twisted.test.proto_helpers import StringTransport
@@ -149,6 +151,33 @@ class SomeObserver(object):
 
 
 
+@implementer(IReactorFromThreads)
+@attr.s
+class ThreadyReactor(object):
+    """
+    An implementation of ``IReactorFromThreads`` that makes it easy for the
+    test code to schedule calls in the preferred way.
+    """
+    _calls = attr.ib(default=attr.Factory(list))
+
+    def callFromThread(self, f, *a, **kw):
+        """
+        Just record the specified call.
+        """
+        self._calls.append((f, a, kw))
+
+
+    def _runCalls(self):
+        """
+        Run all previously recorded calls.
+        """
+        calls = self._calls[:]
+        self._calls[:] = []
+        for f, a, kw in calls:
+            f(*a, **kw)
+
+
+
 class MakeTextServerTests(TestCase):
     """
     Tests for L{makeTextServer}.
@@ -161,10 +190,39 @@ class MakeTextServerTests(TestCase):
         leader, follower = makeTerminal(self)
         observer = SomeObserver()
 
-        text_protocol = makeTextServer(follower, observer)
+        text_protocol = makeTextServer(
+            ThreadyReactor(),
+            follower,
+            observer,
+        )
         terminal_protocol = ServerProtocol(lambda: text_protocol)
         transport = StringTransport()
         terminal_protocol.makeConnection(transport)
 
         terminal_protocol.dataReceived(b"hello\n")
         self.assertEqual(observer.parsed, [b"hello"])
+
+
+    def test_resizeOnSignal(self):
+        """
+        When SIGWINCH is delivered to the process the ``ConsoleTextServer`` is
+        resized to match the new terminal size.
+        """
+        reactor = ThreadyReactor()
+        leader, follower = makeTerminal(self)
+        observer = SomeObserver()
+
+        text_protocol = makeTextServer(reactor, follower, observer)
+        terminal_protocol = ServerProtocol(lambda: text_protocol)
+        transport = StringTransport()
+        terminal_protocol.makeConnection(transport)
+
+        setTerminalSize(leader, 123, 456)
+
+        os.kill(os.getpid(), signal.SIGWINCH)
+
+        # Help the calls along
+        reactor._runCalls()
+
+        self.assertEqual(text_protocol.height, 123)
+        self.assertEqual(text_protocol.width, 456)
