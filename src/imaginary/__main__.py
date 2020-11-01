@@ -126,7 +126,10 @@ def findActorThing(store):
 
 
 
-def makeOrLoadWorld(reactor, worldName=None):
+def makeOrLoadWorld(worldName=None):
+    """
+    Load a world by the given name or make a new empty one.
+    """
     store = Store()
     if worldName is None:
         world = ImaginaryWorld(store=store)
@@ -171,7 +174,7 @@ def runTextServer(reactor, terminal_fd, *argv):
     :param *: Additional positional arguments to use to initialize the
         Imaginary world.
     """
-    store = makeOrLoadWorld(reactor, *argv)
+    store = makeOrLoadWorld(*argv)
     actor = findActorThing(store)
     textServer = makeTextServer(reactor, terminal_fd, Player(actor))
     StandardIO(ServerProtocol(lambda: textServer))
