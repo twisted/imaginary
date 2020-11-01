@@ -1,6 +1,6 @@
 # -*- test-case-name: imaginary.test.test_player -*-
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from twisted.internet import defer
 from twisted.python import log
@@ -11,12 +11,11 @@ from imaginary.text import flatten
 from imaginary.action import Action
 
 
+@implementer(iimaginary.IEventObserver)
 class Player(object):
     """
     UI integration layer for Actors to protocols.
     """
-    implements(iimaginary.IEventObserver)
-
     proto = None
 
     useColors = True
