@@ -8,11 +8,11 @@ Things.
     provides implementations of.
 """
 
+import attr
+
 from zope.interface import implements
 
 from twisted.python.components import registerAdapter
-
-from epsilon.structlike import record
 
 from axiom.item import Item
 from axiom.attributes import reference
@@ -25,13 +25,16 @@ from imaginary.events import ThatDoesntWork
 
 
 
-class NonManipulator(record("thing")):
+@attr.s
+class NonManipulator(object):
     """
     A L{NonManipulator} is the ephemeral actor, implementing the responses that
     normal users will see when they attempt to perform administrative actions.
     """
 
     implements(IManipulator)
+
+    thing = attr.ib()
 
     def setIllumination(self, candelas):
         """
@@ -74,9 +77,5 @@ class Manipulator(Item):
             lambda ll: self.thing.location.powerUp(ll),
             thing=self.thing.location)
         oldCandelas = ll.candelas
-        otherMessage = None
         ll.candelas = candelas
         return oldCandelas
-
-
-
