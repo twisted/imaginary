@@ -1,5 +1,7 @@
 import pprint, string
 
+import attr
+
 from twisted.trial import unittest
 from twisted.conch.insults import insults, helper
 
@@ -15,7 +17,10 @@ def F(*a, **kw):
 
 
 def NN(**kw):
-    nkw = dict.fromkeys(T.AttributeSet.__names__, T.unset)
+    nkw = dict.fromkeys(
+        (a.name for a in attr.fields(T.AttributeSet)),
+        T.unset,
+    )
     nkw.update(kw)
     AS = T.AttributeSet(**nkw)
     x = T.neutral.clone().update(AS)

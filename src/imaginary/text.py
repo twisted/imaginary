@@ -2,16 +2,17 @@
 
 import pprint
 
-from epsilon import structlike
+import attr
 
 class _unset(object):
     def __nonzero__(self):
         return False
 unset = _unset()
 
-class AttributeSet(structlike.record('bold underline reverseVideo blink fg bg',
-                                     bold=False, underline=False, reverseVideo=False,
-                                     blink=False, fg='9', bg='9')):
+_tristate = attr.validators.in_((True, False, unset))
+
+@attr.s
+class AttributeSet(object):
     """
     @ivar bold: True, False, or unset, indicating whether characters
     with these attributes will be bold, or if boldness should be
@@ -33,24 +34,18 @@ class AttributeSet(structlike.record('bold underline reverseVideo blink fg bg',
 
     @ivar bg: Like C{fg} but for background color.
     """
-
-    def __init__(self, *a, **kw):
-        super(AttributeSet, self).__init__(*a, **kw)
-        assert self.fg is unset or self.fg in '012345679'
-        assert self.bg is unset or self.bg in '012345679'
-        assert self.bold is unset or self.bold in (True, False)
-        assert self.underline is unset or self.underline in (True, False)
-        assert self.reverseVideo is unset or self.reverseVideo in (True, False)
-        assert self.blink is unset or self.blink in (True, False)
-
-    def __repr__(self):
-        return '%s(%s)' % (
-            self.__class__.__name__,
-            ', '.join(['='.join((k, str(v)))
-                       for (k, v)
-                       in zip(self.__names__, self)
-                       if v is not unset]))
-
+    bold = attr.ib(default=False, validator=_tristate)
+    underline = attr.ib(default=False, validator=_tristate)
+    reverseVideo = attr.ib(default=False, validator=_tristate)
+    blink = attr.ib(default=False, validator=_tristate)
+    fg = attr.ib(
+        default="9",
+        validator=attr.validators.in_([unset] + list("012345679")),
+    )
+    bg = attr.ib(
+        default="9",
+        validator=attr.validators.in_([unset] + list("012345679")),
+    )
 
     def __len__(self):
         return 6
@@ -79,9 +74,9 @@ class AttributeSet(structlike.record('bold underline reverseVideo blink fg bg',
         active = []
         reset = False
 
-        for attr in 'bold', 'underline', 'reverseVideo', 'blink':
-            was = getattr(state, attr)
-            willBe = getattr(self, attr)
+        for attr_ in 'bold', 'underline', 'reverseVideo', 'blink':
+            was = getattr(state, attr_)
+            willBe = getattr(self, attr_)
 
             if was is unset:
                 if willBe is unset:
@@ -89,17 +84,17 @@ class AttributeSet(structlike.record('bold underline reverseVideo blink fg bg',
                     pass
                 elif willBe:
                     # We're going to turn it on.  Yay.
-                    active.append(self._flags[attr])
+                    active.append(self._flags[attr_])
                 else:
                     # We're going to turn it off.  Yay.
                     reset = True
             elif was:
                 if willBe is unset:
                     # Who cares!  But make a note.
-                    passive.append(self._flags[attr])
+                    passive.append(self._flags[attr_])
                 elif willBe:
                     # Nothing to do!  But make a note.
-                    passive.append(self._flags[attr])
+                    passive.append(self._flags[attr_])
                 else:
                     # Time to destroy!  Zoom.
                     reset = True
@@ -109,14 +104,14 @@ class AttributeSet(structlike.record('bold underline reverseVideo blink fg bg',
                     pass
                 elif willBe:
                     # Enablement now.
-                    active.append(self._flags[attr])
+                    active.append(self._flags[attr_])
                 else:
                     # Consensus is neat.
                     pass
 
-        for x, attr in ('3', 'fg'), ('4', 'bg'):
-            was = getattr(state, attr)
-            willBe = getattr(self, attr)
+        for x, attr_ in ('3', 'fg'), ('4', 'bg'):
+            was = getattr(state, attr_)
+            willBe = getattr(self, attr_)
 
             if was is unset:
                 if willBe is unset:
@@ -194,21 +189,24 @@ class bg:
 
 neutral = AttributeSet(unset, unset, unset, unset, unset, unset)
 
-for cls, attr in [(fg, 'fg'),
-                  (bg, 'bg')]:
-    for n, color in enumerate(['black', 'red', 'green', 'yellow', 'blue',
-                               'magenta', 'cyan', 'white']):
-        value = neutral.clone()
-        setattr(value, attr, str(n))
-        setattr(cls, color, value)
-    cls.normal = neutral.clone()
-    setattr(cls.normal, attr, '9')
-del n, cls, attr, color
+def _setup():
+    for cls, attr_ in [(fg, 'fg'),
+                      (bg, 'bg')]:
+        for n, color in enumerate(['black', 'red', 'green', 'yellow', 'blue',
+                                   'magenta', 'cyan', 'white']):
+            value = neutral.clone()
+            setattr(value, attr_, str(n))
+            setattr(cls, color, value)
+        cls.normal = neutral.clone()
+        setattr(cls.normal, attr_, '9')
 
-for attr in 'bold', 'blink', 'reverseVideo', 'underline':
-    value = neutral.clone()
-    setattr(value, attr, True)
-    locals()[attr] = value
+    for attr_ in 'bold', 'blink', 'reverseVideo', 'underline':
+        value = neutral.clone()
+        setattr(value, attr_, True)
+        globals()[attr_] = value
+_setup()
+del _setup
+
 
 def flatten(dag, currentAttrs=None, useColors=True):
     # XXX TODO: Add unicode handling!

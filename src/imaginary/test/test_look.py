@@ -4,11 +4,12 @@ Tests for L{imaginary.action.LookAt} and L{imaginary.action.LookAround}.
 from __future__ import print_function
 from textwrap import dedent
 
+import attr
+
 from twisted.trial.unittest import TestCase
 
 from zope.interface import implementer
 
-from characteristic import attributes as has_attributes
 from axiom import store, item, attributes
 
 from imaginary import iimaginary, objects, language, action, events
@@ -98,11 +99,12 @@ class LookAroundTranscriptTests(CommandTestCaseMixin, TestCase):
 
 
 @implementer(iimaginary.ILitLink)
-@has_attributes(["bear"])
+@attr.s
 class BearsHiddenBeyondThisLink(object):
     """
     An annotation for a link implementing L{BearBlindness}.
     """
+    bear = attr.ib()
 
     def isItLit(self, path):
         """
@@ -307,6 +309,3 @@ class LookAtTests(TestCase):
             Description of visible location.
             """).lstrip(),
             flatten(evts[0].actorMessage.plaintext(self.context.actor.thing)))
-
-
-

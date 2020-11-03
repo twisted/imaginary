@@ -7,9 +7,9 @@ Textual formatting for game objects.
 import types
 from string import Formatter
 
-from zope.interface import implements, implementer
+import attr
 
-from characteristic import attributes
+from zope.interface import implements, implementer
 
 from twisted.python.components import registerAdapter
 
@@ -153,9 +153,13 @@ class BaseExpress(object):
 
 
 @implementer(IConcept)
-@attributes(["title", "exits", "description", "components", "target"],
-            defaults=dict(target=None))
+@attr.s
 class Description(object):
+    title = attr.ib()
+    exits = attr.ib()
+    description = attr.ib()
+    components = attr.ib()
+    target = attr.ib(default=None)
 
     def plaintext(self, observer):
         return flattenWithoutColors(self.vt102(observer))
