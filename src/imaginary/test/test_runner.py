@@ -3,25 +3,42 @@ Test running an Imaginary world
 """
 
 import os
+import signal
 import fcntl
 import pty
 import tty
 import struct
 import termios
+from textwrap import (
+    dedent,
+)
+import attr
+
+from zope.interface import implementer
 
 from axiom.store import Store
 
+from twisted.python.filepath import (
+    FilePath,
+)
+from twisted.internet.interfaces import IReactorFromThreads
 from twisted.trial.unittest import TestCase
 
-from twisted.internet.defer import Deferred
 from twisted.test.proto_helpers import StringTransport
 from twisted.conch.insults.insults import ServerProtocol
 
+from imaginary.iimaginary import IEventObserver
 from imaginary.world import ImaginaryWorld
 from imaginary.wiring.player import Player
 from imaginary.__main__ import withSavedTerminalSettings
 from imaginary.__main__ import CLEAR_SCREEN
-from imaginary.__main__ import getTerminalSize, ConsoleTextServer
+from imaginary.__main__ import (
+    getTerminalSize,
+    ConsoleTextServer,
+    makeTextServer,
+    makeOrLoadWorld,
+    findActorThing,
+)
 
 
 def makeTerminal(testCase):
@@ -114,3 +131,142 @@ class WindowSizing(TestCase):
         newattrs = termios.tcgetattr(follower)
         attributesEqual(newattrs, attrs)
         self.assertEqual(os.read(leader, 1024), b"HELLO" + CLEAR_SCREEN)
+
+
+
+@implementer(IEventObserver)
+@attr.s
+class SomeObserver(object):
+    parsed = attr.ib(init=False, default=attr.Factory(list))
+
+    # TODO: setProtocol, parse, and disconnect are the APIs that the text
+    # server actually uses from the observer but they're not part of any
+    # interface.
+    def setProtocol(self, protocol):
+        pass
+
+    def parse(self, line):
+        self.parsed.append(line)
+
+    def disconnect(self):
+        pass
+
+    # Here's the IEventObserver implementation but the tests currently don't
+    # do anything that relies on it.
+    def prepare(self, concept):
+        pass
+
+
+
+@implementer(IReactorFromThreads)
+@attr.s
+class ThreadyReactor(object):
+    """
+    An implementation of ``IReactorFromThreads`` that makes it easy for the
+    test code to schedule calls in the preferred way.
+    """
+    _calls = attr.ib(default=attr.Factory(list))
+
+    def callFromThread(self, f, *a, **kw):
+        """
+        Just record the specified call.
+        """
+        self._calls.append((f, a, kw))
+
+
+    def _runCalls(self):
+        """
+        Run all previously recorded calls.
+        """
+        calls = self._calls[:]
+        self._calls[:] = []
+        for f, a, kw in calls:
+            f(*a, **kw)
+
+
+
+class MakeTextServerTests(TestCase):
+    """
+    Tests for L{makeTextServer}.
+    """
+    def test_inputDelivered(self):
+        """
+        When a line of input is received by the result of ``makeTextServer`` it is
+        passed on to the event observer's ``parse`` method.
+        """
+        leader, follower = makeTerminal(self)
+        observer = SomeObserver()
+
+        text_protocol = makeTextServer(
+            ThreadyReactor(),
+            follower,
+            observer,
+        )
+        terminal_protocol = ServerProtocol(lambda: text_protocol)
+        transport = StringTransport()
+        terminal_protocol.makeConnection(transport)
+
+        terminal_protocol.dataReceived(b"hello\n")
+        self.assertEqual(observer.parsed, [b"hello"])
+
+
+    def test_resizeOnSignal(self):
+        """
+        When SIGWINCH is delivered to the process the ``ConsoleTextServer`` is
+        resized to match the new terminal size.
+        """
+        reactor = ThreadyReactor()
+        leader, follower = makeTerminal(self)
+        observer = SomeObserver()
+
+        text_protocol = makeTextServer(reactor, follower, observer)
+        terminal_protocol = ServerProtocol(lambda: text_protocol)
+        transport = StringTransport()
+        terminal_protocol.makeConnection(transport)
+
+        setTerminalSize(leader, 123, 456)
+
+        os.kill(os.getpid(), signal.SIGWINCH)
+
+        # Help the calls along
+        reactor._runCalls()
+
+        self.assertEqual(text_protocol.height, 123)
+        self.assertEqual(text_protocol.width, 456)
+
+
+
+class MakeOrLoadWorldTests(TestCase):
+    """
+    Tests for ``makeOrLoadWorld``.
+    """
+    def test_make(self):
+        """
+        When called without a ``worldName``, ``makeOrLoadWorld`` returns a
+        ``Store`` that contains an ``Actor``.
+        """
+        store = makeOrLoadWorld()
+        actor = findActorThing(store)
+        self.assertEqual(actor.store, store)
+
+
+    def test_load(self):
+        """
+        When called with a ``worldName``, ``makeOrLoadWorld`` treats it as a path,
+        evaluates the Python source it contains, and returns a ``Store``
+        containing whatever results.
+        """
+        testworld = FilePath(self.mktemp())
+        testworld.setContent(dedent(
+            """
+            from imaginary.world import ImaginaryWorld
+
+            def world(store):
+                world = ImaginaryWorld(store=store)
+                world.create(u"testworld-actorname")
+                return world
+            """,
+        ))
+        store = makeOrLoadWorld(testworld.path)
+        actor = findActorThing(store)
+        self.assertEqual(actor.name, u"testworld-actorname")
