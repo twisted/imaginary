@@ -747,6 +747,33 @@ class Take(TargetAction):
             target.moveTo(player.thing)
         except eimaginary.DoesntFit:
             raise tooHeavy(player.thing, target)
+        except eimaginary.CannotMove:
+            raise cannotMove(player.thing, target)
+
+
+
+def cannotMove(player, target):
+    """
+    Create an L{ActionFailure} instance that describes the action that doesn't
+    happen when C{player} tries to move C{target} and C{target} is not a thing
+    that can move.
+
+    @param player: The thing trying to move the target.
+    @type player: L{Thing}
+
+    @param target: The thing player is trying to move.
+    @type target: L{Thing}
+    """
+    return eimaginary.ActionFailure(events.ThatDoesntWork(
+        actor=player,
+        target=target,
+        actorMessage=language.Sentence([
+            target, " cannot be taken.",
+        ]),
+        otherMessage=language.Sentence([
+            player, " regards ", target, " thoughtfully.",
+        ]),
+    ))
 
 
 
