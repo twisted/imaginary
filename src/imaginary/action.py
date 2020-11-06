@@ -754,9 +754,9 @@ class Take(TargetAction):
 
 def cannotMove(player, target):
     """
-    Create an L{ActionFailure} instance that describes the action that doesn't
-    happen when C{player} tries to move C{target} and C{target} is not a thing
-    that can move.
+    Create an L{ActionFailure} instance that explains why an action action
+    doesn't happen when C{player} tries to move C{target} and C{target} is not
+    a thing that can move.
 
     @param player: The thing trying to move the target.
     @type player: L{Thing}
