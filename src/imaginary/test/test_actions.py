@@ -188,6 +188,25 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self.assertEquals(o.location, c)
         self.assertEquals(list(cContainer.getContents()), [o])
 
+
+    def testTakeImmoveable(self):
+        """
+        A L{Thing} with C{portable} set to C{False} cannot be taken.
+        """
+        immoveable = objects.Thing(
+            store=self.store,
+            name=u"immoveable",
+            portable=False,
+        )
+        iimaginary.IContainer(self.location).add(immoveable)
+
+        self._test(
+            "take immoveable",
+            ["An immoveable cannot be taken."],
+            ["Test Player regards an immoveable thoughtfully."],
+        )
+
+
     def testDrop(self):
         self._test(
             "drop foo",
