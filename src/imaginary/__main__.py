@@ -230,5 +230,5 @@ def main(argv):
     terminal_fd = sys.__stdin__.fileno()
     withSavedTerminalSettings(
         terminal_fd,
-        lambda: react(runTextServer, terminal_fd, argv),
+        lambda: react(runTextServer, [terminal_fd] + argv),
     )
