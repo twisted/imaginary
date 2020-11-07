@@ -997,9 +997,7 @@ class Restore(TargetAction):
 
 
 class Hit(TargetAction):
-    expr = ((pyparsing.Literal("hit") ^
-             pyparsing.Literal("attack") ^
-             pyparsing.Literal("kill")) +
+    expr = (orLiterals(["hit", "attack", "kill"]) +
             pyparsing.White() +
             pyparsing.restOfLine.setResultsName("target"))
 
