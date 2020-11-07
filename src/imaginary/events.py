@@ -177,6 +177,20 @@ def runEventTransaction(store, func, *args, **kwargs):
 
 
 
+class IncapableActor(Event):
+    """
+    An action was attempted by a thing which lacks some part of the
+    implementation required to perform that action.
+    """
+    def __init__(
+            self,
+            actorMessage="Your train of thought slips away.",
+            **kw
+    ):
+        super(IncapableActor, self).__init__(actorMessage=actorMessage, **kw)
+
+
+
 class ThatDoesntMakeSense(Event):
     """
     An action was attempted which is logically impossible.

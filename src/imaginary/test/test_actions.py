@@ -3,10 +3,14 @@
 Unit tests for Imaginary actions.
 """
 
+from zope.interface import (
+    Interface,
+)
+
 from twisted.trial import unittest
 from twisted.python import filepath
 
-from imaginary import iimaginary, objects, events
+from imaginary import iimaginary, objects, events, pyparsing
 from imaginary.action import Action, TargetAction, Help
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
@@ -68,12 +72,42 @@ class TargetActionTests(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
 
+class IUnimplemented(Interface):
+    """
+    This is an interface that nothing implements.
+    """
+
+
+
+class Unperformable(Action):
+    """
+    This is an action that no one can perform.
+    """
+    actorInterface = IUnimplemented
+
+    expr = pyparsing.Literal("unperformable")
+
+
 class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
     def testBadCommand(self):
         self._test(
             "jibber jabber",
             ["Bad command or filename"])
+
+
+    def test_missingActorInterface(self):
+        """
+        If the player attempts to invoke an action for which the player does not
+        provide the required C{actorInterface} then the action is not invoked
+        and a reasonable explanation is given to the player.
+        """
+        self._test(
+            "unperformable",
+            ["Your train of thought slips away."],
+            [],
+        )
+
 
     def testInventory(self):
         # There ain't no stuff

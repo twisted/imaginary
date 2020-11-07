@@ -106,7 +106,9 @@ class Action(object):
         def thunk():
             begin = time.time()
             try:
-                actor = self.actorInterface(player)
+                actor = self.actorInterface(player, None)
+                if actor is None:
+                    return self.incapableActor(player, line, match)
                 for (k, v) in match.items():
                     try:
                         objs = self.resolve(player, k, v)
@@ -126,6 +128,16 @@ class Action(object):
                         stat_actionDuration=end - begin,
                         stat_actionExecuted=1)
         events.runEventTransaction(player.store, thunk)
+
+
+    def incapableActor(self, player, line, match):
+        """
+        This hook is invoked when an actor does not provide the required
+        interface.
+        """
+        raise eimaginary.ActionFailure(events.IncapableActor(
+            actor=player,
+        ))
 
 
     def cantFind(self, player, actor, slot, name):
