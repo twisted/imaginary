@@ -897,16 +897,13 @@ class Bury(Action):
             actorMessage="There isn't an exit in that direction."))
 
 
+orLiterals = lambda xs: pyparsing.Or(map(pyparsing.Literal, xs))
+
 
 class Go(Action):
-    expr = (
-        (pyparsing.Literal("go") + pyparsing.White() +
-         targetString("direction")) |
-        (pyparsing.Literal("enter") + pyparsing.White() +
-         targetString("direction")) |
-        (pyparsing.Literal("exit") + pyparsing.White() +
-         targetString("direction")) |
-        DIRECTION_LITERAL)
+    _goVerbs = orLiterals(["go", "enter", "exit"])
+    _goForm = _goVerbs + pyparsing.White() + targetString("direction")
+    expr = _goForm | DIRECTION_LITERAL
 
     actorInterface = iimaginary.IThing
 
