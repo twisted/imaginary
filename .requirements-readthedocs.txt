@@ -13,7 +13,7 @@ Vertex==0.3.1
 alabaster==0.7.7
 cffi==1.5.0
 chardet==2.3.0
-cryptography==1.2.2
+cryptography==3.2.1
 cssutils==1.0.1
 doc8==0.6.0
 docutils==0.12
