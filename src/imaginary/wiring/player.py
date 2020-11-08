@@ -8,7 +8,9 @@ from twisted.python import log
 from imaginary import iimaginary, eimaginary, text as T
 
 from imaginary.text import flatten
-from imaginary.action import Action
+from imaginary.action import (
+    runAction,
+)
 
 
 @implementer(iimaginary.IEventObserver)
@@ -64,7 +66,7 @@ class Player(object):
             self.proto.write('\r\nerror\r\n')
 
         self.send(('> ', line, '\n'))
-        d = defer.maybeDeferred(Action.parse, self.actor, line)
+        d = defer.maybeDeferred(runAction, self.actor, line)
         d.addCallbacks(cbParse, ebParse)
         d.addErrback(ebAmbiguity)
         d.addErrback(ebUnexpected)

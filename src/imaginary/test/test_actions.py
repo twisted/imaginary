@@ -5,12 +5,23 @@ Unit tests for Imaginary actions.
 
 from zope.interface import (
     Interface,
+    implementer,
 )
 
 from twisted.trial import unittest
 from twisted.python import filepath
 
+from axiom.item import (
+    Item,
+)
+from axiom.attributes import (
+    reference,
+)
+
 from imaginary import iimaginary, objects, events, pyparsing
+from imaginary.enhancement import (
+    Enhancement,
+)
 from imaginary.action import Action, TargetAction, Help
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
@@ -88,6 +99,53 @@ class Unperformable(Action):
     expr = pyparsing.Literal("unperformable")
 
 
+
+class AnotherUnperformable(Action):
+    """
+    This is another action that no one can perform.
+    """
+    actorInterface = IUnimplemented
+
+    expr = pyparsing.Literal("action-parse-collision")
+
+
+
+class IImplemented(Interface):
+    """
+    This is an interface that something implements.
+    """
+
+
+
+class Performable(Action):
+    """
+    This is an action with the same parse as L{AnotherUnperformable} but which
+    can actually be performed.
+    """
+    actorInterface = IImplemented
+
+    # Share the expression since we're supposed to have the same parse.
+    expr = AnotherUnperformable.expr
+
+    def do(self, player, line):
+        events.Success(
+            actor=player.thing,
+            actorMessage=["You perform the action you're capable of."],
+        ).broadcast()
+
+
+
+@implementer(IImplemented)
+class Performance(Item, Enhancement):
+    """
+    An enhancement for a L{Thing} confering ability to perform L{Performable}.
+    """
+    powerupInterfaces = [IImplemented]
+
+    thing = reference()
+
+
+
 class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
     def testBadCommand(self):
@@ -105,6 +163,20 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
         self._test(
             "unperformable",
             ["Your train of thought slips away."],
+            [],
+        )
+
+
+    def test_missingActorInterfaceFallback(self):
+        """
+        If there are two possible action parses for an input and the player only
+        provides the required C{actorInterface} for the second then the second
+        action is invoked.
+        """
+        Performance.createFor(self.player)
+        self._test(
+            "action-parse-collision",
+            ["You perform the action you're capable of."],
             [],
         )
 

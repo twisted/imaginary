@@ -205,6 +205,9 @@ class IMovementRestriction(Interface):
 
 
 class IActor(Interface):
+    """
+    A motivated agent in the world.
+    """
     hitpoints = Attribute("L{Points} instance representing hit points")
     experience = Attribute("C{int} representing experience")
     level = Attribute("C{int} representing player's level")
@@ -783,4 +786,3 @@ class IElectromagneticMedium(Interface):
             Alice via L{IElectromagneticMedium} - he can "see" her via
             L{ISoundMedium} or whatever.
         """
-

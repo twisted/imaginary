@@ -7,6 +7,8 @@ import pprint
 
 from zope.interface import implements
 
+import attr
+
 from twisted.python import log, filepath
 from twisted.internet import defer
 
@@ -54,24 +56,259 @@ class _ActionType(type):
         return t
 
 
-    def parse(self, player, line):
-        """
-        Parse an action.
-        """
-        for eachActionType in self.actions:
-            try:
-                match = eachActionType.match(player, line)
-            except pyparsing.ParseException:
-                pass
-            else:
-                if match is not None:
-                    match = dict(match)
-                    for k,v in match.items():
-                        if isinstance(v, pyparsing.ParseResults):
-                            match[k] = v[0]
 
-                    return eachActionType().runEventTransaction(player, line, match)
-        return defer.fail(eimaginary.NoSuchCommand(line))
+def runAction(actor, line):
+    """
+    Parse and run an action.
+
+    @type actor: L{IActor} provider
+    @param actor: The subject of the action (more often than not).
+
+    @type line: L{unicode}
+    @param line: A line of text describing an action for the actor to take.
+
+    @raise NoSuchCommand: If no action can be parsed from the line.
+
+    @return: C{None}
+    """
+    matchedActions = _matchActions(actor, line, Action.actions)
+    try:
+        resolvedActions = _resolveActions(actor, line, matchedActions)
+    except eimaginary.ActionFailure as e:
+        # If none of the matched actions resolve, dispatch one of the
+        # resolution failures at least.
+        e.event.reify()()
+        return None
+
+    if resolvedActions:
+        action, resolution = resolvedActions[0]
+        _executeResolvedActions(actor, line, action, resolution)
+    else:
+        # Nothing at all matched and resolved.
+        raise eimaginary.NoSuchCommand(line)
+
+
+
+def _matchActions(actor, line, actionTypes):
+    """
+    Parse the given line into a list of candidate actions.
+
+    @param actor: See L{runAction}
+
+    @param line: See L{runAction}
+
+    @type actionTypes: list of _ActionType instances
+    @param actionTypes: A list of objects describing the possible actions the
+        given line might parse as.
+
+    @return: A generator of two-tuples.  The first element is a syntactically
+        matching action instance.  The second element is a C{dict} mapping
+        parse slots to matching text.
+    """
+    for eachActionType in actionTypes:
+        try:
+            match = eachActionType.match(actor, line)
+        except pyparsing.ParseException:
+            pass
+        else:
+            if match is not None:
+                match = dict(match)
+                for k,v in match.items():
+                    if isinstance(v, pyparsing.ParseResults):
+                        match[k] = v[0]
+                yield eachActionType(), match
+
+
+
+def _resolveActions(actor, line, matchedActions):
+    """
+    Resolve the grammatical objects in a matched command into objects from the
+    simulation graph.
+
+    @param actor: See L{runAction}
+    @param line: See L{runAction}
+
+    @param matchedActions: Actions which are syntactically viable for the
+        given line.  These will have their parse slots resolved using the
+        simulation graph.
+
+    @raise ActionFailure: If no actions successfully resolve all their slots
+        but at least one raises L{ActionFailure} during resolution, that
+        exception will be re-raised.
+
+    @return: A list of two-tuples.  The first element of each tuple is an
+        C{Action} instance that matched.  The second element of each tuple is
+        a C{Resolution} instance for its objects.  One two-tuple is yielded
+        per action for which all text slots can be resolved to objects.
+    """
+    good_actions = []
+    bad_actions = []
+    for action, match in matchedActions:
+        try:
+            resolution = action.resolveAll(actor, line, match)
+        except eimaginary.ActionFailure as e:
+            bad_actions.append(e)
+        else:
+            good_actions.append((action, resolution))
+
+    if good_actions:
+        return good_actions
+
+    if bad_actions:
+        raise bad_actions[0]
+
+    return []
+
+
+def _narrowObjects(actor, action, resolution):
+    """
+    Narrow resolved objects for the given action to exactly one per parse
+    slot.
+
+    @param actor: See L{runAction}
+    @param action: See L{_executeResolvedActions}
+    @param resolution: See L{_executeResolvedActions}
+
+    @raise AmbiguousArgument: If any parse slots have resolved to more than
+        one object.
+
+    @raise ActionFailure: If any parse slots have resolved to zero objects.
+
+    @rtype: L{dict}
+    @return: A dictionary mapping slot names to the single corresponding
+        resolved object for that slot.
+    """
+    try:
+        return resolution.narrow_objects()
+    except CannotNarrowObjects as e:
+        for slot in e.slots:
+            if len(resolution.objects[slot]) == 0:
+                action.cantFind(
+                    actor,
+                    resolution.actor,
+                    slot,
+                    resolution.match[slot],
+                )
+            else:
+                raise eimaginary.AmbiguousArgument(
+                    action,
+                    slot,
+                    resolution.match[slot],
+                    resolution.objects[slot],
+                )
+
+
+
+def _executeResolvedActions(actor, line, action, resolution):
+    """
+    Execute an action against a collection of already-resolved objects.
+
+    @param actor: See L{runAction}
+    @param line: See L{runAction}
+
+    @type action: L{Action}
+    @param action: An action which has resolved all of its parse slots.
+
+    @type resolution: L{Resolution}
+    @param resolution: The result of resolving all of the parse slots.
+
+    @return: C{None}
+    """
+    try:
+        singular_objects = _narrowObjects(actor, action, resolution)
+    except eimaginary.ActionFailure as e:
+        e.event.reify()()
+    else:
+        _executeAction(
+            actor.store,
+            resolution.actor,
+            line,
+            action,
+            singular_objects,
+        )
+
+
+
+def _executeAction(store, actor, line, action, singular_objects):
+    """
+    Run an action against some objects.
+
+    @type store: L{axiom.store.Store}
+    @param store: An Axiom store to use for transaction management.
+
+    @param actor: See L{runAction}
+    @param line: See L{runAction}
+    @param action: See L{_executeResolvedActions}
+
+    @type singular_objects: L{dict}
+    @param singular_objects: The objects resolved from the text in the
+        action's parse slots.
+
+    @return: C{None}
+    """
+    def thunk():
+        begin = time.time()
+        try:
+            return action.do(actor, line, **singular_objects)
+        finally:
+            end = time.time()
+            log.msg(interface=iaxiom.IStatEvent,
+                    stat_actionDuration=end - begin,
+                    stat_actionExecuted=1)
+    events.runEventTransaction(store, thunk)
+
+
+
+class CannotNarrowObjects(Exception):
+    """
+    Some slots in an action cannot be narrowed down to a single target.
+
+    @ivar slots: A list of the names of the slots which cannot be narrowed
+        down.
+    """
+    def __init__(self, slots):
+        Exception.__init__(self)
+        self.slots = slots
+
+
+
+@attr.s
+class Resolution(object):
+    """
+    A L{Resolution} is the result of using text from specific parts of a
+    command to more structured objects (typically obtained from the simulation
+    graph).
+    """
+    actor = attr.ib()
+    match = attr.ib()
+    objects = attr.ib()
+
+    def narrow_objects(self):
+        """
+        Return a dictionary mapping the text to a single resolved object for that
+        text, if there is exactly one.
+
+        :raise CannotNarrowObjects: If the number of possible objects for any
+            piece of text is not exactly one.
+        """
+        def partition(f, xs):
+            yes = []
+            no = []
+            for x in xs:
+                if f(x):
+                    yes.append(x)
+                else:
+                    no.append(x)
+            return yes, no
+
+        good_objects, bad_objects = partition(
+            lambda kv: len(kv[1]) == 1,
+            self.objects.items(),
+        )
+        if bad_objects:
+            raise CannotNarrowObjects(list(k for (k, v) in bad_objects))
+
+        return {k: v[0] for (k, v) in good_objects}
 
 
 
@@ -83,6 +320,25 @@ class Action(object):
     infrastructure = True
 
     actorInterface = iimaginary.IActor
+
+    def resolveAll(self, player, line, match):
+        actor = self.actorInterface(player, None)
+        if actor is None:
+            raise eimaginary.ActionFailure(events.IncapableActor(
+                actor=player,
+            ))
+
+        objects = {}
+        for (k, v) in match.items():
+            try:
+                candidates = self.resolve(player, k, v)
+            except NotImplementedError:
+                objects[k] = [v]
+            else:
+                objects[k] = candidates
+
+        return Resolution(actor, match, objects)
+
 
     def runEventTransaction(self, player, line, match):
         """
@@ -103,41 +359,8 @@ class Action(object):
         @raise eimaginary.AmbiguousArgument: if multiple valid targets are
             found for an argument.
         """
-        def thunk():
-            begin = time.time()
-            try:
-                actor = self.actorInterface(player, None)
-                if actor is None:
-                    return self.incapableActor(player, line, match)
-                for (k, v) in match.items():
-                    try:
-                        objs = self.resolve(player, k, v)
-                    except NotImplementedError:
-                        pass
-                    else:
-                        if len(objs) == 1:
-                            match[k] = objs[0]
-                        elif len(objs) == 0:
-                            self.cantFind(player, actor, k, v)
-                        else:
-                            raise eimaginary.AmbiguousArgument(self, k, v, objs)
-                return self.do(actor, line, **match)
-            finally:
-                end = time.time()
-                log.msg(interface=iaxiom.IStatEvent,
-                        stat_actionDuration=end - begin,
-                        stat_actionExecuted=1)
-        events.runEventTransaction(player.store, thunk)
-
-
-    def incapableActor(self, player, line, match):
-        """
-        This hook is invoked when an actor does not provide the required
-        interface.
-        """
-        raise eimaginary.ActionFailure(events.IncapableActor(
-            actor=player,
-        ))
+        [(action, resolution)] = _resolveActions(player, line, [(self, match)])
+        _executeResolvedActions(player, line, action, resolution)
 
 
     def cantFind(self, player, actor, slot, name):
