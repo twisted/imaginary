@@ -178,8 +178,7 @@ class DarknessCommandTestCase(commandutils.CommandTestCaseMixin, unittest.TestCa
         dark_to_light = "Your environs are suddenly alight."
         brighten = "Your environs seem slightly brighter."
         endarken = "Your environs seem slightly dimmer."
-        theAdmin = Manipulator(store=self.store, thing=self.playerWrapper.actor)
-        self.playerWrapper.actor.powerUp(theAdmin)
+        Manipulator.createFor(self.playerWrapper.actor)
 
         self._test(
             "illuminate 0",
