@@ -44,5 +44,4 @@ txpasslib==0.1.0
 typing==3.7.4.3
 urllib3==1.25.11
 Vertex==0.3.1
-virtualenv==16.7.9
 zope.interface==5.2.0
