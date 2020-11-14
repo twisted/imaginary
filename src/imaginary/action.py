@@ -180,6 +180,10 @@ class Action(object):
 
         @see: L{imaginary.pyparsing}
         """
+        if cls.actorInterface(player, None) is None:
+            # If the actor doesn't even provide the required interface this
+            # can't be a match.
+            return None
         return (cls.expr + pyparsing.LineEnd()).parseString(line)
 
 

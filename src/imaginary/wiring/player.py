@@ -40,7 +40,7 @@ class Player(object):
 
         def ebParse(err):
             err.trap(eimaginary.NoSuchCommand)
-            self.proto.write('Bad command or filename\r\n')
+            self.proto.write('Bad command or filename.\r\n')
 
         def ebAmbiguity(err):
             err.trap(eimaginary.AmbiguousArgument)
