@@ -639,6 +639,21 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
                  ""])
 
 
+    def test_goClosed(self):
+        """
+        You cannot move through an exit to a "closed" location.
+        """
+        unreachable = objects.Thing(store=self.store, name=u"unreachable")
+        objects.Container.createFor(unreachable, capacity=1000, closed=True)
+        objects.Exit.link(self.location, unreachable, u"west")
+
+        self._test(
+            "west",
+            ["The way is shut."],
+            [],
+        )
+
+
     def test_scrutinize(self):
         """
         The scrutinize action takes a thing as a target and displays a lot of

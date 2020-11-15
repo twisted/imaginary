@@ -946,6 +946,13 @@ class Go(Action):
                 actor=player,
                 actorMessage=language.ExpressString(
                         u"There's no room for you there.")))
+        except eimaginary.Closed:
+            raise eimaginary.ActionFailure(events.ThatDoesntWork(
+                actor=player,
+                actorMessage=language.ExpressString(
+                    u"The way is shut.",
+                ),
+            ))
 
         # This is subtly incorrect: see http://divmod.org/trac/ticket/2917
         lookAroundActor = iimaginary.IActor(player)
