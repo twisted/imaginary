@@ -760,6 +760,21 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
                  ""])
 
 
+    def test_goClosed(self):
+        """
+        You cannot move through an exit to a "closed" location.
+        """
+        unreachable = objects.Thing(store=self.store, name=u"unreachable")
+        objects.Container.createFor(unreachable, capacity=1000, closed=True)
+        objects.Exit.link(self.location, unreachable, u"west")
+
+        self._test(
+            "west",
+            ["The way is shut."],
+            [],
+        )
+
+
     def test_scrutinize(self):
         """
         The scrutinize action takes a thing as a target and displays a lot of
@@ -889,3 +904,39 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             self._test("help foo bar", ["baz"], [])
         finally:
             Help.helpContentPath = original
+
+
+    def test_hit(self):
+        """
+        The hit action removes some hitpoints from the target.
+        """
+        self._violenceTest("hit")
+
+
+    def test_kill(self):
+        """
+        The hit action has I{kill} as an alias.
+        """
+        self._violenceTest("hit")
+
+
+    def test_attack(self):
+        """
+        The hit action has I{attack} as an alias.
+        """
+        self._violenceTest("hit")
+
+
+    def _violenceTest(self, verb):
+        fuzzy = self.world.create(u"fuzzy", proper=True)
+        # Flush the buffer to simplify the real assertion.
+        self.assertCommandOutput(
+            None,
+            ["Fuzzy arrives."],
+            ["Fuzzy arrives."],
+        )
+        self.assertCommandOutput(
+            verb + " fuzzy",
+            ["You hit fuzzy for [12345] hitpoints."],
+            ["Test Player hits fuzzy."],
+        )
