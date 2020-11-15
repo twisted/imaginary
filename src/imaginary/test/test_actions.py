@@ -3,25 +3,18 @@
 Unit tests for Imaginary actions.
 """
 
-from zope.interface import (
-    Interface,
-    implementer,
-)
+from zope.interface import Interface, implementer
 
 from twisted.trial import unittest
 from twisted.python import filepath
 
-from axiom.item import (
-    Item,
-)
-from axiom.attributes import (
-    reference,
-)
+from axiom.item import Item
+
+from axiom.attributes import reference
 
 from imaginary import iimaginary, objects, events, pyparsing
-from imaginary.enhancement import (
-    Enhancement,
-)
+from imaginary.enhancement import Enhancement
+
 from imaginary.action import Action, TargetAction, Help
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
