@@ -44,6 +44,10 @@ class UnicodeWord(pyparsing.Token):
 
 
 
+orLiterals = lambda xs: pyparsing.Or(map(pyparsing.Literal, xs))
+
+
+
 class _ActionType(type):
     actions = []
     def __new__(cls, name, bases, attrs):
@@ -571,8 +575,7 @@ def targetTaken(player, target, container=None):
 
 
 class Remove(TargetAction):
-    expr = ((pyparsing.Literal("remove") |
-             pyparsing.Literal("take off")) +
+    expr = (orLiterals(["remove", "take off"]) +
             pyparsing.White() +
             targetString("target"))
 
@@ -641,7 +644,7 @@ class Equipment(Action):
 class TakeFrom(ToolAction):
     actionName = "take"
 
-    expr = ((pyparsing.Literal("get") ^ pyparsing.Literal("take")) +
+    expr = (orLiterals(["get", "take"]) +
             pyparsing.White() +
             targetString("target") +
             pyparsing.Optional(pyparsing.White() +
@@ -899,14 +902,9 @@ class Bury(Action):
 
 
 class Go(Action):
-    expr = (
-        (pyparsing.Literal("go") + pyparsing.White() +
-         targetString("direction")) |
-        (pyparsing.Literal("enter") + pyparsing.White() +
-         targetString("direction")) |
-        (pyparsing.Literal("exit") + pyparsing.White() +
-         targetString("direction")) |
-        DIRECTION_LITERAL)
+    _goVerbs = orLiterals(["go", "enter", "exit"])
+    _goForm = _goVerbs + pyparsing.White() + targetString("direction")
+    expr = _goForm | DIRECTION_LITERAL
 
     actorInterface = iimaginary.IThing
 
@@ -1006,9 +1004,7 @@ class Restore(TargetAction):
 
 
 class Hit(TargetAction):
-    expr = ((pyparsing.Literal("hit") ^
-             pyparsing.Literal("attack") ^
-             pyparsing.Literal("kill")) +
+    expr = (orLiterals(["hit", "attack", "kill"]) +
             pyparsing.White() +
             pyparsing.restOfLine.setResultsName("target"))
 
