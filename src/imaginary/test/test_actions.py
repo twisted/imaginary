@@ -3,10 +3,18 @@
 Unit tests for Imaginary actions.
 """
 
+from zope.interface import Interface, implementer
+
 from twisted.trial import unittest
 from twisted.python import filepath
 
-from imaginary import iimaginary, objects, events
+from axiom.item import Item
+
+from axiom.attributes import reference
+
+from imaginary import iimaginary, objects, events, pyparsing
+from imaginary.enhancement import Enhancement
+
 from imaginary.action import Action, TargetAction, Help
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
@@ -68,12 +76,125 @@ class TargetActionTests(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
 
+class IUnimplemented(Interface):
+    """
+    This is an interface that nothing implements.
+    """
+
+
+
+class Unperformable(Action):
+    """
+    This is an action that no one can perform.
+    """
+    actorInterface = IUnimplemented
+
+    expr = pyparsing.Literal("unperformable")
+
+
+
+class AnotherUnperformable(Action):
+    """
+    This is another action that no one can perform.
+    """
+    actorInterface = IUnimplemented
+
+    expr = pyparsing.Literal("action-parse-collision")
+
+
+
+class IImplemented(Interface):
+    """
+    This is an interface that something implements.
+    """
+
+
+
+class Performable(Action):
+    """
+    This is an action with the same parse as L{AnotherUnperformable} but which
+    can actually be performed.
+    """
+    actorInterface = IImplemented
+
+    # Share the expression since we're supposed to have the same parse.
+    expr = AnotherUnperformable.expr
+
+    def do(self, player, line):
+        events.Success(
+            actor=player.thing,
+            actorMessage=["You perform the action you're capable of."],
+        ).broadcast()
+
+
+
+@implementer(IImplemented)
+class Performance(Item, Enhancement):
+    """
+    An enhancement for a L{Thing} confering ability to perform L{Performable}.
+    """
+    powerupInterfaces = [IImplemented]
+
+    thing = reference()
+
+
+
 class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
     def testBadCommand(self):
+        """
+        If the line of text corresponds to no existing action then the player is
+        shown a snarky response indicating no action has been taken.
+        """
         self._test(
             "jibber jabber",
-            ["Bad command or filename"])
+            ["Bad command or filename."])
+
+
+    def test_missingActorInterface(self):
+        """
+        If the player attempts to invoke an action for which the player does not
+        provide the required C{actorInterface} then the action is not invoked
+        and a reasonable explanation is given to the player.
+        """
+        self._test(
+            "unperformable",
+            ["Bad command or filename."],
+            [],
+        )
+
+
+    def test_missingActorInterfaceFallback(self):
+        """
+        If there are two possible action parses for an input and the player only
+        provides the required C{actorInterface} for the second then the second
+        action is invoked.
+        """
+        # This test assumes that actions are processed in some order and that
+        # the order could have some impact on the resulting behavior.  There
+        # is no explicit action order but the order in which Action subclass
+        # definitions are encountered does control the order in which they are
+        # later processed.  This is not a great property of the system and we
+        # should do something about it.  For now, though, validate our
+        # assumption that the performable action in this collision comes
+        # "after" the unperformable action.
+        index_a = Action.actions.index(AnotherUnperformable)
+        index_b = Action.actions.index(Performable)
+        self.assertTrue(
+            index_a < index_b,
+            "AnotherUnperformable is at {}; Performable is at {}".format(
+                index_a,
+                index_b,
+            ),
+        )
+
+        Performance.createFor(self.player)
+        self._test(
+            "action-parse-collision",
+            ["You perform the action you're capable of."],
+            [],
+        )
+
 
     def testInventory(self):
         # There ain't no stuff
