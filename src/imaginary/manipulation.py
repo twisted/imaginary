@@ -51,7 +51,7 @@ registerAdapter(NonManipulator, IThing, IManipulator)
 
 
 
-class Manipulator(Item, Enhancement):
+class Manipulator(Enhancement, Item):
     """
     A L{Manipulator} is the actor for actions which can directly change the
     properties of objects in an Imaginary world.
