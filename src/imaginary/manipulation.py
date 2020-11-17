@@ -19,6 +19,7 @@ from axiom.attributes import reference
 
 from imaginary.iimaginary import IManipulator, IThing
 from imaginary.objects import LocationLighting, Thing
+from imaginary.enhancement import Enhancement
 
 from imaginary.eimaginary import ActionFailure
 from imaginary.events import ThatDoesntWork
@@ -50,7 +51,7 @@ registerAdapter(NonManipulator, IThing, IManipulator)
 
 
 
-class Manipulator(Item):
+class Manipulator(Enhancement, Item):
     """
     A L{Manipulator} is the actor for actions which can directly change the
     properties of objects in an Imaginary world.
