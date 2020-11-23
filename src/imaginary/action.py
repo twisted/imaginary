@@ -5,6 +5,8 @@ from __future__ import print_function
 import time, random, operator
 import pprint
 
+import attr
+
 from zope.interface import implements
 
 from twisted.python import log, filepath
@@ -22,7 +24,9 @@ from imaginary.vision import visualizations
 
 from imaginary.idea import (
     CanSee, Proximity, ProviderOf, Named, Traversability,
-    Reachable, isKnownTo
+    Reachable, isKnownTo,
+    Path,
+    DelegatingRetriever,
 )
 from imaginary.iimaginary import IThing
 
@@ -72,7 +76,10 @@ class _ActionType(type):
                     match = dict(match)
                     for k,v in match.items():
                         if isinstance(v, pyparsing.ParseResults):
-                            match[k] = v[0]
+                            if len(v) == 1:
+                                match[k] = v[0]
+                            else:
+                                match[k] = v
 
                     return eachActionType().runEventTransaction(player, line, match)
         return defer.fail(eimaginary.NoSuchCommand(line))
@@ -1319,3 +1326,169 @@ class Help(Action):
             player.send("No help available on ", topic, ".", "\n")
         else:
             player.send(helpFile.read(), '\n')
+
+
+_OBTAINABLE_INTERFACES = {
+    "things": IThing,
+    "containers": iimaginary.IContainer,
+    "actors": iimaginary.IActor,
+    "manipulators": iimaginary.IManipulator,
+    "exits": iimaginary.IExit,
+    "light sources": iimaginary.ILightSource,
+}
+
+_OBTAINABLE_RETRIEVERS = {
+    "visible": CanSee,
+    "reachable": Reachable,
+    "traversable": Traversability,
+}
+
+class ObtainHelp(Action):
+    """
+    Show the dynamic help for the obtain command.
+    """
+    actionName = "obtain?"
+
+    actorInterface = iimaginary.IManipulator
+
+    expr = pyparsing.Literal(actionName)
+
+    def do(self, actor, line):
+        events.Success(
+            actor=actor.thing,
+            actorMessage=[
+                "Supported adjectives: ",
+                language.ItemizedList(_OBTAINABLE_RETRIEVERS.keys()),
+                "\n",
+                "Supported nouns: ",
+                language.ItemizedList(_OBTAINABLE_INTERFACES.keys()),
+                "\n",
+            ],
+        ).broadcast()
+
+
+@attr.s
+class ResultWithPath(object):
+    path = attr.ib(validator=attr.validators.instance_of(Path))
+    retrieved = attr.ib()
+
+
+class RetrieveWithPath(DelegatingRetriever):
+    def resultRetrieved(self, path, retrievedResult):
+        return ResultWithPath(path, retrievedResult)
+
+
+class Obtain(Action):
+    """
+    Explicitly traverse the simulation graph to find things.
+    """
+    actorInterface = iimaginary.IManipulator
+
+    adj = orLiterals(_OBTAINABLE_RETRIEVERS.keys())
+    listSep = pyparsing.Optional(pyparsing.Literal(","))
+    adjList = (
+        adj +
+        pyparsing.ZeroOrMore(pyparsing.Suppress(listSep) + adj)
+    ).setResultsName(
+        "adjectives",
+        listAllMatches=True,
+    )
+
+    noun = orLiterals(_OBTAINABLE_INTERFACES.keys()).setResultsName("noun")
+
+    naming = (
+        pyparsing.Literal("named") +
+        targetString("target")
+    )
+
+    distance = (
+        pyparsing.Literal("within") +
+        pyparsing.Word("123456789", "0123456789").setResultsName("meters") +
+        orLiterals(["meter", "meters"])
+    )
+
+    annotations = (
+        pyparsing.Literal("with") +
+        pyparsing.Optional(pyparsing.Literal("full").setResultsName("full")) +
+        pyparsing.Literal("annotations").setResultsName("annotations")
+    )
+
+    expr = (
+        pyparsing.Literal("obtain") +
+        pyparsing.Optional(adjList) +
+        noun +
+        pyparsing.Optional(naming) +
+        pyparsing.Optional(distance) +
+        pyparsing.Optional(annotations)
+    )
+
+
+    def do(self, actor, line, noun, adjectives=None, target=None, meters=None, full=False, annotations=False):
+        retriever = ProviderOf(_OBTAINABLE_INTERFACES[noun])
+        if adjectives is None:
+            adjectives = []
+        elif not isinstance(adjectives, list):
+            adjectives = [adjectives]
+        for adj in adjectives:
+            retriever = _OBTAINABLE_RETRIEVERS[adj](retriever)
+        if target is not None:
+            retriever = Named(target, retriever, actor.thing)
+        if meters is not None:
+            retriever = Proximity(int(meters), retriever)
+        retriever = RetrieveWithPath(retriever)
+
+        if annotations:
+            if full:
+                def expressAnnotations(link):
+                    result = list(
+                        [expressAnything(ann), u" "]
+                        for ann
+                        in link.annotations
+                    )
+                    return [u"; annotations ", result or u"(None)"]
+            else:
+                def expressAnnotations(link):
+                    result = list(
+                        [ann.__class__.__name__, u" "]
+                        for ann
+                        in link.annotations
+                    )
+                    return [u"; annotations ", result or u"(None)"]
+        else:
+            def expressAnnotations(link):
+                return u""
+
+        thingsWithPaths = actor.thing.obtainOrReportWhyNot(retriever)
+
+        def expressAnything(o):
+            concept = iimaginary.IConcept(o, None)
+            if concept is None:
+                return repr(o)
+            return concept
+
+        def linkToString(link):
+            return [
+                u"\n\t=> ",
+                expressAnything(link.target.delegate),
+                expressAnnotations(link),
+            ]
+
+        def pathToString(path):
+            return [
+                u"* ", expressAnything(path.links[0].source.delegate),
+                list(
+                    linkToString(link)
+                    for link
+                    in path.links
+                ),
+                u"\n",
+            ]
+
+        events.Success(
+            actor=actor.thing,
+            actorMessage=list(
+                (pathToString(thingwithpath.path), u"\n")
+                for thingwithpath
+                in thingsWithPaths
+            )
+        ).broadcast()

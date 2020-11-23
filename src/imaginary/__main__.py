@@ -107,7 +107,7 @@ def loadWorld(worldName, store):
         codeobj = compile(f.read(), worldName, "exec")
         namespace = {}
         eval(codeobj, namespace, namespace)
-        return namespace['world'](store)
+        return store.transact(namespace['world'], store)
 
 
 
@@ -126,14 +126,15 @@ def findActorThing(store):
 
 
 
-def makeOrLoadWorld(worldName=None):
+def makeOrLoadWorld(worldName=None, saveName=None):
     """
     Load a world by the given name or make a new empty one.
     """
-    store = Store()
-    if worldName is None:
-        world = ImaginaryWorld(store=store)
-        world.create("player")
+    store = Store(saveName if saveName else None)
+    if not worldName:
+        if not saveName:
+            world = ImaginaryWorld(store=store)
+            world.create("player")
     else:
         world = loadWorld(worldName, store)
     return store

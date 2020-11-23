@@ -8,15 +8,17 @@ from imaginary.iimaginary import IClothing, IClothingWearer
 
 from examplegame.squeaky import Squeaker
 
+from imaginary.manipulation import Manipulator
 
 def world(store):
     def room(name):
-        it = Thing(store=store, name=name)
+        it = Thing(store=store, name=name, proper=True)
         Container.createFor(it, capacity=1000)
         return it
     world = ImaginaryWorld(store=store,
                            origin=room("The Beginning"))
     protagonist = world.create("An Example Player")
+    Manipulator(store=store, thing=protagonist).powerUp(protagonist)
     shirt = createShirt(store=store, name="shirt", location=world.origin)
     pants = createPants(store=store, name="pants", location=world.origin)
     middle = room("The Middle")

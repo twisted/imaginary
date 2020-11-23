@@ -561,9 +561,8 @@ components.registerAdapter(_exitAsConcept, Exit, iimaginary.IConcept)
 @attr.s
 class ContainmentRelationship(object):
     """
-    Implementation of L{iimaginary.IContainmentRelationship}.  The interface
-    specifies no methods or attributes.  See its documentation for more
-    information.
+    Implementation of L{iimaginary.IContainmentRelationship}.  See its
+    documentation for more information.
     """
     implements(iimaginary.IContainmentRelationship)
 

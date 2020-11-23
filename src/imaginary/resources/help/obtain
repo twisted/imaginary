@@ -1,0 +1,20 @@
+OBTAIN
+
+Usage: obtain [adjective list] <noun> [named <name>] [within <integer> meter[s]]
+
+Traverse the simulation graph with a retriever configured based on the given
+parameters and display everything it retrieves.
+
+If given, *adjective list* is one or more adjectives describing properties the
+retrieved objects must have.  If more than one adjective is given, separate
+them with commas.
+
+<noun> indicates the type of object to retrieve.
+
+If given, <name> is the name by which the object is known to you.
+
+If given, <integer> is a number of meters to search before stopping.  Note
+that this is approximated by link count since distance isn't properly
+simulated yet.
+
+See Also: obtain?
