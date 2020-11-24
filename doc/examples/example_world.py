@@ -11,7 +11,11 @@ from examplegame.squeaky import Squeaker
 
 def world(store):
     def room(name):
-        it = Thing(store=store, name=name)
+        it = Thing(
+            store=store,
+            name=name,
+            proper=True,
+        )
         Container.createFor(it, capacity=1000)
         return it
     world = ImaginaryWorld(store=store,
