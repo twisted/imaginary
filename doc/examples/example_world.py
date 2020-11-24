@@ -15,6 +15,7 @@ def world(store):
             store=store,
             name=name,
             proper=True,
+            portable=False,
         )
         Container.createFor(it, capacity=1000)
         return it
