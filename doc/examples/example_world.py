@@ -19,12 +19,15 @@ def world(store):
         )
         Container.createFor(it, capacity=1000)
         return it
-    world = ImaginaryWorld(store=store,
-                           origin=room("The Beginning"))
+    origin = room("The Beginning", "Everything here looks fresh and new.")
+    world = ImaginaryWorld(store=store, origin=origin)
     protagonist = world.create("An Example Player")
     shirt = createShirt(store=store, name="shirt", location=world.origin)
     pants = createPants(store=store, name="pants", location=world.origin)
-    middle = room("The Middle")
+    middle = room(
+        "The Middle",
+        "At first glance, this appears to be the center of things.",
+    )
     wearer = IClothingWearer(protagonist)
     wearer.putOn(IClothing(shirt))
     wearer.putOn(IClothing(pants))
