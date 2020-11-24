@@ -10,10 +10,11 @@ from examplegame.squeaky import Squeaker
 
 
 def world(store):
-    def room(name):
+    def room(name, description):
         it = Thing(
             store=store,
             name=name,
+            description=description,
             proper=True,
             portable=False,
         )
