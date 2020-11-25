@@ -327,6 +327,24 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["Test Player regards an immoveable thoughtfully."],
         )
 
+    def testTakeImmoveableByLink(self):
+        """
+        A L{Thing} with C{portable} set to C{False} cannot be taken via a link to
+        it.
+        """
+        immoveable = objects.Thing(
+            store=self.store,
+            name=u"immoveable",
+            portable=False,
+        )
+        objects.Container.createFor(immoveable)
+        objects.Exit.link(self.location, immoveable, u'north')
+
+        self._test(
+            "take north",
+            ["You cannot take an immoveable."],
+            [],
+        )
 
     def testDrop(self):
         self._test(
