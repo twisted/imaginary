@@ -327,10 +327,10 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
             ["Test Player regards an immoveable thoughtfully."],
         )
 
-    def testTakeImmoveableByLink(self):
+    def testTakeNonContainingImmoveable(self):
         """
-        A L{Thing} with C{portable} set to C{False} cannot be taken via a link to
-        it.
+        A L{Thing} with C{portable} set to C{False} cannot be taken even if the
+        taker is not contained by it.  it.
         """
         immoveable = objects.Thing(
             store=self.store,
@@ -341,7 +341,7 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
         objects.Exit.link(self.location, immoveable, u'north')
 
         self._test(
-            "take north",
+            "take immoveable",
             ["An immoveable cannot be taken."],
             ["Test Player regards an immoveable thoughtfully."],
         )
