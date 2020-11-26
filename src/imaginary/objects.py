@@ -293,6 +293,9 @@ class Thing(item.Item):
                         .capitalizeConcept(),
                         " won't fit inside itself."]))
 
+        if not self.portable:
+            raise eimaginary.CannotMove(self, where)
+
         oldLocation = self.location
         for restriction in self.powerupsFor(iimaginary.IMovementRestriction):
             restriction.movementImminent(self, where)
@@ -300,8 +303,6 @@ class Thing(item.Item):
             events.DepartureEvent(oldLocation, self).broadcast()
         if where is not None:
             where = iimaginary.IContainer(where)
-            if oldLocation is not None and not self.portable:
-                raise eimaginary.CannotMove(self, where)
             where.add(self)
             if arrivalEventFactory is not None:
                 arrivalEventFactory(self).broadcast()
