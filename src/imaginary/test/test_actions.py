@@ -342,8 +342,8 @@ class Actions(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
         self._test(
             "take north",
-            ["You cannot take an immoveable."],
-            [],
+            ["An immoveable cannot be taken."],
+            ["Test Player regards an immoveable thoughtfully."],
         )
 
     def testDrop(self):
