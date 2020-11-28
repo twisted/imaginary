@@ -104,7 +104,7 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
             [],
         )
 
-    def closedEmptyDescription(self):
+    def testClosedEmptyDescription(self):
         """
         The fact that a vending machine is empty is not visible when the vending
         machine is closed.
