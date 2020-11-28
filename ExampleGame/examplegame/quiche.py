@@ -84,7 +84,6 @@ class VendingMachine(item.Item, objects.Containment, Enhancement):
             except StopIteration:
                 evt = events.Success(
                     actor=self.thing,
-                    target=obj,
                     otherMessage=language.Sentence([self.thing, " thumps loudly."]))
             else:
                 evt = events.Success(

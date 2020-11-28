@@ -201,6 +201,29 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
                     "Vendy thumps loudly and spits out a quiche onto the ground."])
 
 
+    def testEmptyVendingMachinePurchase(self):
+        """
+        Putting 5 coins into an empty vending machine causes it to clunk but does
+        not cause anything to be spit out.
+        """
+        self._create()
+        self._drop()
+        self._open()
+        for i in range(4):
+            self._create_quarter("quarter")
+            self._put_quarter("quarter")
+
+        self._create_quarter("quarter")
+        self._test(
+            "put quarter in vendy",
+            ["You put quarter in vendy.",
+             "Vendy thumps loudly.",
+            ],
+            ["Test Player puts quarter in vendy.",
+             "Vendy thumps loudly."],
+        )
+
+
     def testProgrammaticQuichePurchase(self):
         location = objects.Thing(store=self.store, name=u"room")
         icloc = objects.Container.createFor(location, capacity=500)
