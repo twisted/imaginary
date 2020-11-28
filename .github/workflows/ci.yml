@@ -70,14 +70,31 @@ jobs:
       - name: "Run Imaginary Tests"
         run: |
           python -m coverage run -m twisted.trial imaginary
+
+      - name: "Install ExampleGame and dependencies"
+        run: |
+          pip install ./ExampleGame
+          pip freeze
+
+      - name: "Run ExampleGame Tests"
+        run: |
+          python -m coverage run -m twisted.trial examplegame
+
+      - name: "Upload Coverage Results"
+        run: |
+          # Combine coverage from all of the test runs.
           coverage combine
+
+          # For fun, I guess, dump a text report to CI output.  These aren't
+          # too much fun to read but perhaps it's useful sometimes if the CI
+          # reporting service is misbehaving.
+          #
           # --ignore-errors is required here because the path resolution can't
           # --figure out the right place to find Twisted dropin source files.
           # --Without --ignore-errors the report fails when it fails to read
           # --these sources.
           coverage report --show-missing --ignore-errors
 
-      - name: "Upload Coverage Results"
-        run: |
+          # Okay actually upload it.
           pip install coveralls
           COVERALLS_REPO_TOKEN=1oyBvUgwFpx0lZfqAXiqM8LPmgKk2Y7OL coveralls
