@@ -44,6 +44,15 @@ class Quarter(item.Item, Coinage, Enhancement):
 class VendingMachine(item.Item, objects.Containment, Enhancement):
     implements(iimaginary.IContainer)
 
+    contentsTemplate = attributes.text(
+        doc="""
+        Define how the contents of this container are presented to observers.
+        Certain substrings will be given special treatment.
+
+        @see: L{imaginary.language.ConceptTemplate}
+        """,
+        allowNone=True, default=None)
+
     capacity = attributes.integer(doc="""
     Units of weight which can be contained.
     """, allowNone=False, default=1)
