@@ -19,6 +19,9 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
     def _drop(self):
+        """
+        Drop the vending machine.
+        """
         self._test(
             "drop vendy",
             ["You drop vendy."],
@@ -47,12 +50,18 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
     def _create_quiche(self):
+        """
+        Create a quiche.
+        """
         self._test("create a quiche named quiche",
                    ["You create a quiche."],
                    ["Test Player creates a quiche."])
 
 
     def _put_quiche(self):
+        """
+        Put a quiche in the vending machine.
+        """
         self._test("put quiche in vendy",
                    ["You put the quiche in vendy."],
                    ["Test Player puts a quiche in vendy."])
@@ -60,10 +69,16 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
     def testTheyExist(self):
+        """
+        Vending machines can be created because they exist.
+        """
         self._create()
 
 
     def testPopulateVendingMachine(self):
+        """
+        A vending machine can be opened so that an object can be placed in it.
+        """
         self._create()
         self._open()
         self._create_quiche()
@@ -143,6 +158,9 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
     def _create_quarter(self, name):
+        """
+        Create a quarter.
+        """
         self._test(
             "create the quarter named %s" % (name,),
             ["You create %s." % (name,)],
@@ -151,12 +169,19 @@ class VendingTest(commandutils.CommandTestCaseMixin, unittest.TestCase):
 
 
     def _put_quarter(self, name):
+        """
+        Put a quarter into the vending machine.
+        """
         self._test("put %s in vendy" % (name,),
                    ["You put %s in vendy." % (name,)],
                    ["Test Player puts %s in vendy." % (name,)])
 
 
     def testBuyingQuiche(self):
+        """
+        Putting 5 coins into a vending machine causes it to spit out an object it
+        contains.
+        """
         self._create()
         self._drop()
         self._create_quiche()
