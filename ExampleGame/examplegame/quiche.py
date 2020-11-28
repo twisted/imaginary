@@ -103,14 +103,6 @@ class VendingMachine(item.Item, objects.Containment, Enhancement):
 
 
 
-def createVendingMachine(store, name, description=u""):
-    o = objects.Thing(store=store, name=name, description=description)
-    VendingMachine.createFor(o)
-    return o
-
-
-
 createCoin = createCreator((Quarter, {}))
 createVendingMachine = createCreator((VendingMachine, {}))
 createQuiche = createCreator()
-
