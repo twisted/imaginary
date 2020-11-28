@@ -61,13 +61,13 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
 
-      - name: "Install Python packages"
+      - name: "Install Imaginary and dependencies"
         run: |
           pip install --upgrade pip setuptools coverage
-          pip install . ./ExampleGame
-          pip list
+          pip install .
+          pip freeze
 
-      - name: "Run Tests"
+      - name: "Run Imaginary Tests"
         run: |
           python -m coverage run -m twisted.trial imaginary
           coverage combine
