@@ -4,12 +4,17 @@ parallel = True
 
 source_pkgs =
        imaginary
+       examplegame
 
 omit =
      # Vendored source file, don't worry about its coverage.
      */imaginary/pyparsing.py
 
 [paths]
-source =
+imaginary =
        src/
+       */site-packages/
+
+examplegame =
+       ExampleGame/
        */site-packages/
