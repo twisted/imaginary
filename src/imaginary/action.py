@@ -32,6 +32,9 @@ _quoteRemovingQuotedString = pyparsing.quotedString.copy()
 _quoteRemovingQuotedString.setParseAction(pyparsing.removeQuotes)
 
 class UnicodeWord(pyparsing.Token):
+    """
+    Match any consecutive sequence of any unicode non-whitespace.
+    """
     def parseImpl(self, instring, loc, doActions=True):
         maxLoc = len(instring)
         while loc < maxLoc and instring[loc].isspace():
@@ -42,6 +45,31 @@ class UnicodeWord(pyparsing.Token):
         end = loc
         return end, instring[start:end]
 
+
+
+class White(pyparsing.Token):
+    """
+    Match any consecutive sequence of any unicode whitespace.
+    """
+    def __init__(self, *args, **kwargs):
+        super(White, self).__init__(*args, **kwargs)
+        self.leaveWhitespace()
+
+
+    def parseImpl(self, instring, loc, doActions=True):
+        maxLoc = len(instring)
+        start = loc
+        while loc < maxLoc and instring[loc].isspace():
+            loc += 1
+        end = loc
+        return loc, instring[start:end]
+
+
+
+restOfLine = (
+    pyparsing.Optional(White().suppress()) +
+    pyparsing.restOfLine
+)
 
 
 orLiterals = lambda xs: pyparsing.Or(map(pyparsing.Literal, xs))
