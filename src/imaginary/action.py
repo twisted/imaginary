@@ -673,31 +673,6 @@ class Equipment(Action):
 
 
 
-class TakeFrom(ToolAction):
-    actionName = "take"
-
-    expr = (orLiterals(["get", "take"]) +
-            pyparsing.White() +
-            targetString("target") +
-            pyparsing.Optional(pyparsing.White() +
-                               pyparsing.Literal("from")) +
-            pyparsing.White() +
-            targetString("tool"))
-
-    def cantFind_target(self, player, targetName):
-        return "Nothing like that around here."
-    cantFind_tool = cantFind_target
-
-    def do(self, player, line, target, tool):
-        # XXX Make sure target is in tool
-        targetTaken(player.thing, target, tool).broadcast()
-        try:
-            target.moveTo(player.thing)
-        except eimaginary.DoesntFit:
-            raise tooHeavy(player.thing, target)
-
-
-
 class PutIn(ToolAction):
 
     toolInterface = iimaginary.IThing
@@ -760,24 +735,30 @@ class PutIn(ToolAction):
 
 
 
-class Take(TargetAction):
-    expr = ((pyparsing.Literal("get") ^ pyparsing.Literal("take")) +
-            pyparsing.White() +
-            targetString("target"))
+class Take(ToolAction):
+    expr = (
+        orLiterals(["get", "take"]) +
+        targetString("target") +
+        pyparsing.Optional(
+            pyparsing.Literal("from") +
+            targetString("tool")
+        )
+    )
 
     def cantFind_target(self, player, targetName):
         return u"Nothing like that around here."
+    cantFind_tool = cantFind_target
 
     def targetRadius(self, player):
         return 1
 
-    def do(self, player, line, target):
+    def do(self, player, line, target, tool=None):
         if target in (player.thing, player.thing.location) or target.location is player.thing:
             raise eimaginary.ActionFailure(events.ThatDoesntMakeSense(
                 actor=player.thing,
                 actorMessage=("You cannot take ", target, ".")))
 
-        targetTaken(player.thing, target).broadcast()
+        targetTaken(player.thing, target, tool).broadcast()
         try:
             target.moveTo(player.thing)
         except eimaginary.DoesntFit:
