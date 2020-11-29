@@ -372,10 +372,8 @@ class LookAround(Action):
 class LookAt(TargetAction):
     actionName = "look"
     expr = (pyparsing.Literal("look") +
-            pyparsing.Optional(pyparsing.White() +
-                               pyparsing.Literal("at")) +
-            pyparsing.White() +
-            pyparsing.restOfLine.setResultsName("target"))
+            pyparsing.Optional(pyparsing.Literal("at")) +
+            restOfLine.setResultsName("target"))
 
     targetInterface = iimaginary.IVisible
 
@@ -444,7 +442,6 @@ class Illuminate(Action):
     actorInterface = iimaginary.IManipulator
 
     expr = (pyparsing.Literal("illuminate") +
-            pyparsing.White() +
             pyparsing.Word("0123456789").setResultsName("candelas"))
 
 
@@ -489,10 +486,8 @@ class Illuminate(Action):
 
 class Describe(TargetAction):
     expr = (pyparsing.Literal("describe") +
-            pyparsing.White() +
             targetString("target") +
-            pyparsing.White() +
-            pyparsing.restOfLine.setResultsName("description"))
+            restOfLine.setResultsName("description"))
 
     def targetRadius(self, player):
         return 3
@@ -508,10 +503,8 @@ class Describe(TargetAction):
 
 class Name(TargetAction):
     expr = (pyparsing.Literal("name") +
-            pyparsing.White() +
             targetString("target") +
-            pyparsing.White() +
-            pyparsing.restOfLine.setResultsName("name"))
+            restOfLine.setResultsName("name"))
 
     def targetRadius(self, player):
         return 3
@@ -528,7 +521,6 @@ class Name(TargetAction):
 
 class Open(TargetAction):
     expr = (pyparsing.Literal("open") +
-            pyparsing.White() +
             targetString("target"))
 
     targetInterface = iimaginary.IContainer
@@ -554,7 +546,6 @@ class Open(TargetAction):
 
 class Close(TargetAction):
     expr = (pyparsing.Literal("close") +
-            pyparsing.White() +
             targetString("target"))
 
     targetInterface = iimaginary.IContainer
@@ -608,7 +599,6 @@ def targetTaken(player, target, container=None):
 
 class Remove(TargetAction):
     expr = (orLiterals(["remove", "take off"]) +
-            pyparsing.White() +
             targetString("target"))
 
     targetInterface = iimaginary.IClothing
@@ -682,11 +672,8 @@ class PutIn(ToolAction):
         return "That doesn't work."
 
     expr = (pyparsing.Literal("put") +
-            pyparsing.White() +
             targetString("tool") +
-            pyparsing.Optional(pyparsing.White() +
-                               pyparsing.Literal("in")) +
-            pyparsing.White() +
+            pyparsing.Optional(pyparsing.Literal("in")) +
             targetString("target"))
 
     def do(self, player, line, tool, target):
@@ -801,9 +788,7 @@ def insufficientSpace(player):
 
 
 class Drop(TargetAction):
-    expr = (pyparsing.Literal("drop") +
-            pyparsing.White() +
-            targetString("target"))
+    expr = pyparsing.Literal("drop") + targetString("target")
 
     def cantFind_target(self, player, targetName):
         return "Nothing like that around here."
@@ -854,10 +839,8 @@ def expandDirection(direction):
 
 class Dig(Action):
     expr = (pyparsing.Literal("dig") +
-            pyparsing.White() +
             DIRECTION_LITERAL +
-            pyparsing.White() +
-            pyparsing.restOfLine.setResultsName("name"))
+            restOfLine.setResultsName("name"))
 
     def do(self, player, line, direction, name):
         direction = expandDirection(direction)
@@ -884,7 +867,6 @@ class Dig(Action):
 
 class Bury(Action):
     expr = (pyparsing.Literal("bury") +
-            pyparsing.White() +
             DIRECTION_LITERAL)
 
     def do(self, player, line, direction):
@@ -916,7 +898,7 @@ class Bury(Action):
 
 class Go(Action):
     _goVerbs = orLiterals(["go", "enter", "exit"])
-    _goForm = _goVerbs + pyparsing.White() + targetString("direction")
+    _goForm = _goVerbs + targetString("direction")
     expr = _goForm | DIRECTION_LITERAL
 
     actorInterface = iimaginary.IThing
@@ -975,8 +957,7 @@ class Go(Action):
 
 class Restore(TargetAction):
     expr = (pyparsing.Literal("restore") +
-            pyparsing.White() +
-            pyparsing.restOfLine.setResultsName("target"))
+            restOfLine.setResultsName("target"))
 
     targetInterface = iimaginary.IActor
 
@@ -1018,8 +999,7 @@ class Restore(TargetAction):
 
 class Hit(TargetAction):
     expr = (orLiterals(["hit", "attack", "kill"]) +
-            pyparsing.White() +
-            pyparsing.restOfLine.setResultsName("target"))
+            restOfLine.setResultsName("target"))
 
     targetInterface = iimaginary.IActor
 
@@ -1062,9 +1042,8 @@ class Hit(TargetAction):
 
 
 class Say(Action):
-    expr = (((pyparsing.Literal("say") + pyparsing.White()) ^
-             pyparsing.Literal("'")) +
-            pyparsing.restOfLine.setResultsName("text"))
+    expr = (orLiterals(["say", "'"]) +
+            restOfLine.setResultsName("text"))
 
     def do(self, player, line, text):
         evt = events.SpeechEvent(speaker=player.thing, text=text)
@@ -1073,9 +1052,8 @@ class Say(Action):
 
 
 class Emote(Action):
-    expr = (((pyparsing.Literal("emote") + pyparsing.White()) ^
-             pyparsing.Literal(":")) +
-            pyparsing.restOfLine.setResultsName("text"))
+    expr = (orLiterals(["emote", ":"]) +
+            restOfLine.setResultsName("text"))
 
     def do(self, player, line, text):
         evt = events.Success(actor=player.thing,
@@ -1156,9 +1134,7 @@ class Scrutinize(TargetAction):
     """
     Show detailed information about the model structure of a game object.
     """
-    expr = (pyparsing.Literal("scrutinize") +
-            pyparsing.White() +
-            targetString("target"))
+    expr = pyparsing.Literal("scrutinize") + targetString("target")
 
     def targetRadius(self, player):
         return 3
@@ -1210,11 +1186,11 @@ class Set(TargetAction):
     Direct model-level state manipulation command.
     """
     expr = (
-        pyparsing.Literal("set") + pyparsing.White() +
-        targetString("attribute") + pyparsing.White() +
-        pyparsing.Literal("of") + pyparsing.White() +
-        targetString("target") + pyparsing.White() +
-        pyparsing.Literal("to") + pyparsing.White() +
+        pyparsing.Literal("set") +
+        targetString("attribute") +
+        pyparsing.Literal("of") +
+        targetString("target") +
+        pyparsing.Literal("to") +
         targetString("value"))
 
     def do(self, player, line, attribute, target, value):
@@ -1314,8 +1290,7 @@ class Help(Action):
     @type helpContentPath: L{filepath.FilePath}
     """
     expr = (pyparsing.Literal("help") +
-            pyparsing.White() +
-            pyparsing.restOfLine.setResultsName("topic"))
+            restOfLine.setResultsName("topic"))
 
     helpContentPath = filepath.FilePath(imaginary.__file__).sibling(
         "resources").child("help")
