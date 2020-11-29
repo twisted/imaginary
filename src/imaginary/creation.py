@@ -16,10 +16,15 @@ from imaginary import language
 from imaginary.iimaginary import IThingType
 from imaginary.eimaginary import ActionFailure, DoesntFit
 
-from imaginary.action import Action, insufficientSpace
+from imaginary.action import (
+    Action,
+    restOfLine,
+    orLiterals,
+    insufficientSpace,
+)
 from imaginary.action import targetString
 
-from imaginary.pyparsing import Literal, White, Optional, restOfLine
+from imaginary.pyparsing import Literal, Optional
 
 
 def getPlugins(iface, package):
@@ -115,16 +120,13 @@ class Create(Action):
     registry.
     """
     expr = (Literal("create") +
-            Optional(White() +
-                     (Literal("an") | Literal("a") | Literal("the")).setResultsName("article")) +
-            White() +
+            Optional(
+                orLiterals(["a", "an", "the"])
+            ).setResultsName("article") +
             targetString("typeName") +
-            White() +
             Literal("named") +
-            White() +
             targetString("name") +
-            Optional(White() +
-                     restOfLine.setResultsName("description")))
+            Optional(restOfLine.setResultsName("description")))
 
     def do(self, player, line, typeName, name, description=None, article=None):
         """
