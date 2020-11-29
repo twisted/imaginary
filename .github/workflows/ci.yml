@@ -78,7 +78,7 @@ jobs:
 
       - name: "Run ExampleGame Tests"
         run: |
-          python -m coverage run -m twisted.trial examplegame
+          python -m coverage run --rcfile .coveragerc-examplegame -m twisted.trial examplegame
 
       - name: "Upload Coverage Results"
         run: |
