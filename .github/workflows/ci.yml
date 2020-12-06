@@ -65,7 +65,9 @@ jobs:
         run: |
           pip install --upgrade pip setuptools coverage
           pip install .
-          pip freeze
+
+      - name: "Dump Environment Info"
+        uses: "twisted/python-info-action@v1.0.1"
 
       - name: "Run Imaginary Tests"
         run: |
@@ -77,7 +79,9 @@ jobs:
       - name: "Install ExampleGame and dependencies"
         run: |
           pip install ./ExampleGame
-          pip freeze
+
+      - name: "Dump Environment Info"
+        uses: "twisted/python-info-action@v1.0.1"
 
       - name: "Run ExampleGame Tests"
         run: |
