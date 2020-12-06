@@ -94,9 +94,9 @@ jobs:
           # reporting service is misbehaving.
           #
           # --ignore-errors is required here because the path resolution can't
-          # --figure out the right place to find Twisted dropin source files.
-          # --Without --ignore-errors the report fails when it fails to read
-          # --these sources.
+          # figure out the right place to find Twisted dropin source files.
+          # Without --ignore-errors the report fails when it fails to read
+          # these sources.
           coverage report --show-missing --ignore-errors
 
           # Okay actually upload it.
