@@ -1,0 +1,11 @@
+[run]
+branch = True
+parallel = True
+
+source_pkgs =
+       examplegame
+
+[paths]
+source_paths =
+       ExampleGame/
+       */site-packages/
