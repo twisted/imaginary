@@ -10,6 +10,6 @@ omit =
      */imaginary/pyparsing.py
 
 [paths]
-source =
+paths =
        src/
        */site-packages/
