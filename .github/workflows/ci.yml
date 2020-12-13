@@ -64,7 +64,7 @@ jobs:
       - name: "Install Imaginary and dependencies"
         run: |
           pip install --upgrade pip setuptools coverage
-          pip install .
+          pip install .[test]
 
       - name: "Dump Environment Info"
         uses: "twisted/python-info-action@v1.0.1"
