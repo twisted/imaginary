@@ -61,23 +61,48 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
 
-      - name: "Install Python packages"
+      - name: "Install Imaginary and dependencies"
         run: |
           pip install --upgrade pip setuptools coverage
-          pip install . ./ExampleGame
-          pip list
+          pip install .
 
-      - name: "Run Tests"
+      - name: "Dump Environment Info"
+        uses: "twisted/python-info-action@v1.0.1"
+
+      - name: "Run Imaginary Tests"
         run: |
           python -m coverage run -m twisted.trial imaginary
+          # Combine the Imaginary coverage results in a .coverage data file.
+          # Like the `coverage run` above, use the default .coveragerc.
           coverage combine
-          # --ignore-errors is required here because the path resolution can't
-          # --figure out the right place to find Twisted dropin source files.
-          # --Without --ignore-errors the report fails when it fails to read
-          # --these sources.
-          coverage report --show-missing --ignore-errors
+
+      - name: "Install ExampleGame and dependencies"
+        run: |
+          pip install ./ExampleGame
+
+      - name: "Dump Environment Info"
+        uses: "twisted/python-info-action@v1.0.1"
+
+      - name: "Run ExampleGame Tests"
+        run: |
+          python -m coverage run --rcfile .coveragerc-examplegame -m twisted.trial examplegame
+          # Combine the ExampleGame coverage results into the existing
+          # .coverage data file.  Make sure to use the ExampleGame .coveragerc
+          # so paths are resolved correctly.
+          coverage combine --rcfile .coveragerc-examplegame --append
 
       - name: "Upload Coverage Results"
         run: |
+          # For fun, I guess, dump a text report to CI output.  These aren't
+          # too much fun to read but perhaps it's useful sometimes if the CI
+          # reporting service is misbehaving.
+          #
+          # --ignore-errors is required here because the path resolution can't
+          # figure out the right place to find Twisted dropin source files.
+          # Without --ignore-errors the report fails when it fails to read
+          # these sources.
+          coverage report --show-missing --ignore-errors
+
+          # Okay actually upload it.
           pip install coveralls
           COVERALLS_REPO_TOKEN=1oyBvUgwFpx0lZfqAXiqM8LPmgKk2Y7OL coveralls
