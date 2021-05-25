@@ -101,11 +101,14 @@ class ObjectTestCase(unittest.TestCase):
         Test that the C{portable} flag is respected and prevents movement
         between locations.
         """
-        obj = objects.Thing(store=self.store, name=u"mountain")
-        obj.portable = False
         room = objects.Thing(store=self.store, name=u"place")
         objects.Container.createFor(room, capacity=1000)
-        obj.moveTo(room)
+        obj = objects.Thing(
+            store=self.store,
+            name=u"mountain",
+            portable=False,
+            location=room,
+        )
         elsewhere = objects.Thing(store=self.store, name=u"different place")
         container = objects.Container.createFor(elsewhere, capacity=1000)
         self.assertRaises(eimaginary.CannotMove, obj.moveTo, elsewhere)
