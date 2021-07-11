@@ -163,7 +163,7 @@ def runEventTransaction(store, func, *args, **kwargs):
             return context.call(
                 {iimaginary.ITransactionalEventBroadcaster: broadcaster},
                 func, *args, **kwargs)
-        except eimaginary.ActionFailure, e:
+        except eimaginary.ActionFailure as e:
             broadcaster.addRevertEvent(e.event.reify())
             raise
     try:

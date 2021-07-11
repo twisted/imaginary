@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 def getInt(i):
     d = ''
     for c in i:
@@ -60,7 +62,7 @@ def prettystring(s):
     return prettylist((parser(tokenize(s))))
 
 def _test():
-    print prettystring(ss)
+    print(prettystring(ss))
 
 if __name__ == '__main__':
     _test()

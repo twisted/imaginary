@@ -25,6 +25,7 @@
 #  - add pprint() - pretty-print output of defined BNF
 #
 #from __future__ import generators
+from __future__ import print_function
 
 __doc__ = \
 """
@@ -80,7 +81,7 @@ def _ustr(obj):
         # it won't break any existing code.
         return str(obj)
         
-    except UnicodeEncodeError, e:
+    except UnicodeEncodeError as e:
         # The Python docs (http://docs.python.org/ref/customization.html#l2h-182)
         # state that "The return value must be a string object". However, does a
         # unicode object (being a subclass of basestring) count as a "string
@@ -126,7 +127,7 @@ class ParseBaseException(Exception):
         elif( aname == "line" ):
             return line( self.loc, self.pstr )
         else:
-            raise AttributeError, aname
+            raise AttributeError(aname)
 
     def __str__( self ):
         return "%s (at char %d), (line:%d, col:%d)" % ( self.msg, self.loc, self.lineno, self.column )
@@ -449,13 +450,13 @@ def line( loc, strg ):
         return strg[lastCR+1:]
 
 def _defaultStartDebugAction( instring, loc, expr ):
-    print "Match",expr,"at loc",loc,"(%d,%d)" % ( lineno(loc,instring), col(loc,instring) )
+    print("Match",expr,"at loc",loc,"(%d,%d)" % ( lineno(loc,instring), col(loc,instring) ))
 
 def _defaultSuccessDebugAction( instring, startloc, endloc, expr, toks ):
-    print "Matched",expr,"->",toks.asList()
+    print("Matched",expr,"->",toks.asList())
     
 def _defaultExceptionDebugAction( instring, loc, expr, exc ):
-    print "Exception raised:", exc
+    print("Exception raised:", exc)
 
 def nullDebugAction(*args):
     """'Do-nothing' debug action, to suppress debugging output during parsing."""
@@ -577,7 +578,7 @@ class ParserElement(object):
                     loc,tokens = self.parseImpl( instring, loc, doActions )
                 except IndexError:
                     raise ParseException( instring, len(instring), self.errmsg, self )
-            except ParseException, err:
+            except ParseException as err:
                 #~ print "Exception raised:", err
                 if (self.debugActions[2] ):
                     self.debugActions[2]( instring, tokensStart, self, err )
@@ -610,7 +611,7 @@ class ParserElement(object):
                                                       self.resultsName, 
                                                       asList=self.saveAsList and isinstance(tokens,(ParseResults,list)), 
                                                       modal=self.modalResults )
-                except ParseException, err:
+                except ParseException as err:
                     #~ print "Exception raised in user parse action:", err
                     if (self.debugActions[2] ):
                         self.debugActions[2]( instring, tokensStart, self, err )
@@ -653,7 +654,7 @@ class ParserElement(object):
                 ParserElement._exprArgCache[ lookup ] = \
                     value = self._parseNoCache( instring, loc, doActions, callPreParse )
                 return value
-            except Exception, pe:
+            except Exception as pe:
                 ParserElement._exprArgCache[ lookup ] = pe
                 raise
 
@@ -1226,7 +1227,7 @@ class Regex(Token):
         try:
             self.re = re.compile(self.pattern, self.flags)
             self.reString = self.pattern
-        except Exception,e:
+        except Exception as e:
             warnings.warn("invalid pattern (%s) passed to Regex" % pattern, 
                 SyntaxWarning, stacklevel=2)
             raise
@@ -1331,7 +1332,7 @@ class QuotedString(Token):
         try:
             self.re = re.compile(self.pattern, self.flags)
             self.reString = self.pattern
-        except Exception,e:
+        except Exception as e:
             warnings.warn("invalid pattern (%s) passed to Regex" % self.pattern, 
                 SyntaxWarning, stacklevel=2)
             raise
@@ -1771,11 +1772,11 @@ class Or(ParseExpression):
         for e in self.exprs:
             try:
                 loc2 = e.tryParse( instring, loc )
-            except ParseException, err:
+            except ParseException as err:
                 if err.loc > maxExcLoc:
                     maxException = err
                     maxExcLoc = err.loc
-            except IndexError, err:
+            except IndexError as err:
                 if len(instring) > maxExcLoc:
                     maxException = ParseException(instring,len(instring),e.errmsg,self)
                     maxExcLoc = len(instring)
@@ -1834,11 +1835,11 @@ class MatchFirst(ParseExpression):
             try:
                 ret = e._parse( instring, loc, doActions )
                 return ret
-            except ParseException, err:
+            except ParseException as err:
                 if err.loc > maxExcLoc:
                     maxException = err
                     maxExcLoc = err.loc
-            except IndexError, err:
+            except IndexError as err:
                 if len(instring) > maxExcLoc:
                     maxException = ParseException(instring,len(instring),e.errmsg,self)
                     maxExcLoc = len(instring)
@@ -2088,8 +2089,8 @@ class ZeroOrMore(ParseElementEnhance):
                     tokens += tmptokens
         except (ParseException,IndexError):
             pass
-        except Exception,e:
-            print "####",e
+        except Exception as e:
+            print("####",e)
 
         return loc, tokens
 
@@ -2600,19 +2601,19 @@ commaSeparatedList = delimitedList( Optional( quotedString | _commasepitem, defa
 if __name__ == "__main__":
 
     def test( teststring ):
-        print teststring,"->",
+        print(teststring,"->", end="")
         try:
             tokens = simpleSQL.parseString( teststring )
             tokenlist = tokens.asList()
-            print tokenlist
-            print "tokens = ",        tokens
-            print "tokens.columns =", tokens.columns
-            print "tokens.tables =",  tokens.tables
-            print tokens.asXML("SQL",True)
-        except ParseException, err:
-            print err.line
-            print " "*(err.column-1) + "^"
-            print err
+            print(tokenlist)
+            print("tokens = ",        tokens)
+            print("tokens.columns =", tokens.columns)
+            print("tokens.tables =",  tokens.tables)
+            print(tokens.asXML("SQL",True))
+        except ParseException as err:
+            print(err.line)
+            print(" "*(err.column-1) + "^")
+            print(err)
         print
 
     selectToken    = CaselessLiteral( "select" )
