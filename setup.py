@@ -49,3 +49,5 @@ distobj = setup(
         "imaginary": ["resources/*", "resources/help/*"],
     },
 )
+
+print "hello world"
