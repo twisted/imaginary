@@ -44,6 +44,15 @@ class Quarter(item.Item, Coinage, Enhancement):
 class VendingMachine(item.Item, objects.Containment, Enhancement):
     implements(iimaginary.IContainer)
 
+    contentsTemplate = attributes.text(
+        doc="""
+        Define how the contents of this container are presented to observers.
+        Certain substrings will be given special treatment.
+
+        @see: L{imaginary.language.ConceptTemplate}
+        """,
+        allowNone=True, default=None)
+
     capacity = attributes.integer(doc="""
     Units of weight which can be contained.
     """, allowNone=False, default=1)
@@ -75,7 +84,6 @@ class VendingMachine(item.Item, objects.Containment, Enhancement):
             except StopIteration:
                 evt = events.Success(
                     actor=self.thing,
-                    target=obj,
                     otherMessage=language.Sentence([self.thing, " thumps loudly."]))
             else:
                 evt = events.Success(
@@ -103,14 +111,6 @@ class VendingMachine(item.Item, objects.Containment, Enhancement):
 
 
 
-def createVendingMachine(store, name, description=u""):
-    o = objects.Thing(store=store, name=name, description=description)
-    VendingMachine.createFor(o)
-    return o
-
-
-
 createCoin = createCreator((Quarter, {}))
 createVendingMachine = createCreator((VendingMachine, {}))
 createQuiche = createCreator()
-
