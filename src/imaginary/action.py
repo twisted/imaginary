@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import time, random, operator
 import pprint
+from functools import reduce
 
 from zope.interface import implements
 
@@ -590,7 +591,7 @@ class Remove(TargetAction):
         from imaginary import garments
         try:
             player.takeOff(target)
-        except garments.InaccessibleGarment, e:
+        except garments.InaccessibleGarment as e:
             raise eimaginary.ActionFailure(events.ThatDoesntWork(
                 actor=player.thing,
                 target=target.thing,
