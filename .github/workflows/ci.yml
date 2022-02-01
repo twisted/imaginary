@@ -7,6 +7,28 @@ on:
   pull_request:
 
 jobs:
+  python3-syntax:
+    runs-on: "${{ matrix.os }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - "ubuntu-latest"
+        python-version:
+          - "3.9"
+    steps:
+      - name: "Check out sources"
+        uses: "actions/checkout@v2"
+
+      - name: "Set up Python ${{ matrix.python-version }}"
+        uses: "actions/setup-python@v1"
+        with:
+          python-version: "${{ matrix.python-version }}"
+
+      - name: "Check Python3 Syntax"
+        run: |
+          python3 -m compileall .
+
   documentation:
     runs-on: "${{ matrix.os }}"
     strategy:

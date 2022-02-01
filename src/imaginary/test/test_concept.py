@@ -3,6 +3,8 @@ Tests for the conversion between abstract objects representing the world or
 changes in the world into concrete per-user-interface content.
 """
 
+from __future__ import print_function
+
 import attr
 
 from zope.interface import implementer
@@ -249,7 +251,7 @@ class VT102Tests(NounTestCase, SharedTextyTests):
 
 
     def unparse(self, s):
-        print repr(s)
+        print(repr(s))
         return list(unc.parser(unc.tokenize(s)))
 
     def _assertECMA48Equality(self, a, b):
