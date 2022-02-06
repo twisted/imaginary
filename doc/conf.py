@@ -48,7 +48,7 @@ copyright = u'2014, The Imaginary Team'
 # built documents.
 #
 # The short X.Y version.
-from imaginary import __version__ as version
+version = "0.0.5"
 # The full version, including alpha/beta/rc tags.
 release = version
 

@@ -21,7 +21,7 @@ jobs:
         uses: "actions/checkout@v2"
 
       - name: "Set up Python ${{ matrix.python-version }}"
-        uses: "actions/setup-python@v1"
+        uses: "actions/setup-python@v2"
         with:
           python-version: "${{ matrix.python-version }}"
 
@@ -44,7 +44,7 @@ jobs:
         uses: "actions/checkout@v2"
 
       - name: "Set up Python ${{ matrix.python-version }}"
-        uses: "actions/setup-python@v1"
+        uses: "actions/setup-python@v2"
         with:
           python-version: "${{ matrix.python-version }}"
 
@@ -79,14 +79,14 @@ jobs:
         uses: "actions/checkout@v2"
 
       - name: "Set up Python ${{ matrix.python-version }}"
-        uses: "actions/setup-python@v1"
+        uses: "actions/setup-python@v2"
         with:
           python-version: "${{ matrix.python-version }}"
 
       - name: "Install Imaginary and dependencies"
         run: |
           pip install --upgrade pip setuptools coverage
-          pip install .
+          pip install .[test]
 
       - name: "Dump Environment Info"
         uses: "twisted/python-info-action@v1.0.1"

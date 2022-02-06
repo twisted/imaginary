@@ -5,6 +5,14 @@ Unit tests for Imaginary actions.
 
 from zope.interface import Interface, implementer
 
+from hypothesis import (
+    given,
+)
+from hypothesis.strategies import (
+    text,
+    characters,
+)
+
 from twisted.trial import unittest
 from twisted.python import filepath
 
@@ -15,7 +23,14 @@ from axiom.attributes import reference
 from imaginary import iimaginary, objects, events, pyparsing
 from imaginary.enhancement import Enhancement
 
-from imaginary.action import Action, TargetAction, Help
+from imaginary.action import (
+    Action,
+    TargetAction,
+    Help,
+    UnicodeWord,
+    White,
+    restOfLine,
+)
 from imaginary.test import commandutils
 from imaginary.test.commandutils import E
 
@@ -23,6 +38,118 @@ from imaginary.test.commandutils import E
 # commands.
 PTR = "[a-fA-F0-9]{1,16}"
 STOREID = "\\d+"
+
+def whitespaces(min_size=0, max_size=16):
+    """
+    Build L{unicode} strings consisting only of whitespace.
+    """
+    return text(
+        alphabet=characters(
+            whitelist_categories=("Z",),
+        ),
+        min_size=min_size,
+        max_size=max_size,
+    )
+
+
+
+def words(min_size=1, max_size=16):
+    """
+    Build L{unicode} strings consisting only of printable non-whitespace.
+    """
+    return text(
+        alphabet=characters(
+            whitelist_categories=(
+                # Letters
+                "L",
+                # Numbers
+                "N",
+                # Punctuation
+                "P",
+                # Symbols
+                "S",
+            ),
+        ),
+        min_size=min_size,
+        max_size=max_size,
+    )
+
+
+
+class ParsingHelperTests(unittest.TestCase):
+    """
+    Tests for L{UnicodeWord}, L{restOfLine}, and other parsing building
+    blocks.
+    """
+    @given(
+        leadingWhitespace=whitespaces(),
+        needle=words(),
+        trailingWhitespace=whitespaces(),
+    )
+    def testUnicodeWord(self, leadingWhitespace, needle, trailingWhitespace):
+        """
+        L{UnicodeWord} matches a consecutive sequence of non-whitespace
+        characters.
+        """
+        word = UnicodeWord()
+        haystack = leadingWhitespace + needle + trailingWhitespace
+        match = word.parseString(haystack)
+        self.assertEqual(
+            match.asList(),
+            [needle],
+        )
+
+    @given(
+        first=words(),
+        separator=whitespaces(min_size=1),
+        second=words(),
+    )
+    def testCombinedUnicodeWord(self, first, separator, second):
+        """
+        Two L{UnicodeWord} joined by C{+} match two consecutive non-whitespace
+        character sequences separated by whitespace.
+        """
+        word = UnicodeWord() + UnicodeWord()
+        self.assertEqual(
+            word.parseString(first + separator + second).asList(),
+            [first, second],
+        )
+
+    @given(
+        leadingWhitespace=whitespaces(),
+        needle=words(),
+        trailingWhitespace=whitespaces(),
+    )
+    def testRestOfLine(self, leadingWhitespace, needle, trailingWhitespace):
+        """
+        L{restOfLine} skips over some leading whitespace, if there is some, and
+        then matches the rest of the string.
+        """
+        self.assertEqual(
+            restOfLine.parseString(
+                leadingWhitespace +
+                needle +
+                trailingWhitespace
+            ).asList(),
+            [needle + trailingWhitespace],
+        )
+
+    @given(
+        leadingWord=words(),
+        spaces=whitespaces(),
+        trailingWord=words(),
+    )
+    def testWhite(self, leadingWord, spaces, trailingWord):
+        """
+        L{White} matches any number of consecutive unicode spaces.
+        """
+        expr = UnicodeWord().suppress() + White() + UnicodeWord().suppress()
+        self.assertEqual(
+            expr.parseString(leadingWord + spaces + trailingWord).asList(),
+            [spaces],
+        )
+
+
 
 class TransactionalEventBroadcasterTestCase(unittest.TestCase):
     def testAddEvent(self):
