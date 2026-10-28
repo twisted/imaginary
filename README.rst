@@ -44,3 +44,8 @@ documentation you should be able to construct your own example by modifying it.
 
 If you're interested in setting up a multi-player Imaginary server, see
 ``MULTIPLAYER.rst``.
+
+AI Policy
+---------
+
+Imaginary follows the `Twisted AI Policy <https://docs.twisted.org/en/latest/development/ai-policy.html>`_. This means this project does not allow the inclusion of the outputs of generative AI tools.
